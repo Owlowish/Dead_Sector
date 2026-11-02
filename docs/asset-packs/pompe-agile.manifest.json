@@ -1,0 +1,1115 @@
+{
+  "schemaVersion": 1,
+  "preparedAt": "2026-11-02",
+  "scope": "Assets et chronologies proposés ; aucune mécanique intégrée au jeu.",
+  "status": "partial_missing_reload_art",
+  "assets": {
+    "weapons/shotgun/hip.png": {
+      "file": "public/assets/weapons/shotgun/hip.png",
+      "url": "/assets/weapons/shotgun/hip.png",
+      "width": 1254,
+      "height": 1254,
+      "alphaBounds": {
+        "x": 0,
+        "y": 315,
+        "width": 1254,
+        "height": 939
+      },
+      "status": "reference_or_rejected",
+      "reason": "Référence de création ; utiliser la cellule prête de hip_pump pour éviter un changement de cadrage."
+    },
+    "weapons/shotgun/ads.png": {
+      "file": "public/assets/weapons/shotgun/ads.png",
+      "url": "/assets/weapons/shotgun/ads.png",
+      "width": 1254,
+      "height": 1254,
+      "alphaBounds": {
+        "x": 0,
+        "y": 167,
+        "width": 1208,
+        "height": 1087
+      },
+      "status": "reference_or_rejected",
+      "reason": "Essai rejeté : vue trop plongeante et canon trop long."
+    },
+    "weapons/shotgun/ads_v2.png": {
+      "file": "public/assets/weapons/shotgun/ads_v2.png",
+      "url": "/assets/weapons/shotgun/ads_v2.png",
+      "width": 1254,
+      "height": 1254,
+      "alphaBounds": {
+        "x": 0,
+        "y": 540,
+        "width": 1254,
+        "height": 714
+      },
+      "status": "reference_or_rejected",
+      "reason": "Référence ADS corrigée ; ne pas alterner avec la planche ads_pump_v2 dont le cadrage diffère."
+    },
+    "weapons/shotgun/hip_pump.png": {
+      "file": "public/assets/weapons/shotgun/hip_pump.png",
+      "url": "/assets/weapons/shotgun/hip_pump.png",
+      "width": 1774,
+      "height": 887,
+      "alphaBounds": {
+        "x": 0,
+        "y": 101,
+        "width": 1774,
+        "height": 786
+      },
+      "status": "candidate_inspected"
+    },
+    "weapons/shotgun/ads_pump.png": {
+      "file": "public/assets/weapons/shotgun/ads_pump.png",
+      "url": "/assets/weapons/shotgun/ads_pump.png",
+      "width": 1774,
+      "height": 887,
+      "alphaBounds": {
+        "x": 0,
+        "y": 296,
+        "width": 1774,
+        "height": 591
+      },
+      "status": "reference_or_rejected",
+      "reason": "Essai rejeté : pièce centrale ajoutée devant le boîtier."
+    },
+    "weapons/shotgun/ads_pump_v2.png": {
+      "file": "public/assets/weapons/shotgun/ads_pump_v2.png",
+      "url": "/assets/weapons/shotgun/ads_pump_v2.png",
+      "width": 1774,
+      "height": 887,
+      "alphaBounds": {
+        "x": 0,
+        "y": 342,
+        "width": 1774,
+        "height": 545
+      },
+      "status": "candidate_inspected"
+    },
+    "weapons/shotgun/shells.png": {
+      "file": "public/assets/weapons/shotgun/shells.png",
+      "url": "/assets/weapons/shotgun/shells.png",
+      "width": 2172,
+      "height": 724,
+      "alphaBounds": {
+        "x": 80,
+        "y": 153,
+        "width": 2004,
+        "height": 410
+      },
+      "status": "candidate_inspected"
+    },
+    "weapons/shotgun/flash.png": {
+      "file": "public/assets/weapons/shotgun/flash.png",
+      "url": "/assets/weapons/shotgun/flash.png",
+      "width": 1774,
+      "height": 887,
+      "alphaBounds": {
+        "x": 159,
+        "y": 78,
+        "width": 1572,
+        "height": 740
+      },
+      "status": "candidate_inspected"
+    },
+    "weapons/shotgun/ammo_pickup.png": {
+      "file": "public/assets/weapons/shotgun/ammo_pickup.png",
+      "url": "/assets/weapons/shotgun/ammo_pickup.png",
+      "width": 1254,
+      "height": 1254,
+      "alphaBounds": {
+        "x": 255,
+        "y": 152,
+        "width": 831,
+        "height": 987
+      },
+      "status": "candidate_inspected"
+    },
+    "weapons/shotgun/live_shell.png": {
+      "file": "public/assets/weapons/shotgun/live_shell.png",
+      "url": "/assets/weapons/shotgun/live_shell.png",
+      "width": 1774,
+      "height": 887,
+      "alphaBounds": {
+        "x": 383,
+        "y": 200,
+        "width": 1008,
+        "height": 523
+      },
+      "status": "candidate_inspected"
+    },
+    "weapons/shotgun/pickup.png": {
+      "file": "public/assets/weapons/shotgun/pickup.png",
+      "url": "/assets/weapons/shotgun/pickup.png",
+      "width": 2079,
+      "height": 756,
+      "alphaBounds": {
+        "x": 68,
+        "y": 183,
+        "width": 1940,
+        "height": 435
+      },
+      "status": "candidate_inspected"
+    },
+    "zombies/agile/idle.png": {
+      "file": "public/assets/zombies/agile/idle.png",
+      "url": "/assets/zombies/agile/idle.png",
+      "width": 948,
+      "height": 1660,
+      "alphaBounds": {
+        "x": 145,
+        "y": 52,
+        "width": 723,
+        "height": 1552
+      },
+      "status": "candidate_inspected"
+    },
+    "zombies/agile/run.png": {
+      "file": "public/assets/zombies/agile/run.png",
+      "url": "/assets/zombies/agile/run.png",
+      "width": 1086,
+      "height": 1448,
+      "alphaBounds": {
+        "x": 46,
+        "y": 68,
+        "width": 1016,
+        "height": 1315
+      },
+      "status": "candidate_inspected"
+    },
+    "zombies/agile/attack.png": {
+      "file": "public/assets/zombies/agile/attack.png",
+      "url": "/assets/zombies/agile/attack.png",
+      "width": 1774,
+      "height": 887,
+      "alphaBounds": {
+        "x": 17,
+        "y": 37,
+        "width": 1737,
+        "height": 808
+      },
+      "status": "candidate_inspected"
+    },
+    "zombies/agile/hurt.png": {
+      "file": "public/assets/zombies/agile/hurt.png",
+      "url": "/assets/zombies/agile/hurt.png",
+      "width": 1254,
+      "height": 1254,
+      "alphaBounds": {
+        "x": 150,
+        "y": 17,
+        "width": 1030,
+        "height": 1188
+      },
+      "status": "candidate_inspected"
+    },
+    "zombies/agile/death.png": {
+      "file": "public/assets/zombies/agile/death.png",
+      "url": "/assets/zombies/agile/death.png",
+      "width": 1254,
+      "height": 1254,
+      "alphaBounds": {
+        "x": 29,
+        "y": 35,
+        "width": 1216,
+        "height": 1169
+      },
+      "status": "candidate_inspected"
+    }
+  },
+  "shotgun": {
+    "ready": {
+      "hip": {
+        "asset": "weapons/shotgun/hip_pump.png",
+        "rect": {
+          "x": 887,
+          "y": 0,
+          "width": 887,
+          "height": 887
+        },
+        "anchors": {
+          "muzzle": [
+            202,
+            110
+          ],
+          "ejection": [
+            540,
+            413
+          ],
+          "bottom": [
+            443.5,
+            887
+          ]
+        }
+      },
+      "ads": {
+        "asset": "weapons/shotgun/ads_pump_v2.png",
+        "rect": {
+          "x": 887,
+          "y": 0,
+          "width": 887,
+          "height": 887
+        },
+        "anchors": {
+          "frontSight": [
+            444,
+            353
+          ],
+          "rearSight": [
+            444,
+            411
+          ],
+          "muzzle": [
+            444,
+            353
+          ],
+          "ejection": [
+            540,
+            462
+          ],
+          "bottom": [
+            443.5,
+            887
+          ]
+        }
+      }
+    },
+    "fire": {
+      "hip": {
+        "loop": false,
+        "frames": [
+          {
+            "asset": "weapons/shotgun/hip_pump.png",
+            "rect": {
+              "x": 887,
+              "y": 0,
+              "width": 887,
+              "height": 887
+            },
+            "anchors": {
+              "muzzle": [
+                202,
+                110
+              ],
+              "ejection": [
+                540,
+                413
+              ],
+              "bottom": [
+                443.5,
+                887
+              ]
+            },
+            "duration": 0.035,
+            "flash": 0,
+            "kick": 6
+          },
+          {
+            "asset": "weapons/shotgun/hip_pump.png",
+            "rect": {
+              "x": 887,
+              "y": 0,
+              "width": 887,
+              "height": 887
+            },
+            "anchors": {
+              "muzzle": [
+                202,
+                110
+              ],
+              "ejection": [
+                540,
+                413
+              ],
+              "bottom": [
+                443.5,
+                887
+              ]
+            },
+            "duration": 0.035,
+            "flash": 1,
+            "kick": 10
+          },
+          {
+            "asset": "weapons/shotgun/hip_pump.png",
+            "rect": {
+              "x": 887,
+              "y": 0,
+              "width": 887,
+              "height": 887
+            },
+            "anchors": {
+              "muzzle": [
+                202,
+                110
+              ],
+              "ejection": [
+                540,
+                413
+              ],
+              "bottom": [
+                443.5,
+                887
+              ]
+            },
+            "duration": 0.12,
+            "flash": null,
+            "kick": 5
+          },
+          {
+            "asset": "weapons/shotgun/hip_pump.png",
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 887,
+              "height": 887
+            },
+            "anchors": {
+              "muzzle": [
+                202,
+                110
+              ],
+              "ejection": [
+                540,
+                413
+              ],
+              "bottom": [
+                443.5,
+                887
+              ]
+            },
+            "duration": 0.16,
+            "flash": null,
+            "kick": 0
+          },
+          {
+            "asset": "weapons/shotgun/hip_pump.png",
+            "rect": {
+              "x": 887,
+              "y": 0,
+              "width": 887,
+              "height": 887
+            },
+            "anchors": {
+              "muzzle": [
+                202,
+                110
+              ],
+              "ejection": [
+                540,
+                413
+              ],
+              "bottom": [
+                443.5,
+                887
+              ]
+            },
+            "duration": 0.15,
+            "flash": null,
+            "kick": 0
+          }
+        ],
+        "events": [
+          {
+            "at": 0,
+            "type": "shot_once"
+          },
+          {
+            "at": 0.19,
+            "type": "eject_spent_shell_once"
+          }
+        ]
+      },
+      "ads": {
+        "loop": false,
+        "frames": [
+          {
+            "asset": "weapons/shotgun/ads_pump_v2.png",
+            "rect": {
+              "x": 887,
+              "y": 0,
+              "width": 887,
+              "height": 887
+            },
+            "anchors": {
+              "frontSight": [
+                444,
+                353
+              ],
+              "rearSight": [
+                444,
+                411
+              ],
+              "muzzle": [
+                444,
+                353
+              ],
+              "ejection": [
+                540,
+                462
+              ],
+              "bottom": [
+                443.5,
+                887
+              ]
+            },
+            "duration": 0.035,
+            "flash": 0,
+            "kick": 6
+          },
+          {
+            "asset": "weapons/shotgun/ads_pump_v2.png",
+            "rect": {
+              "x": 887,
+              "y": 0,
+              "width": 887,
+              "height": 887
+            },
+            "anchors": {
+              "frontSight": [
+                444,
+                353
+              ],
+              "rearSight": [
+                444,
+                411
+              ],
+              "muzzle": [
+                444,
+                353
+              ],
+              "ejection": [
+                540,
+                462
+              ],
+              "bottom": [
+                443.5,
+                887
+              ]
+            },
+            "duration": 0.035,
+            "flash": 1,
+            "kick": 10
+          },
+          {
+            "asset": "weapons/shotgun/ads_pump_v2.png",
+            "rect": {
+              "x": 887,
+              "y": 0,
+              "width": 887,
+              "height": 887
+            },
+            "anchors": {
+              "frontSight": [
+                444,
+                353
+              ],
+              "rearSight": [
+                444,
+                411
+              ],
+              "muzzle": [
+                444,
+                353
+              ],
+              "ejection": [
+                540,
+                462
+              ],
+              "bottom": [
+                443.5,
+                887
+              ]
+            },
+            "duration": 0.12,
+            "flash": null,
+            "kick": 5
+          },
+          {
+            "asset": "weapons/shotgun/ads_pump_v2.png",
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 887,
+              "height": 887
+            },
+            "anchors": {
+              "frontSight": [
+                444,
+                353
+              ],
+              "rearSight": [
+                444,
+                411
+              ],
+              "muzzle": [
+                444,
+                353
+              ],
+              "ejection": [
+                540,
+                462
+              ],
+              "bottom": [
+                443.5,
+                887
+              ]
+            },
+            "duration": 0.16,
+            "flash": null,
+            "kick": 0
+          },
+          {
+            "asset": "weapons/shotgun/ads_pump_v2.png",
+            "rect": {
+              "x": 887,
+              "y": 0,
+              "width": 887,
+              "height": 887
+            },
+            "anchors": {
+              "frontSight": [
+                444,
+                353
+              ],
+              "rearSight": [
+                444,
+                411
+              ],
+              "muzzle": [
+                444,
+                353
+              ],
+              "ejection": [
+                540,
+                462
+              ],
+              "bottom": [
+                443.5,
+                887
+              ]
+            },
+            "duration": 0.15,
+            "flash": null,
+            "kick": 0
+          }
+        ],
+        "events": [
+          {
+            "at": 0,
+            "type": "shot_once"
+          },
+          {
+            "at": 0.19,
+            "type": "eject_spent_shell_once"
+          }
+        ]
+      }
+    },
+    "spentShells": [
+      {
+        "asset": "weapons/shotgun/shells.png",
+        "rect": {
+          "x": 74,
+          "y": 258,
+          "width": 461,
+          "height": 229
+        }
+      },
+      {
+        "asset": "weapons/shotgun/shells.png",
+        "rect": {
+          "x": 633,
+          "y": 147,
+          "width": 436,
+          "height": 404
+        }
+      },
+      {
+        "asset": "weapons/shotgun/shells.png",
+        "rect": {
+          "x": 1202,
+          "y": 147,
+          "width": 259,
+          "height": 422
+        }
+      },
+      {
+        "asset": "weapons/shotgun/shells.png",
+        "rect": {
+          "x": 1653,
+          "y": 184,
+          "width": 437,
+          "height": 377
+        }
+      }
+    ],
+    "muzzleFlash": [
+      {
+        "asset": "weapons/shotgun/flash.png",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 887,
+          "height": 887
+        },
+        "anchor": [
+          443.5,
+          495
+        ]
+      },
+      {
+        "asset": "weapons/shotgun/flash.png",
+        "rect": {
+          "x": 887,
+          "y": 0,
+          "width": 887,
+          "height": 887
+        },
+        "anchor": [
+          443.5,
+          495
+        ]
+      }
+    ],
+    "liveShell": {
+      "asset": "weapons/shotgun/live_shell.png",
+      "rect": {
+        "x": 377,
+        "y": 194,
+        "width": 1020,
+        "height": 535
+      }
+    },
+    "ammoPickup": {
+      "asset": "weapons/shotgun/ammo_pickup.png",
+      "rect": {
+        "x": 249,
+        "y": 146,
+        "width": 843,
+        "height": 999
+      }
+    },
+    "weaponPickup": {
+      "asset": "weapons/shotgun/pickup.png",
+      "rect": {
+        "x": 62,
+        "y": 177,
+        "width": 1952,
+        "height": 447
+      }
+    },
+    "reload": {
+      "status": "missing_art_tool_rejected",
+      "asset": null,
+      "expectedPhases": [
+        "empty_hand_ready",
+        "present_one_live_shell",
+        "insert_one_shell",
+        "withdraw_empty_hand"
+      ],
+      "proposedTimings": {
+        "enter": 0.25,
+        "insertLoop": 0.65,
+        "transferEventInLoop": 0.45,
+        "exit": 0.2
+      },
+      "note": "Deux demandes refusées par le système de sécurité imagegen. Aucun fichier reload.png ni fausse animation livrée. Obtenir et valider ces poses avant de déclarer le rechargement visuel terminé."
+    },
+    "proposedGameplay": {
+      "capacity": 5,
+      "reserve": 20,
+      "pellets": 8,
+      "damagePerPellet": 12,
+      "range": 18,
+      "hipConeHalfAngleDegrees": 5,
+      "adsConeHalfAngleDegrees": 3,
+      "cooldownSeconds": 0.9,
+      "ammoType": "shell",
+      "note": "Valeurs de départ à approuver/tester. ADS resserre la gerbe, sans transformer le fusil en tir monoprojectile."
+    }
+  },
+  "agile": {
+    "visualIdentity": "Cheveux noirs, gilet ocre, chemise bleu pétrole, silhouette basse de coureur.",
+    "billboard": "vertical_yaw_only",
+    "animations": {
+      "idle": {
+        "pixelsPerUnit": 862.2222222222222,
+        "loop": true,
+        "frames": [
+          {
+            "asset": "zombies/agile/idle.png",
+            "rect": {
+              "x": 141,
+              "y": 48,
+              "width": 731,
+              "height": 1560
+            },
+            "duration": 1,
+            "anchor": [
+              506.5,
+              1604
+            ],
+            "floorHeight": 0.025
+          }
+        ]
+      },
+      "run": {
+        "pixelsPerUnit": 341.6666666666667,
+        "loop": true,
+        "frames": [
+          {
+            "asset": "zombies/agile/run.png",
+            "rect": {
+              "x": 53,
+              "y": 74,
+              "width": 272,
+              "height": 623
+            },
+            "duration": 0.09,
+            "anchor": [
+              181,
+              693
+            ],
+            "floorHeight": 0.025
+          },
+          {
+            "asset": "zombies/agile/run.png",
+            "rect": {
+              "x": 371,
+              "y": 68,
+              "width": 325,
+              "height": 626
+            },
+            "duration": 0.09,
+            "anchor": [
+              543,
+              693
+            ],
+            "floorHeight": 0.025
+          },
+          {
+            "asset": "zombies/agile/run.png",
+            "rect": {
+              "x": 732,
+              "y": 64,
+              "width": 334,
+              "height": 617
+            },
+            "duration": 0.09,
+            "anchor": [
+              905,
+              693
+            ],
+            "floorHeight": 0.025
+          },
+          {
+            "asset": "zombies/agile/run.png",
+            "rect": {
+              "x": 42,
+              "y": 761,
+              "width": 317,
+              "height": 624
+            },
+            "duration": 0.09,
+            "anchor": [
+              181,
+              1383
+            ],
+            "floorHeight": 0.025
+          },
+          {
+            "asset": "zombies/agile/run.png",
+            "rect": {
+              "x": 401,
+              "y": 761,
+              "width": 280,
+              "height": 626
+            },
+            "duration": 0.09,
+            "anchor": [
+              543,
+              1383
+            ],
+            "floorHeight": 0.025
+          },
+          {
+            "asset": "zombies/agile/run.png",
+            "rect": {
+              "x": 740,
+              "y": 757,
+              "width": 326,
+              "height": 593
+            },
+            "duration": 0.09,
+            "anchor": [
+              905,
+              1383
+            ],
+            "floorHeight": 0.025
+          }
+        ]
+      },
+      "attack": {
+        "pixelsPerUnit": 395,
+        "loop": false,
+        "frames": [
+          {
+            "asset": "zombies/agile/attack.png",
+            "rect": {
+              "x": 13,
+              "y": 125,
+              "width": 510,
+              "height": 719
+            },
+            "duration": 0.2,
+            "anchor": [
+              268,
+              840
+            ],
+            "floorHeight": 0.025,
+            "clipPolygon": [
+              [
+                13,
+                125
+              ],
+              [
+                513,
+                125
+              ],
+              [
+                513,
+                470
+              ],
+              [
+                523,
+                470
+              ],
+              [
+                523,
+                650
+              ],
+              [
+                513,
+                650
+              ],
+              [
+                513,
+                844
+              ],
+              [
+                13,
+                844
+              ]
+            ]
+          },
+          {
+            "asset": "zombies/agile/attack.png",
+            "rect": {
+              "x": 513,
+              "y": 33,
+              "width": 447,
+              "height": 812
+            },
+            "duration": 0.25,
+            "anchor": [
+              736.5,
+              841
+            ],
+            "floorHeight": 0.025,
+            "clipPolygon": [
+              [
+                513,
+                33
+              ],
+              [
+                960,
+                33
+              ],
+              [
+                960,
+                845
+              ],
+              [
+                513,
+                845
+              ],
+              [
+                513,
+                650
+              ],
+              [
+                523,
+                650
+              ],
+              [
+                523,
+                470
+              ],
+              [
+                513,
+                470
+              ]
+            ]
+          },
+          {
+            "asset": "zombies/agile/attack.png",
+            "rect": {
+              "x": 963,
+              "y": 153,
+              "width": 375,
+              "height": 696
+            },
+            "duration": 0.1,
+            "anchor": [
+              1150.5,
+              845
+            ],
+            "floorHeight": 0.025
+          },
+          {
+            "asset": "zombies/agile/attack.png",
+            "rect": {
+              "x": 1374,
+              "y": 121,
+              "width": 384,
+              "height": 723
+            },
+            "duration": 0.2,
+            "anchor": [
+              1566,
+              840
+            ],
+            "floorHeight": 0.025
+          }
+        ],
+        "events": [
+          {
+            "at": 0.45,
+            "type": "melee_damage_once"
+          }
+        ]
+      },
+      "hurt": {
+        "pixelsPerUnit": 621.6666666666666,
+        "loop": false,
+        "frames": [
+          {
+            "asset": "zombies/agile/hurt.png",
+            "rect": {
+              "x": 146,
+              "y": 13,
+              "width": 480,
+              "height": 1196
+            },
+            "duration": 0.09,
+            "anchor": [
+              386,
+              1205
+            ],
+            "floorHeight": 0.025
+          },
+          {
+            "asset": "zombies/agile/hurt.png",
+            "rect": {
+              "x": 658,
+              "y": 82,
+              "width": 526,
+              "height": 1127
+            },
+            "duration": 0.09,
+            "anchor": [
+              921,
+              1205
+            ],
+            "floorHeight": 0.025
+          }
+        ]
+      },
+      "death": {
+        "pixelsPerUnit": 355,
+        "loop": false,
+        "frames": [
+          {
+            "asset": "zombies/agile/death.png",
+            "rect": {
+              "x": 162,
+              "y": 31,
+              "width": 406,
+              "height": 647
+            },
+            "duration": 0.12,
+            "anchor": [
+              365,
+              674
+            ],
+            "floorHeight": 0.025
+          },
+          {
+            "asset": "zombies/agile/death.png",
+            "rect": {
+              "x": 704,
+              "y": 158,
+              "width": 424,
+              "height": 515
+            },
+            "duration": 0.14,
+            "anchor": [
+              916,
+              669
+            ],
+            "floorHeight": 0.025
+          },
+          {
+            "asset": "zombies/agile/death.png",
+            "rect": {
+              "x": 25,
+              "y": 862,
+              "width": 573,
+              "height": 346
+            },
+            "duration": 0.14,
+            "anchor": [
+              311.5,
+              1204
+            ],
+            "floorHeight": 0.025
+          },
+          {
+            "asset": "zombies/agile/death.png",
+            "rect": {
+              "x": 608,
+              "y": 983,
+              "width": 641,
+              "height": 205
+            },
+            "duration": 0.16,
+            "anchor": [
+              928.5,
+              1184
+            ],
+            "floorHeight": 0.025
+          }
+        ],
+        "keepLastFrameAsVerticalBillboard": true
+      }
+    },
+    "proposedGameplay": {
+      "speed": 2.7,
+      "health": 80,
+      "collisionRadius": 0.4,
+      "attackWindup": 0.45,
+      "attackDamage": 10,
+      "attackRange": 1.4,
+      "hurtStopSeconds": 0.18,
+      "note": "Paramètres proposés, non intégrés. Préserver la lisibilité de préparation et les annulations."
+    }
+  },
+  "notes": [
+    "Ne pas déduire les cellules par width/columns pour les zombies : utiliser les régions mesurées.",
+    "Les clipPolygon sont en pixels ABSOLUS de l’atlas ; ils excluent deux minuscules débordements voisins dans attack.",
+    "anchor zombie est aussi en pixels ABSOLUS de l’atlas ; les ancrages arme sont locaux à la cellule.",
+    "Les mains/clothes sont cohérentes de style, mais ces dessins IA ne garantissent pas une continuité mécanique au pixel près.",
+    "Enregistrer événements et état de gameplay séparément des images."
+  ]
+}

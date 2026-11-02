@@ -1,0 +1,156 @@
+{
+  "tool": "image_gen intégré, transparence alpha",
+  "entries": [
+    {
+      "file": "public/assets/weapons/shotgun/hip.png",
+      "prompt": "Use case: stylized-concept. Asset: ONE ready-to-fire hip-view weapon sprite for DEAD SECTOR retro FPS. Reference images establish ONLY the current player's hand/clothing design: CLOSED full-finger black charcoal textured tactical gloves, dark blue-gray jacket sleeves, no skin. Draw a generic modern pump-action shotgun, matte graphite steel receiver and long straight barrel, ribbed anthracite pump fore-end and tubular magazine, simple bead sight, no brand or scope. FIRST-PERSON perspective from player's eyes: gun held at lower RIGHT, muzzle aimed toward screen upper center-left into depth, right hand on trigger grip, left glove firmly supporting pump farther forward, both arms visibly continuous to bottom edge. Physically straight receiver/barrel, parallel barrel/magazine tube, realistic coherent foreshortening, no twisted wrist, no floating fingers. Square canvas. Compose muzzle around (43%,32%), receiver around (66%,62%), wrists/forearms ending at bottom edge. Weapon at rest with pump fully forward. Strong readable chunky pixel art matching reference, crisp dark outline, desaturated steel highlights, broad diffuse shading, limited palette, no photoreal smooth render. Everything except intentional forearm exits contained with side margins. No flash, smoke, projectile, ejected shell, detached pieces, UI, text, labels, background or painted checkerboard. Truly transparent alpha background. One complete weapon and exactly two hands.",
+      "references": [
+        "C:/Users/Administrateur/source/dead_sector/public/assets/weapons/pistol_actions_v3.png",
+        "C:/Users/Administrateur/source/dead_sector/public/assets/weapons/modern_ads.png"
+      ],
+      "source": "exec-4e9898a2-a030-446e-b1e5-ef2634cfda86.png"
+    },
+    {
+      "file": "public/assets/zombies/agile/idle.png",
+      "prompt": "Use case: stylized-concept. ONE full-body AGILE ZOMBIE enemy idle sprite for DEAD SECTOR, retro pixel-art haunted manor FPS. Reference is ONLY style and visual universe, not the new enemy's identity. Design a clearly DIFFERENT adult infected caretaker/runner: lean narrow silhouette, messy short black hair hanging forward instead of bald head, bent knees and low forward hunch, long tense arms with hands near thigh level, torn muted MUSTARD OCHRE waistcoat over a DARK PETROL BLUE short-sleeved shirt, charcoal trousers and worn dark boots. Adult gaunt face, pale gray-olive skin, no glow. Distinguishable by posture, hair and clothing even if desaturated; do not merely recolor the reference white-shirt zombie. Front three-quarter view toward camera, shoulders narrower than the original, ready-to-sprint posture but feet planted. Entire figure visible including boots, centered on tall portrait canvas, identical detail density and square chunky pixel clusters to reference, thin dark outline, limited muted palette. Head around y=5%, boot soles aligned y=94%, generous transparent margins. No extra limbs, weapon, armor, text, labels, grid, floor or cast shadow, blood pool, dismemberment, organs or graphic gore. Truly transparent alpha background. Single standalone character pose, not a sprite sheet.",
+      "references": [
+        "C:/Users/Administrateur/source/dead_sector/public/assets/zombies/zombie_idle.png"
+      ],
+      "source": "exec-aa4f53a7-d78f-4942-96df-29737f14fbee.png"
+    },
+    {
+      "file": "public/assets/weapons/shotgun/ads.png",
+      "prompt": "Game-art asset, nonviolent fictional prop study for a retro first-person video game. Draw ONE static centered rear view of the pump-action shotgun shown in reference1, with the same black full-finger gloves and blue-gray sleeves shown in reference2. No person, opponent, scene, action, discharge or injury. It is an empty UI weapon pose on genuine transparent background. Looking straight along its top from behind: gun axis is exactly vertical on the image centerline x=50%, no roll, twist or sideways angle. Front bead at x=50%,y=40%; rear sight centered at x=50%,y=56%; barrel, magazine tube and receiver foreshortened consistently beneath. Right gloved hand holds the rear grip, left gloved hand supports the ribbed fore-end. Forearms continue to the bottom corners of a square canvas. Retain the same graphite metal and polymer proportions as reference1, the same chunky pixel art and closed gloves as reference2. No text, UI, effects, smoke, shell, branding, border, grid, shadows outside the object or painted background. One complete isolated game sprite.",
+      "references": [
+        "C:/Users/Administrateur/source/dead_sector/public/assets/weapons/shotgun/hip.png",
+        "C:/Users/Administrateur/source/dead_sector/public/assets/weapons/modern_ads.png"
+      ],
+      "source": "exec-286335ab-2728-48a8-aeb1-6d21f3d3c070.png"
+    },
+    {
+      "file": "public/assets/weapons/shotgun/ads_v2.png",
+      "prompt": "Use case: precise-object-edit. Nonviolent fictional video-game UI prop, static isolated sprite. Correct the camera perspective of reference1, which currently shows too much of the shotgun barrel from above. Reference2 gives the CORRECT eye-level rear sight perspective: rear sight large at center and front bead only just above it, not a long top-down overhead view. Preserve reference1 exact graphite pump-shotgun identity and full-finger black gloves with dark blue-gray sleeves. Camera eye directly behind rear sight, looking ALONG barrel axis with very strong foreshortening. Short visible top strip between rear receiver and front bead. Front bead center x=50%,y=44%; rear sight center x=50%,y=49%; rear receiver occupies x=41%..59%,y=48%..67%. NO long barrel extending toward top of canvas, no roll or yaw. Left hand supporting fore-end and right grip hand continue through broad sleeve forearms to bottom corners. Square canvas with top 40% empty transparent. Same chunky pixel art, desaturated colors, clean dark outlines, no photorealism. No effects, smoke, shells, UI, text, grid or background. One coherent static pose with genuine alpha transparency.",
+      "references": [
+        "C:/Users/Administrateur/source/dead_sector/public/assets/weapons/shotgun/ads.png",
+        "C:/Users/Administrateur/source/dead_sector/public/assets/weapons/modern_ads.png"
+      ],
+      "source": "exec-6c827249-40aa-4fb3-a601-8cb989d22fba.png"
+    },
+    {
+      "file": "public/assets/weapons/shotgun/hip_pump.png",
+      "prompt": "Use case: precise-object-edit. Retro game prop animation sheet from the exact supplied shotgun sprite. Exactly TWO equal SQUARE cells SIDE BY SIDE, transparent background, full first-person gun and same two hands in each cell. Copy base reference camera, graphite receiver/barrel shape, muzzle position, overall scale, right firing hand and blue-gray sleeves. Muzzle fixed around x=27%,y=26% OF EACH CELL and receiver/right hand remain in identical places. ONLY the ribbed sliding fore-end and LEFT support hand move ALONG the barrel axis toward the receiver. LEFT CELL: fore-end fully pulled back, left hand follows, receiver side port appears open and dark. RIGHT CELL: fore-end halfway moving forward, left hand follows, port closing. The ready forward position will reuse the supplied base, so do NOT redesign the gun or show another weapon angle. Same closed full-finger charcoal gloves with textured palms and blue-gray sleeves, arms continuous to bottom edge of EACH cell. No shell, flash or smoke baked in, no second fore-end behind moved part, no bending barrel or receiver, no extra hands/fingers. Chunky hand-drawn pixel art, consistent palette and broad shading. Clean transparent gutter between cells, no text, grid, labels, background, floor or UI.",
+      "references": [
+        "C:/Users/Administrateur/source/dead_sector/public/assets/weapons/shotgun/hip.png"
+      ],
+      "source": "exec-c2d3ba45-09de-42b1-a35d-39477f519864.png"
+    },
+    {
+      "file": "public/assets/weapons/shotgun/ads_pump.png",
+      "prompt": "Use case: precise-object-edit. Static nonviolent fictional game prop sprite sheet. Exactly TWO equal SQUARE cells side by side. Use the supplied centered rear-view shotgun as the strict drawing base. Preserve its camera at eye level behind rear sight, very strong barrel foreshortening, centerline x=50% in EACH cell, front bead near (50%,44%), receiver/right hand and both sleeve exits unchanged. Do not reveal a long overhead barrel, do not rotate or tilt gun. Same matte graphite receiver, dark ribbed pump, closed black gloves, blue-gray jacket sleeves and pixel style. LEFT cell shows left support hand and pump pulled back toward camera, moving downward in image, side port dark/open. RIGHT cell shows left hand and pump halfway returning forward/up, side port closing. Right hand stays on rear grip. Preserve weapon perspective and scale; ONLY mechanical pump and its supporting hand move. One gun, two hands per cell, no extra fingers. Both sleeve ends run to the bottom edge of their cell. No shell, effects, smoke, scene, text, labels, grid or background. Real transparent alpha. This is artwork for a UI animation, no person or target in scene.",
+      "references": [
+        "C:/Users/Administrateur/source/dead_sector/public/assets/weapons/shotgun/ads_v2.png"
+      ],
+      "source": "exec-d51079c2-de30-4ee8-8867-667d93abd6d4.png"
+    },
+    {
+      "file": "public/assets/zombies/agile/run.png",
+      "prompt": "Use case: identity-preserve. A SIX-frame running-in-place animation sprite sheet of the EXACT adult agile zombie in reference. Same messy black hair, gaunt gray face, torn mustard ochre waistcoat, dark petrol shirt, charcoal trousers, dark boots, narrow hunched silhouette. Exact front three-quarter camera angle throughout, no change of character or clothing. Exactly SIX equal portrait cells in THREE columns and TWO rows (overall canvas 3:4 portrait). Each cell width:height 1:2. Full body fits inside its own cell with clean transparent margins x=8%..92%, head below y=5%, grounded boot baseline y=94%. NO anatomy crossing grid boundaries. Same body scale in each frame, no zoom, feet stay within same horizontal anchor. Fast human runner gait with torso low, elbows bent and arms counter-swing: left foot contact, left push, airborne transition, right foot contact, right push, airborne return. Running on the spot, not translating through sheet. Alternating bent legs clearly readable at 90px tall, no attack poses. Chunky square pixel clusters and desaturated palette like reference, crisp dark outline, subtle shading. No extra limbs, text, labels, grid, background, ground, shadows, weapons, blood effects, dismemberment or new gore. Real transparent alpha everywhere outside the six complete figures.",
+      "references": [
+        "C:/Users/Administrateur/source/dead_sector/public/assets/zombies/agile/idle.png"
+      ],
+      "source": "exec-b6a87f7a-89b1-41f3-91b5-b57b6905e68d.png"
+    },
+    {
+      "file": "public/assets/zombies/agile/attack.png",
+      "prompt": "Use case: identity-preserve. FOUR-frame melee attack animation sheet for the EXACT adult agile zombie in reference, no victim shown and no injury scene. Same messy black hair, mustard ochre torn waistcoat, dark petrol shirt, charcoal trousers and boots, narrow hunched body. FOUR equal portrait cells in ONE horizontal row, each cell width:height=1:2, overall landscape 2:1. Full body stays inside each cell with transparent gutters; same camera front three-quarter, same scale, feet baseline y=94%, no zoom. Pose1: runner plants both feet, coils shoulders and draws one arm back, clear readable preparation. Pose2: shoulders twist, claw hand raised just before swing, anticipation. Pose3: ONE forward/downward swipe toward camera, arm foreshortened within cell; not a second strike. Pose4: arm lowered and body recoils back toward hunched idle. One head, two attached arms and two legs every frame. Broad readable silhouettes, hands never cross a cell boundary. Match reference chunky pixel art, square color clusters, thin dark outlines, desaturated ochre and blue-gray palette. No blood effects, gore, dismemberment, weapon, background, floor, cast shadow, text, numbers, labels or grid. Genuine transparent alpha.",
+      "references": [
+        "C:/Users/Administrateur/source/dead_sector/public/assets/zombies/agile/idle.png"
+      ],
+      "source": "exec-7c00fffd-b798-43c1-b415-148263cb6fe1.png"
+    },
+    {
+      "file": "public/assets/zombies/agile/hurt.png",
+      "prompt": "Use case: identity-preserve. TWO-frame flinch reaction sheet for the exact adult agile zombie reference. Same messy black hair, torn ochre vest, dark blue petrol shirt, charcoal trousers and boots, narrow low hunched silhouette and pixel art. Exactly TWO equal portrait cells side by side, each 1:2, overall square transparent canvas. FULL figure in each cell, same camera front three-quarter and same pixel scale. Keep soles at y=94%, centered x=50%, all hands within x=12%..88% of own cell so no crossing center. Left frame: brief torso/shoulder recoil, head tilts back a little, hands close to body, knees remain planted. Right frame: halfway settling back into original hunched idle. ONE small flinch, not an attack, no extra wounds or blood, no victim, no projectile. Preserve anatomy and proportions. Crisp chunky pixels, desaturated palette and dark outline. No ground, shadow, text, numbers, labels, grid or background. Genuinely transparent alpha. Arms remain close enough that silhouettes do not touch neighboring cell.",
+      "references": [
+        "C:/Users/Administrateur/source/dead_sector/public/assets/zombies/agile/idle.png"
+      ],
+      "source": "exec-edbeff06-eb50-4ae9-bd30-5001182ebd2a.png"
+    },
+    {
+      "file": "public/assets/zombies/agile/death.png",
+      "prompt": "Use case: identity-preserve. FOUR-frame collapse animation sheet of the EXACT adult agile zombie in reference, no violence scene or victim. Same messy black hair, torn mustard ochre waistcoat, dark petrol blue shirt, charcoal trousers and boots, gaunt lean proportions and chunky retro pixel art. FOUR equal SQUARE cells in TWO columns and TWO rows, transparent canvas. Same front three-quarter camera and same pixel scale across all poses, no zoom. Full figure and all attached limbs entirely within each cell with 10% left/right gutters. Soles/ground contact at y=92% of each cell. Top-left: runner's knees give way, shoulders slump; top-right: collapses onto one knee, arms hanging. Bottom-left: falls onto left shoulder/side, knees fold. Bottom-right: complete motionless body lying on side, head on LEFT and bent legs/boots to RIGHT, horizontally along bottom of the cell. Last pose must read as a COUCHED BODY seen from the front, suitable for keeping on a VERTICAL billboard, not a top-down floor sticker. Do not shrink final body to fit: keep same head/torso sizes, use square cells wide enough. One head, two attached arms, two legs per pose. No blood pool, organs, dismemberment, new wounds, weapons, floor, cast shadow, text, labels, grid or painted backdrop. Genuinely transparent alpha.",
+      "references": [
+        "C:/Users/Administrateur/source/dead_sector/public/assets/zombies/agile/idle.png"
+      ],
+      "source": "exec-198fb61b-e008-4646-9f15-ee163ee22b6e.png"
+    },
+    {
+      "file": "public/assets/weapons/shotgun/shells.png",
+      "prompt": "Use case: stylized-concept. Retro video-game collectible/effect art sheet of FOUR small EMPTY spent shotgun shell casings, no weapon or person shown. Each is a short dark RED plastic cylindrical hull with a dull BRASS base and an OPEN dark crimped mouth, clearly empty, matching muted haunted-manor pixel palette. Four equal SQUARE cells in a single horizontal row: side profile horizontal, three-quarter diagonal rising right, end-on brass base facing viewer, three-quarter diagonal falling right. Same physical object and pixel density in all four views, centered with generous transparent margins. Crisp chunky pixel art, large square color clusters, dark outline, small brass highlights; readable when displayed at 10 to 20 pixels. No live bullet tip, no projectile, no firearm, no explosion, smoke, injury, text, headstamp lettering, diagrams, measurements, labels or grid. Truly transparent alpha background. Four separate little object sprites only.",
+      "references": [
+        "C:/Users/Administrateur/source/dead_sector/public/assets/weapons/shotgun/hip.png"
+      ],
+      "source": "exec-5b6ef0e0-1a7f-4b49-8d5e-a4079b8fcd04.png"
+    },
+    {
+      "file": "public/assets/weapons/shotgun/flash.png",
+      "prompt": "Use case: stylized-concept. A two-frame retro pixel-art visual-effect sheet: TWO small irregular warm golden starbursts used as muzzle-flash animation sprites in a fictional game, no weapon or character. Two equal square cells side by side, each star centered (50%,50%) inside a clear transparent margin. Left star short compact first burst, right star larger irregular second burst with asymmetrical pointed rays. Cream ivory core, muted amber middle, burnt orange outer pixels; crisp square pixel clusters, dark background absent, no smooth glow or blur, no smoke. Same limited warm palette as antique brass and candlelight in a haunted manor. Actual transparent alpha, not black or painted checkerboard. No objects, gun, ammunition, text, labels, grid, border or scene. Separate discrete sprites, not a continuous strip of fire.",
+      "references": [
+        "C:/Users/Administrateur/source/dead_sector/public/assets/weapons/shotgun/hip.png"
+      ],
+      "source": "exec-880d0cce-978a-4404-be6e-b2b922fb5508.png"
+    },
+    {
+      "file": "public/assets/weapons/shotgun/ammo_pickup.png",
+      "prompt": "Use case: stylized-concept. ONE retro pixel-art ammunition pickup icon for a fictional haunted-manor game. A small worn charcoal-and-ochre cardboard box with its top open, showing THREE short dark red shotgun cartridges with brass bases. Cartridge ends closed and crimped, NOT pointed bullets. Front three-quarter view, squat box centered with clean transparent margins. No writing or branding. Match the crisp chunky pixel clusters, dark outlines and muted palette of reference objects, broad diffuse shading rather than a glow. Clearly readable at 40 to 64 pixels, strong red-and-brass identity distinct from the olive pistol ammo box. No firearm, hands, scene, instructions, measurements, labels, grid, shadow on ground or effects. Real transparent alpha background. One complete collectible object only.",
+      "references": [
+        "C:/Users/Administrateur/source/dead_sector/public/assets/pickups/ammo.png"
+      ],
+      "source": "exec-9bd0d1a8-b2c7-41b4-a97b-bd7e6252d88e.png"
+    },
+    {
+      "file": "public/assets/weapons/shotgun/live_shell.png",
+      "prompt": "Use case: stylized-concept. ONE isolated small fictional game inventory icon: a short dark red plastic shotgun cartridge with dull brass base, intact closed star-crimp end, seen in side three-quarter view and lying horizontally across a wide canvas. This is a collectible object sprite only, no firearm, hand, scene, operation, effects or text. Match supplied red-and-brass game pickup art and chunky crisp pixel style, limited desaturated red, gold and charcoal palette, dark clean outline, subtle diffuse shading, readable at 16 to 32 pixels. Whole object contained with broad genuinely transparent margins, no ground shadow, labels, lettering, grid, diagrams or background. Single complete closed cartridge, not an empty casing.",
+      "references": [
+        "C:/Users/Administrateur/source/dead_sector/public/assets/weapons/shotgun/ammo_pickup.png"
+      ],
+      "source": "exec-b4242284-318f-4b46-9a5e-5ba6b8132420.png"
+    },
+    {
+      "file": "public/assets/weapons/shotgun/ads_pump_v2.png",
+      "prompt": "Use case: precise-object-edit. Two static pose variants of the supplied fictional first-person GAME PROP sprite, for a pixel-art animation. Exactly TWO equal square cells side by side, genuine transparent background. In BOTH cells copy reference gun's exact eye-level centered rear-view silhouette, short foreshortened barrel, bead position at (50%,44%) and rear receiver at (50%,50%..67%), right glove and grip unchanged. No long overhead barrel and NO new object or moving block in front of the rear receiver. No open hole on the BACK of the receiver. The gun body is identical in the two poses. ONLY the LEFT glove/forearm changes position: LEFT cell its support grip is closer to body, lower and slightly to the left of receiver; RIGHT cell the support glove is halfway farther forward and higher along left side. Keep the ribbed fore-end mostly occluded behind barrel as in reference, never drawn over rear receiver. Same black closed full-finger tactical gloves and blue-gray sleeves reaching bottom edges. One gun and exactly two hands in each cell, natural wrists. Preserve graphite metal, subtle shading and chunky pixel clusters. No cartridge, discharge, flash, smoke, scene, people, target, text, labels or grid.",
+      "references": [
+        "C:/Users/Administrateur/source/dead_sector/public/assets/weapons/shotgun/ads_v2.png"
+      ],
+      "source": "exec-aa818575-778b-49a0-bd78-446522de9dfe.png"
+    },
+    {
+      "file": "public/assets/weapons/shotgun/pickup.png",
+      "prompt": "Use case: stylized-concept. ONE isolated retro pixel-art GAME inventory/pickup icon of the same modern pump shotgun design in reference, viewed in clear SIDE PROFILE, full complete object across a wide landscape canvas. Matte graphite receiver, straight barrel, parallel tube underneath, ribbed anthracite fore-end, dark polymer pistol grip and compact dark shoulder stock. No hands, people, scene or action. Crisp chunky square pixels and dark outline matching reference, limited desaturated steel palette and restrained highlights, broad diffuse lighting. Strong silhouette readable at 96px wide. Full muzzle and stock inside generous genuinely transparent margins. No brand, writing, labels, grid, diagrams, measuring marks, ammunition, flash, smoke or backdrop. One static fictional game prop icon only.",
+      "references": [
+        "C:/Users/Administrateur/source/dead_sector/public/assets/weapons/shotgun/hip.png"
+      ],
+      "source": "exec-ea84978b-5e6c-441c-972f-ebebffb89dda.png"
+    }
+  ],
+  "blocked": [
+    {
+      "asset": "shotgun ADS première tentative",
+      "requestId": "6a0389a5-064c-4a8a-9157-cd3cfa699c10",
+      "stage": "input",
+      "resolved": "Pose statique créée ensuite ; version ads_v2 et planche ads_pump_v2 retenues."
+    },
+    {
+      "asset": "shotgun reload",
+      "requestId": "0cc68414-bc1b-4584-94e1-3b716e9d1227",
+      "stage": "input"
+    },
+    {
+      "asset": "shotgun reload",
+      "requestId": "794e8f41-2024-46e0-9353-0fc7355b51f2",
+      "stage": "output",
+      "resolved": false,
+      "consequence": "Planche de rechargement absente ; ne pas annoncer le pack fusil complet ni une animation de rechargement livrée."
+    }
+  ]
+}

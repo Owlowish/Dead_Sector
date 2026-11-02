@@ -1,0 +1,19 @@
+{
+  "tool": "image_gen intégré, sortie alpha transparente, originaux conservés",
+  "death": {
+    "file": "public/assets/zombies/zombie_death.png",
+    "source": "exec-c3f0a458-ed70-498b-af6e-85cbdf2d6f3d.png",
+    "reference": "public/assets/zombies/zombie_idle.png",
+    "prompt": "Use case: identity-preserve. Game asset: four-frame death/collapse sprite sheet for a retro pixel-art FPS zombie. Reference image establishes exact character identity: gaunt balding male zombie, torn stained ivory shirt, dark torn trousers, brown boots, mottled skin. Match those clothes, proportions, desaturated colors and chunky pixels, with no added gore, organs or detached limbs. Exactly FOUR equally sized SQUARE cells in a TWO BY TWO grid, read left-to-right then top-to-bottom. Overall square transparent canvas. Same front three-quarter viewpoint throughout. Same pixel scale in every cell; do not enlarge crouched poses. Each figure FULLY inside its own cell with generous transparent gutters: all anatomy within x=10%..90%, y=5%..94% of its own cell; no crossing center boundaries. Ground baseline y=92%, same fixed anchor at x=50%. Cell1 knees buckle, torso still mostly upright, head lowered, legs giving way. Cell2 down on one knee, torso folds, arms going limp. Cell3 falling onto left side, shoulder low and legs folding. Cell4 collapsed motionless on side, head toward LEFT and bent legs/boots toward RIGHT, full body horizontally stretched across bottom third of cell, pale torn shirt clear. Four distinct progressive poses of ONE collapse, never a walking or attack motion. Limbs stay attached, exactly one head, two arms, two legs each frame. No floor or painted shadow, no labels, numbers, text, grid lines, environment, weapons, extra characters. Truly transparent alpha background."
+  },
+  "corpse": {
+    "status": "Essai horizontal conservé, non chargé après correction demandée : cadavre en billboard vertical utilisant la dernière pose de zombie_death.png.",
+    "file": "public/assets/zombies/zombie_corpse.png",
+    "source": "exec-1f14a303-1ee7-47a9-9874-3af01d181bec.png",
+    "references": [
+      "public/assets/zombies/zombie_idle.png",
+      "public/assets/zombies/zombie_death.png"
+    ],
+    "prompt": "Use case: identity-preserve. ONE retro pixel-art game sprite of the SAME zombie lying dead on its LEFT SIDE, for mapping onto a HORIZONTAL FLOOR PLANE in a first-person shooter. Reference1 is exact identity/style (bald gaunt male, torn stained ivory shirt, dark ripped trousers, brown boots); reference2 is final collapse pose, to match its head-left/feet-right silhouette and clothing. CRITICAL camera: true TOP-DOWN / straight overhead view, looking vertically down at a body lying on the floor, NOT a standing side-view billboard and NOT perspective scenery. Body horizontal across canvas, head at LEFT x=12%, boots RIGHT x=90%, knees slightly bent, limp arms near face/chest, entire silhouette centered vertically y=50%. All attached limbs and boots wholly visible, one body only. Match emaciated proportions, existing blood-stained clothes, muted pixel palette and chunky crisp square clusters. Broad subtle painted shading, no smooth 3D render, no glow, no added gore, no organs, no blood pool. Wide LANDSCAPE composition (approximately 2:1), with transparent margins on all sides. Transparent alpha background, no ground, no cast shadow, no writing, labels, grid, border, weapons or other objects."
+  }
+}

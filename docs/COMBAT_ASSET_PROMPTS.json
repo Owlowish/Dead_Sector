@@ -1,0 +1,29 @@
+{
+  "tool": "image_gen intégré, transparence alpha, originaux conservés dans .codex/generated_images",
+  "medkit": {
+    "file": "public/assets/pickups/medkit.png",
+    "source": "exec-16a519e1-e911-4c7f-b1f8-8773099511dd.png",
+    "prompt": "Use case: stylized-concept. ONE pickup sprite for a retro 2D-billboard FPS in a haunted Victorian manor. Small battered medical first aid satchel/box, ivory canvas and worn brown leather edges, muted red cross clearly visible on the FRONT, dark brass clasp. Front three-quarter view, squat rectangular shape, top slightly visible, centered and entirely inside square canvas with transparent margins. Strong readable silhouette at 48 to 64 pixels. Authentic chunky hand-drawn pixel art, large square color clusters, limited desaturated palette matching wood, burgundy and antique brass, no realistic smooth rendering, no tiny text. Broad diffuse shading, not self-luminous. Object only, no hand, no ground, no cast shadow, no border, no scene, no writing. Genuinely transparent alpha background. One object, not a sprite sheet."
+  },
+  "ammo": {
+    "file": "public/assets/pickups/ammo.png",
+    "source": "exec-37d8aeaa-b328-403b-8a4c-2addb6e59bda.png",
+    "prompt": "Use case: stylized-concept. Asset type: one transparent pickup sprite for a retro pixel-art FPS haunted Victorian manor. A small squat worn olive-green steel ammunition tin with a hinged lid partly open, three short brass pistol cartridges visible along the top. Front three-quarter view, front and right side visible, centered fully inside square canvas with transparent margins. Chunky authentic pixel art with square color clusters, limited desaturated olive, antique brass and brown palette, dark crisp outline, readable at 48 to 64 pixels. Broad diffuse shading, no emission. One object only, no text, no logos, no hands, no ground, no cast shadow, no environment, no sprite sheet. Genuinely transparent alpha background. Match the worn retro style of a cream canvas medical satchel pickup."
+  },
+  "hurtFirst": {
+    "file": "public/assets/zombies/zombie_hurt.png",
+    "status": "Rejeté : main débordant de la cellule. Conservé, non chargé.",
+    "source": "exec-922bd43e-675f-4a99-8a46-811227983868.png",
+    "reference": "public/assets/zombies/zombie_idle.png",
+    "prompt": "Use case: identity-preserve. Asset: two-frame bullet-hit reaction sprite sheet for a retro pixel-art billboard zombie. Input image is the exact identity/style/proportions reference. Preserve this SAME gaunt zombie, torn stained white shirt, dark torn trousers, boots, bald mottled head, existing injuries, colors and chunky pixel detail. No new gore, no exposed organs. Sheet layout: exactly TWO equal-width cells in ONE horizontal row, transparent background. Each cell is portrait with width:height=1:2; overall sheet square. Full body visible in each cell, same height and scale, soles aligned at y=96% of the cell, head around y=3%, equal padding. Frame LEFT: torso jerks slightly backward from a bullet impact, shoulders recoil, arms loose, boots stay planted. Frame RIGHT: torso settles halfway back to the supplied idle hunch. Front three-quarter facing matches reference, no change of viewing angle. These are two stages of ONE short flinch, no walking, no attacking, no ground/shadow, no letters, labels or grid. Transparent alpha throughout empty areas."
+  },
+  "hurtFinal": {
+    "file": "public/assets/zombies/zombie_hurt_v2.png",
+    "source": "exec-85fc681c-124d-400c-abf6-f02a4fc34509.png",
+    "references": [
+      "public/assets/zombies/zombie_hurt.png",
+      "public/assets/zombies/zombie_idle.png"
+    ],
+    "prompt": "Use case: precise-object-edit. Fix ONLY the two-frame zombie hit-reaction sprite sheet (first reference); second reference is original zombie identity. Keep two poses, pixel art, clothes, same character, palette, viewpoint and proportions. Critical production defect: left pose's extended hand crosses the center boundary and appears as a severed hand fragment on the left edge of right cell. Recompose BOTH figures wholly inside their own cells. EXACT square sheet, TWO equal-width portrait cells side by side, one row. Each body plus hands must stay within horizontal 12% to 88% of ITS cell, leaving clean transparent gutters at all cell edges and center boundary. No body parts or pixels crossing the vertical center, no detached hands/fragments anywhere. Feet at y=94% and head y=5%, identical framing for both cells. First pose slight backward flinch, arms closer to torso so complete hands fit; second pose returns toward original idle hunch. Both full bodies and boots visible, all silhouettes entirely inside their own cell with transparent margin. No ground, no shadow, no text, no grid, no new gore. Genuinely transparent background. Preserve identity of original idle sprite."
+  }
+}
