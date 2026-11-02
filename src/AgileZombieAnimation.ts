@@ -332,13 +332,17 @@ export function getAgileSharedResources(): AgileSharedResources {
 export function releaseAgileSharedResources(): void {
   if (!agileSharedInstance) return;
   agileSharedInstance.users--;
-  if (agileSharedInstance.users <= 0) {
-    const res = agileSharedInstance;
-    Object.values(res.textures).forEach((t) => t.dispose());
-    Object.values(res.materials).forEach((m) => m.dispose());
-    Object.values(res.depthMaterials).forEach((m) => m.dispose());
-    Object.values(res.distanceMaterials).forEach((m) => m.dispose());
-    Object.values(res.geometries).forEach((list) => list.forEach((g) => g.dispose()));
-    agileSharedInstance = null;
-  }
+  // Les textures et géométries de l'Agile sont conservées en cache entre les paliers
+  // pour éliminer toute saccade lors de la transition vers le Palier 2 et 3.
+}
+
+export function disposeAgileSharedResources(): void {
+  if (!agileSharedInstance) return;
+  const res = agileSharedInstance;
+  Object.values(res.textures).forEach((t) => t.dispose());
+  Object.values(res.materials).forEach((m) => m.dispose());
+  Object.values(res.depthMaterials).forEach((m) => m.dispose());
+  Object.values(res.distanceMaterials).forEach((m) => m.dispose());
+  Object.values(res.geometries).forEach((list) => list.forEach((g) => g.dispose()));
+  agileSharedInstance = null;
 }

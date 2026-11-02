@@ -7,4 +7,9 @@ export const visualColors = {
   olive: 0x515546,
   blood: 0xb85b4a,
   warning: 0xe1b66b,
+  stone: 0x48423c,
+  hearthDark: 0x141210,
+  ember: 0x9e3215,
+  carpet: 0x4d161a,
+  carpetGold: 0x9a7d3b,
 } as const;

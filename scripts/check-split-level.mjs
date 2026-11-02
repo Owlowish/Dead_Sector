@@ -189,6 +189,42 @@ assert.equal(highMedkit.tryPickup(highPlayerFake), true, 'Objet ramassé avec su
 
 console.log('   -> PASS : Pickups ancrés au sol local et protégés contre le vol vertical.\n');
 
+// ============================================================================
+// ÉPREUVE 6 : FERMETURE DES PLAFONDS ET DÉGAGEMENT VERTICAL (HEADROOM)
+// ============================================================================
+console.log('6. Test de la fermeture des plafonds et du dégagement vertical...');
+
+const raycastUp = (x, y, z) => {
+  const origin = new THREE.Vector3(x, y, z);
+  const upDir = new THREE.Vector3(0, 1, 0);
+  const ray = new THREE.Raycaster(origin, upDir);
+  for (const mesh of level.getSolidMeshes()) mesh.updateWorldMatrix(true, false);
+  const hits = ray.intersectObjects(level.getSolidMeshes(), false);
+  return hits.length > 0 ? hits[0].point.y : null;
+};
+
+// 6.1 Plafond Sud à Y = 4.0m dans le Vestibule
+const southCeilingY = raycastUp(8, 1.7, 11);
+assert.notEqual(southCeilingY, null, 'Le plafond Sud doit intercepter les tirs vers le haut');
+assert.ok(Math.abs(southCeilingY - 4.0) < 0.05, `Plafond Sud attendu à Y=4.0m (mesuré: ${southCeilingY})`);
+
+// 6.2 Plafond monumental à Y = 6.4m dans le Grand Hall
+const grandHallCeilingY = raycastUp(0, 1.7, 2);
+assert.notEqual(grandHallCeilingY, null, 'Le plafond du Grand Hall doit être présent');
+assert.ok(Math.abs(grandHallCeilingY - 6.4) < 0.05 || Math.abs(grandHallCeilingY - 6.25) < 0.05, `Plafond Grand Hall attendu à Y=6.4m ou poutre à 6.25m (mesuré: ${grandHallCeilingY})`);
+
+// 6.3 Plafond à Y = 6.4m dans la Grande Bibliothèque
+const libraryCeilingY = raycastUp(-12, 4.1, -12);
+assert.notEqual(libraryCeilingY, null, 'Le plafond de la Bibliothèque doit être présent');
+assert.ok(Math.abs(libraryCeilingY - 6.4) < 0.05 || Math.abs(libraryCeilingY - 6.25) < 0.05, `Plafond Bibliothèque attendu à Y=6.4m (mesuré: ${libraryCeilingY})`);
+
+// 6.4 Dégagement vertical au milieu de l'escalier Ouest
+const stairCeilingY = raycastUp(-12.25, 2.9, -4.0);
+assert.notEqual(stairCeilingY, null, 'L\'escalier doit avoir un plafond');
+assert.ok(stairCeilingY > 6.0, `L'escalier doit offrir un grand dégagement vertical (mesuré: ${stairCeilingY}m > 6.0m)`);
+
+console.log('   -> PASS : Plafonds continus, hermétiques et dégagement vertical garanti dans tout le manoir.\n');
+
 console.log('================================================================');
 console.log('TOUTES LES VALIDATIONS DU DEMI-NIVEAU (+2,4 M) ONT RÉUSSI !');
 console.log('================================================================');

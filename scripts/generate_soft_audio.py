@@ -75,3 +75,20 @@ for i in range(len(breath)):
     roughness = 0.65 + 0.35 * math.sin(2 * math.pi * 58 * t)
     breath[i] *= envelope * roughness
 write('zombie-groan', breath, 0.48)
+
+# Craquement feutré de boiserie / parquet ancien : friction basse fréquence espacée
+def generate_creak():
+    seconds = 0.85
+    total = round(seconds * RATE)
+    samples = []
+    phase = 0.0
+    for i in range(total):
+        t = i / RATE
+        envelope = math.sin(math.pi * i / (total - 1)) ** 1.8
+        freq = 110 + 60 * math.sin(2 * math.pi * 3.5 * t) + 30 * rng.uniform(-1, 1)
+        phase += 2 * math.pi * freq / RATE
+        stick_slip = (math.sin(phase) + 0.5 * math.sin(phase * 2.3)) * (1.0 if rng.random() > 0.15 else 0.2)
+        samples.append(stick_slip * envelope)
+    write('creak', samples, 0.24)
+
+generate_creak()

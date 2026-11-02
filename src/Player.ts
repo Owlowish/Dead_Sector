@@ -9,8 +9,9 @@ export class Player {
 
   private level: Level;
   private canvas: HTMLCanvasElement;
-  public readonly maxHealth = 100;
+  public maxHealth = 100;
   private health = 100;
+  private speedMultiplier = 1.0;
   private canPlay: () => boolean;
   private onInteract: (() => void) | null = null;
   private onFlashlightToggle: ((enabled: boolean) => void) | null = null;
@@ -172,6 +173,22 @@ export class Player {
     return true;
   }
 
+  public setMaxHealth(newMax: number): void {
+    this.maxHealth = Math.max(10, newMax);
+  }
+
+  public getMaxHealth(): number {
+    return this.maxHealth;
+  }
+
+  public setSpeedMultiplier(mult: number): void {
+    this.speedMultiplier = Math.max(0.5, mult);
+  }
+
+  public getSpeedMultiplier(): number {
+    return this.speedMultiplier;
+  }
+
   public update(delta: number): void {
     // Amortissement élastique continu du recul de caméra
     if (this.recoilPitch > 0.0001 || Math.abs(this.recoilYaw) > 0.0001 || Math.abs(this.recoilRoll) > 0.0001) {
@@ -183,10 +200,10 @@ export class Player {
     this.camera.rotation.x = this.pitch + this.recoilPitch;
     this.camera.rotation.z = this.recoilRoll;
 
-    const speed = (
+    const speed = ((
       this.keys.has('ShiftLeft') ||
       this.keys.has('ShiftRight')
-    ) ? this.runSpeed : this.walkSpeed;
+    ) ? this.runSpeed : this.walkSpeed) * this.speedMultiplier;
 
     this.direction.set(0, 0, 0);
 

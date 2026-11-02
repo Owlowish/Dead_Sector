@@ -107,6 +107,25 @@ function createAgileResources(): SharedDeathResources {
 
 const sharedByType = new Map<ZombieKind, SharedDeathResources>();
 
+export function warmupRemainsResources(): void {
+  for (const kind of ['standard', 'agile'] as ZombieKind[]) {
+    if (!sharedByType.has(kind)) {
+      sharedByType.set(kind, kind === 'agile' ? createAgileResources() : createStandardResources());
+    }
+  }
+}
+
+export function disposeRemainsSharedResources(): void {
+  for (const [, res] of sharedByType.entries()) {
+    res.frames.forEach((geometry) => geometry.dispose());
+    res.deathMaterial.dispose();
+    res.depthMaterial.dispose();
+    res.distanceMaterial.dispose();
+    res.deathTexture.dispose();
+  }
+  sharedByType.clear();
+}
+
 export class ZombieRemains {
   private kind: ZombieKind;
   private resources: SharedDeathResources;
@@ -177,19 +196,22 @@ export class ZombieRemains {
     }
   }
 
+  public static warmup(): void {
+    warmupRemainsResources();
+  }
+
+  public static disposeSharedResources(): void {
+    disposeRemainsSharedResources();
+  }
+
   public dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
     this.mesh.visible = false;
     this.mesh.removeFromParent();
     this.resources.users--;
-    if (this.resources.users <= 0) {
-      this.resources.frames.forEach((geometry) => geometry.dispose());
-      this.resources.deathMaterial.dispose();
-      this.resources.depthMaterial.dispose();
-      this.resources.distanceMaterial.dispose();
-      this.resources.deathTexture.dispose();
-      sharedByType.delete(this.kind);
-    }
+    // Le mesh d'instance est retiré du graphe de scène Three.js.
+    // Les ressources partagées (textures GPU, matériaux compilés, géométries UV)
+    // sont conservées en mémoire pour les paliers suivants et libérées explicitement.
   }
 }

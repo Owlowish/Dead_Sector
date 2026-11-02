@@ -3,7 +3,7 @@ import * as THREE from 'three';
 
 import { Level } from './Level';
 import { Player } from './Player';
-import { Zombie } from './Zombie';
+import { Zombie, disposeAllZombieResources } from './Zombie';
 import { type ZombieKind } from './ZombieRemains';
 import { Weapon } from './Weapon';
 import { Medkit } from './Medkit';
@@ -11,11 +11,16 @@ import { AmmoBox } from './AmmoBox';
 import { ShotgunPickup } from './ShotgunPickup';
 import { ShellCasing } from './ShellCasing';
 import { HitEffects } from './HitEffects';
+import { PerfTracker, type DetailedPerfReport } from './PerfTracker';
 import {
   MANSION_BUDGET,
-  MANSION_SPAWNS,
   MANSION_PICKUPS,
+  type Point2D,
 } from './MansionConfig.ts';
+import { ENCOUNTER_CONFIGS, type EncounterSpec } from './EncounterConfig.ts';
+import { EncounterBell } from './EncounterBell.ts';
+import { UpgradePedestal } from './UpgradePedestal.ts';
+import { drawTierUpgrades, type UpgradeId, type UpgradeSpec } from './UpgradeConfig.ts';
 
 type GameState = 'playing' | 'respite' | 'exploration' | 'won' | 'lost';
 
@@ -29,6 +34,9 @@ export class Game {
   private medkits: Medkit[] = [];
   private ammoBoxes: AmmoBox[] = [];
   private shotgunPickup: ShotgunPickup;
+  private encounterBell: EncounterBell;
+  private upgradePedestals: UpgradePedestal[] = [];
+  private appliedUpgrades: UpgradeId[] = [];
   private shellCasings: ShellCasing[] = [];
   private hitEffects: HitEffects;
   private weapon: Weapon;
@@ -40,7 +48,7 @@ export class Game {
   private tierAgileSpawned = 0;
   private readonly maxSimultaneousZombies = MANSION_BUDGET.maxSimultaneousZombies;
 
-  private readonly tierCandidateSpawns = MANSION_SPAWNS;
+  private readonly encounterConfigs: EncounterSpec[] = ENCOUNTER_CONFIGS;
 
   private readonly healthDisplay = document.querySelector<HTMLElement>('#health');
   private readonly ammoDisplay = document.querySelector<HTMLElement>('#ammo');
@@ -54,11 +62,17 @@ export class Game {
   private readonly damageEffectDuration = 0.4;
   private damageEffectRemaining = 0;
 
-  private clock = new THREE.Clock();
   // Facteur de réduction de résolution pour le rendu 3D rétro (divise par 3)
   private readonly retroScale = 3;
   private ambianceAudio: THREE.Audio | null = null;
+  private creakAudio: THREE.Audio | null = null;
+  private creakTimer = 18.0;
   private zombieGroanBuffer: AudioBuffer | null = null;
+
+  // Métriques de performance haute précision (raw delta, percentiles, combat vs pause)
+  private perfTracker = new PerfTracker(300);
+  private lastFrameTime = typeof performance !== 'undefined' ? performance.now() : 0;
+  private tabBecameVisible = false;
 
   constructor() {
     this.scene = new THREE.Scene();
@@ -117,7 +131,35 @@ export class Game {
         }
       }
 
-      // 2. Portes du manoir
+      // 2. Dispositif d'activation volontaire (Carillon d'arène pour rencontres en manoir ouvert)
+      if (this.state === 'exploration' && this.pendingTierStart > 0 && this.encounterBell.canInteract(this.player.camera.position, cameraDir)) {
+        const nextEncounter = this.encounterConfigs[this.pendingTierStart - 1];
+        if (nextEncounter?.activationType === 'arena_signal') {
+          this.encounterBell.trigger();
+          this.launchPendingTier();
+          return;
+        }
+      }
+
+      // 3. Présentoirs d'offrandes / améliorations in-world sans menu bloquant (F2)
+      if (this.state === 'exploration') {
+        for (const pedestal of (this.upgradePedestals ?? [])) {
+          if (pedestal.canInteract(this.player.camera.position, cameraDir)) {
+            const chosen = pedestal.choose();
+            if (chosen) {
+              this.applyUpgrade(chosen);
+              // Fermer immédiatement l'autre stèle : choix unique pour cette accalmie
+              for (const other of (this.upgradePedestals ?? [])) {
+                if (other !== pedestal) other.close();
+              }
+              this.updateObjectiveDisplay();
+              return;
+            }
+          }
+        }
+      }
+
+      // 4. Portes du manoir
       for (const door of this.level.getDoors()) {
         if (door.canInteract(this.player.camera.position, cameraDir)) {
           const toggled = door.toggle();
@@ -128,9 +170,12 @@ export class Game {
           } else if (toggled) {
             // Déclencheur immersif : ouvrir la porte de l'aile déverrouillée déclenche le combat du palier suivant
             if (this.state === 'exploration' && this.pendingTierStart > 0) {
-              const targetUnlockTier = this.pendingTierStart - 1;
-              if (door.getUnlockAfterTier() === targetUnlockTier) {
-                this.launchPendingTier();
+              const nextEncounter = this.encounterConfigs[this.pendingTierStart - 1];
+              if (nextEncounter?.activationType === 'wing_gate') {
+                const targetUnlockTier = this.pendingTierStart - 1;
+                if (door.getUnlockAfterTier() === targetUnlockTier) {
+                  this.launchPendingTier();
+                }
               }
             }
           }
@@ -144,7 +189,18 @@ export class Game {
     });
 
     if (typeof window !== 'undefined') {
-      (window as unknown as { __DEAD_SECTOR_PERF?: () => unknown }).__DEAD_SECTOR_PERF = () => this.getPerformanceReport();
+      (window as unknown as { __DEAD_SECTOR_PERF?: () => unknown; __DEAD_SECTOR_PERF_DETAILED?: () => unknown; __DEAD_SECTOR_START_TIER?: (tier: number) => void }).__DEAD_SECTOR_PERF = () => this.getPerformanceReport();
+      (window as unknown as { __DEAD_SECTOR_PERF_DETAILED?: () => unknown }).__DEAD_SECTOR_PERF_DETAILED = () => this.getDetailedPerformanceReport();
+      (window as unknown as { __DEAD_SECTOR_START_TIER?: (tier: number) => void }).__DEAD_SECTOR_START_TIER = (tier: number) => this.startTier(tier);
+    }
+
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+          this.tabBecameVisible = true;
+          this.lastFrameTime = performance.now();
+        }
+      });
     }
 
     document.addEventListener('pointerlockchange', () => {
@@ -168,6 +224,15 @@ export class Game {
       this.syncAmbientAudio();
     }, undefined, (error) => console.warn('Chargement ambiance impossible :', error));
 
+    // 1B. Événements sonores feutrés et espacés du manoir (craquements de parquet/boiserie)
+    audioLoader.load('/assets/sounds/creak-soft.wav', (buffer) => {
+      const creak = new THREE.Audio(this.player.audioListener);
+      creak.setBuffer(buffer);
+      creak.setLoop(false);
+      creak.setVolume(0.18);
+      this.creakAudio = creak;
+    }, undefined, (error) => console.warn('Chargement craquement sonore impossible :', error));
+
     // 2. Grognements spatiaux des zombies en 3D
     audioLoader.load('/assets/sounds/zombie-groan-soft.wav', (buffer) => {
       this.zombieGroanBuffer = buffer;
@@ -190,6 +255,17 @@ export class Game {
     const shotgunFloorY = this.level.getFloorHeightAt(0, 0);
     this.shotgunPickup = new ShotgunPickup(this.scene, 0, 0, shotgunFloorY + 0.4);
 
+    // Dispositif d'activation volontaire des rencontres (Carillon d'arène au Grand Hall Sud)
+    const bellFloorY = this.level.getFloorHeightAt(0, 2.5);
+    this.encounterBell = new EncounterBell(this.scene, 0, 2.5, bellFloorY);
+
+    // Présentoirs d'offrandes / améliorations in-world (Grand Hall Sud, encadrant le carillon)
+    const pedestalFloorY = this.level.getFloorHeightAt(0, 2.5);
+    this.upgradePedestals = [
+      new UpgradePedestal(this.scene, -2.5, 2.5, pedestalFloorY, 'left'),
+      new UpgradePedestal(this.scene, 2.5, 2.5, pedestalFloorY, 'right'),
+    ];
+
     // Création de l'arme (cibles actualisées dynamiquement lors du démarrage de chaque palier).
     this.weapon = new Weapon(
       this.player.camera,
@@ -209,6 +285,9 @@ export class Game {
     );
 
     this.weapon.setOnImpact((impact) => this.hitEffects.emit(impact));
+
+    // Préchauffage des ressources graphiques partagées (Warmup standard, agile et cadavres)
+    Zombie.warmup();
 
     // Initialisation du premier palier
     this.startTier(1);
@@ -262,11 +341,20 @@ export class Game {
   }
 
   public start(): void {
+    this.lastFrameTime = performance.now();
     this.renderer.setAnimationLoop(() => {
-      const delta = Math.min(
-        this.clock.getDelta(),
-        0.05
-      );
+      const now = performance.now();
+      const rawDeltaMs = Math.max(0, now - this.lastFrameTime);
+      this.lastFrameTime = now;
+      const rawDeltaSec = rawDeltaMs / 1000;
+      const isTabSwitch = this.tabBecameVisible || (typeof document !== 'undefined' && document.hidden) || rawDeltaMs > 1000;
+      this.tabBecameVisible = false;
+
+      // Conserver le plafonnement de simulation existant pour le gameplay (déplacements, physique)
+      const delta = Math.min(rawDeltaSec, 0.05);
+
+      const isCombat = this.state === 'playing' && (typeof document !== 'undefined' && document.pointerLockElement === this.renderer.domElement);
+      this.perfTracker?.recordFrame(rawDeltaMs, isCombat, isTabSwitch);
 
       this.updateDamageEffect(delta);
 
@@ -276,9 +364,12 @@ export class Game {
 
         // Déclencheur de secours si le joueur franchit le seuil d'accès dans la nouvelle aile
         if (this.state === 'exploration' && this.pendingTierStart > 0) {
-          const pZ = this.player.camera.position.z;
-          if ((this.pendingTierStart === 2 && pZ < 5.8) || (this.pendingTierStart === 3 && pZ < -8.2)) {
-            this.launchPendingTier();
+          const nextEncounter = this.encounterConfigs[this.pendingTierStart - 1];
+          if (nextEncounter?.activationType === 'wing_gate') {
+            const pZ = this.player.camera.position.z;
+            if ((this.pendingTierStart === 2 && pZ < 5.8) || (this.pendingTierStart === 3 && pZ < -8.2)) {
+              this.launchPendingTier();
+            }
           }
         }
 
@@ -337,6 +428,23 @@ export class Game {
           this.promptDisplay.textContent = '[E] RAMASSER LE FUSIL À POMPE';
           this.promptDisplay.style.color = 'var(--gold, #dfba73)';
         }
+      } else if (this.isSimulationActive() && this.state === 'exploration' && this.encounterBell.canInteract(this.player.camera.position, cameraDir)) {
+        canInteract = true;
+        if (this.promptDisplay) {
+          const prompt = this.encounterBell.getPrompt();
+          this.promptDisplay.textContent = prompt.text;
+          this.promptDisplay.style.color = prompt.color;
+        }
+      } else if (this.isSimulationActive() && this.state === 'exploration' && (this.upgradePedestals ?? []).some((p) => p.canInteract(this.player.camera.position, cameraDir))) {
+        const ped = (this.upgradePedestals ?? []).find((p) => p.canInteract(this.player.camera.position, cameraDir));
+        if (ped) {
+          canInteract = true;
+          if (this.promptDisplay) {
+            const prompt = ped.getPrompt();
+            this.promptDisplay.textContent = prompt.text;
+            this.promptDisplay.style.color = prompt.color;
+          }
+        }
       } else {
         for (const door of this.level.getDoors()) {
           if (this.isSimulationActive() && door.canInteract(this.player.camera.position, cameraDir)) {
@@ -358,6 +466,10 @@ export class Game {
       if (this.promptDisplay) {
         this.promptDisplay.hidden = !canInteract || !this.isSimulationActive() || document.pointerLockElement !== this.renderer.domElement;
       }
+
+      // Animation du carillon d'arène et des stèles d'offrandes
+      this.encounterBell?.update(delta);
+      for (const p of (this.upgradePedestals ?? [])) p.update(delta);
 
       // Animation et ramassage du fusil à pompe
       this.shotgunPickup.update(delta, this.player.camera.position);
@@ -386,6 +498,18 @@ export class Game {
       const effectsDelta = this.isSimulationActive() && document.pointerLockElement === this.renderer.domElement ? delta : 0;
       this.hitEffects.update(effectsDelta, this.player.camera);
 
+      // Craquements de boiseries feutrés et espacés en phase de jeu actif (ambiance d'horreur psychologique)
+      if (this.isSimulationActive() && document.pointerLockElement === this.renderer.domElement) {
+        this.creakTimer -= delta;
+        if (this.creakTimer <= 0) {
+          if (this.creakAudio && !this.creakAudio.isPlaying) {
+            this.creakAudio.play();
+          }
+          // Réarmer un intervalle espacé (18 à 35 secondes)
+          this.creakTimer = 18.0 + Math.random() * 17.0;
+        }
+      }
+
       this.level.update(delta);
 
       // Transmission de l'éclairage local ambiant du joueur à l'arme 2D (rehaussé par la lampe torche)
@@ -406,18 +530,29 @@ export class Game {
   }
 
   private perfTimer = 0;
-  private frameTimes: number[] = [];
   public getPerformanceReport() {
-    const info = this.renderer.info;
-    const avgDelta = this.frameTimes.length > 0
-      ? this.frameTimes.reduce((a, b) => a + b, 0) / this.frameTimes.length
-      : 0.016;
-    const fps = avgDelta > 0 ? Math.round(1 / avgDelta) : 60;
-    const perfMemory = (performance as unknown as { memory?: { usedJSHeapSize: number; totalJSHeapSize: number } }).memory;
+    const info = this.renderer?.info ?? { render: { calls: 0, triangles: 0 }, memory: { geometries: 0, textures: 0 }, programs: [] };
+    const combat = this.perfTracker?.getCombatMetrics() ?? { count: 0, medianMs: 0, p95Ms: 0, p99Ms: 0, maxMs: 0, over33Ms: 0, over50Ms: 0 };
+    const overall = this.perfTracker?.getOverallMetrics() ?? { count: 0, medianMs: 0, p95Ms: 0, p99Ms: 0, maxMs: 0, over33Ms: 0, over50Ms: 0 };
+    const targetMetrics = combat.count > 0 ? combat : overall;
+    const avgDeltaMs = targetMetrics.count > 0 ? targetMetrics.medianMs : 16.67;
+    const fps = avgDeltaMs > 0 ? Math.round(1000 / avgDeltaMs) : 60;
+    const perfMemory = (typeof performance !== 'undefined' && (performance as unknown as { memory?: { usedJSHeapSize: number; totalJSHeapSize: number } }).memory);
 
     return {
       fps,
-      frameTimeMs: Number((avgDelta * 1000).toFixed(2)),
+      frameTimeMs: Number(avgDeltaMs.toFixed(2)),
+      medianFrameTimeMs: targetMetrics.medianMs,
+      p95FrameTimeMs: targetMetrics.p95Ms,
+      p99FrameTimeMs: targetMetrics.p99Ms,
+      maxFrameTimeMs: targetMetrics.maxMs,
+      framesOver33Ms: targetMetrics.over33Ms,
+      framesOver50Ms: targetMetrics.over50Ms,
+      lastSpawnMs: Number((this.perfTracker?.getLastSpawnDurationMs() ?? 0).toFixed(2)),
+      lastPathfindingMs: Number((this.perfTracker?.getLastPathfindingDurationMs() ?? 0).toFixed(2)),
+      lastTransitionMs: this.perfTracker?.getLastTransition() ? Number(this.perfTracker.getLastTransition()!.durationMs.toFixed(2)) : null,
+      combatMetrics: combat,
+      overallMetrics: overall,
       drawCalls: info.render.calls,
       triangles: info.render.triangles,
       geometries: info.memory.geometries,
@@ -425,30 +560,27 @@ export class Game {
       shaders: info.programs?.length ?? 0,
       jsHeapUsedMB: perfMemory ? Number((perfMemory.usedJSHeapSize / (1024 * 1024)).toFixed(2)) : null,
       jsHeapTotalMB: perfMemory ? Number((perfMemory.totalJSHeapSize / (1024 * 1024)).toFixed(2)) : null,
-      internalResolution: `${Math.round(window.innerWidth / this.retroScale)}x${Math.round(window.innerHeight / this.retroScale)}`,
-      viewportResolution: `${window.innerWidth}x${window.innerHeight}`,
-      activeZombies: this.zombies.filter((z) => z.isAlive()).length,
-      spawnQueue: this.spawnQueue,
+      internalResolution: typeof window !== 'undefined' ? `${Math.round(window.innerWidth / this.retroScale)}x${Math.round(window.innerHeight / this.retroScale)}` : '320x240',
+      viewportResolution: typeof window !== 'undefined' ? `${window.innerWidth}x${window.innerHeight}` : '1920x1080',
+      activeZombies: this.zombies ? this.zombies.filter((z) => z.isAlive()).length : 0,
+      spawnQueue: this.spawnQueue ?? 0,
       state: this.state,
     };
   }
 
+  public getDetailedPerformanceReport(): DetailedPerfReport {
+    return this.getPerformanceReport() as unknown as DetailedPerfReport;
+  }
+
   private logPerformanceMetrics(delta: number): void {
-    this.frameTimes.push(delta);
-    if (this.frameTimes.length > 60) this.frameTimes.shift();
-
-    // Exposer l'objet global pour l'audit et la console développeur
-    if (typeof window !== 'undefined') {
-      (window as unknown as { __DEAD_SECTOR_PERF?: () => unknown }).__DEAD_SECTOR_PERF = () => this.getPerformanceReport();
-    }
-
     this.perfTimer += delta;
     if (this.perfTimer >= 3.0) {
       this.perfTimer = 0;
       const stats = this.getPerformanceReport();
       const heapStr = stats.jsHeapUsedMB !== null ? ` | RAM JS: ${stats.jsHeapUsedMB}Mo` : '';
+      const spikeStr = stats.framesOver33Ms > 0 || stats.framesOver50Ms > 0 ? ` [Saccades >33ms: ${stats.framesOver33Ms}, >50ms: ${stats.framesOver50Ms}]` : '';
       console.log(
-        `[PERF] ${stats.fps} FPS (${stats.frameTimeMs}ms) | DrawCalls: ${stats.drawCalls} | Triangles: ${stats.triangles} | Textures: ${stats.textures} | Géométries: ${stats.geometries}${heapStr}`
+        `[PERF] ${stats.fps} FPS (médiane: ${stats.medianFrameTimeMs}ms, p95: ${stats.p95FrameTimeMs}ms, max: ${stats.maxFrameTimeMs}ms)${spikeStr} | DrawCalls: ${stats.drawCalls} | Triangles: ${stats.triangles} | Textures: ${stats.textures} | Géométries: ${stats.geometries}${heapStr}`
       );
     }
   }
@@ -481,15 +613,15 @@ export class Game {
   private enterRespite(): void {
     if (this.state !== 'playing') return;
 
-    // 1. Déverrouiller la nouvelle aile accessible
-    const doors = this.level.getDoors();
-    if (this.currentTier === 1) {
+    // 1. Déverrouiller la nouvelle aile accessible selon la rencontre validée
+    const configs = this.encounterConfigs ?? (this as unknown as { tierCandidateSpawns?: EncounterSpec[] }).tierCandidateSpawns;
+    const currentEncounter = configs?.[this.currentTier - 1];
+    if (currentEncounter?.unlockSectorTier) {
+      const doors = this.level.getDoors();
       for (const door of doors) {
-        if (door.getUnlockAfterTier() === 1) door.unlock();
-      }
-    } else if (this.currentTier === 2) {
-      for (const door of doors) {
-        if (door.getUnlockAfterTier() === 2) door.unlock();
+        if (door.getUnlockAfterTier() === currentEncounter.unlockSectorTier) {
+          door.unlock();
+        }
       }
     }
 
@@ -502,8 +634,9 @@ export class Game {
     unlockSound.volume = 0.5;
     void unlockSound.play().catch(() => {});
 
-    // 4. Si tous les paliers ont été purgés, victoire finale !
-    if (this.currentTier >= this.tierCandidateSpawns.length) {
+    // 4. Si toutes les rencontres configurées ont été purgées, fin du prototype réussie !
+    const maxTiers = configs?.length ?? 4;
+    if (this.currentTier >= maxTiers) {
       this.endGame('won');
       return;
     }
@@ -511,7 +644,40 @@ export class Game {
     // 5. Transition directe et fluide vers l'exploration sécurisée (sans menu bloquant)
     this.pendingTierStart = this.currentTier + 1;
     this.state = 'exploration';
+    const nextEncounter = configs?.[this.pendingTierStart - 1];
+    if (nextEncounter?.activationType === 'arena_signal') {
+      this.encounterBell?.setActive(true);
+    } else {
+      this.encounterBell?.setActive(false);
+    }
+
+    // 6. Proposer deux améliorations in-world gratuites sur les stèles du Grand Hall (F2)
+    const [offerA, offerB] = drawTierUpgrades(this.appliedUpgrades ?? []);
+    this.upgradePedestals?.[0]?.setOffer(offerA);
+    this.upgradePedestals?.[1]?.setOffer(offerB);
+
     this.updateObjectiveDisplay();
+  }
+
+  public applyUpgrade(upgrade: UpgradeSpec): void {
+    this.appliedUpgrades.push(upgrade.id);
+    switch (upgrade.id) {
+      case 'ammo_capacity':
+        this.weapon.upgradeAmmoCapacity(1.5);
+        this.updateAmmoDisplay();
+        break;
+      case 'hip_accuracy':
+        this.weapon.upgradeAccuracy(0.65);
+        break;
+      case 'vitality':
+        this.player.setMaxHealth(120);
+        this.player.heal(40);
+        this.updateHealthDisplay();
+        break;
+      case 'agility':
+        this.player.setSpeedMultiplier(1.12);
+        break;
+    }
   }
 
   public confirmRewardAndContinue(): void {
@@ -529,7 +695,12 @@ export class Game {
   }
 
   public startTier(tierNumber: number): void {
+    const t0 = performance.now();
     this.tierAgileSpawned = 0;
+    this.encounterBell?.setActive(false);
+    for (const p of (this.upgradePedestals ?? [])) {
+      p.close();
+    }
 
     // 1. Nettoyer les anciens zombies de la scène et couper leurs sons
     for (const zombie of this.zombies) {
@@ -561,15 +732,16 @@ export class Game {
     }
 
     // 4. Initialisation de la file d'apparition échelonnée
-    const config = this.tierCandidateSpawns[tierNumber - 1];
+    const configs = this.encounterConfigs ?? (this as unknown as { tierCandidateSpawns?: EncounterSpec[] }).tierCandidateSpawns;
+    const config = configs?.[tierNumber - 1];
     if (config) {
       this.spawnQueue = config.totalZombies;
       // Au démarrage du Palier 1, accorder un délai d'observation initial de 2 secondes au joueur
-      this.spawnCooldownTimer = tierNumber === 1 ? 2.0 : 0.8;
+      this.spawnCooldownTimer = tierNumber === 1 ? 2.0 : (config.activationType === 'arena_signal' ? 1.0 : 0.8);
 
-      // Au Palier 1, aucun zombie n'apparaît à la frame 0 : le joueur découvre la pièce calmement
+      // Au Palier 1 et lors des activations par signal, aucun zombie n'apparaît à la frame 0
       // Pour les paliers 2 et 3 (porte ouverte), 1 zombie initial émerge dans la nouvelle aile
-      const initialSpawns = tierNumber === 1 ? 0 : Math.min(1, this.spawnQueue);
+      const initialSpawns = (tierNumber === 1 || config.activationType === 'arena_signal') ? 0 : Math.min(1, this.spawnQueue);
       for (let i = 0; i < initialSpawns; i++) {
         if (this.trySpawnZombie()) {
           this.spawnQueue--;
@@ -580,10 +752,13 @@ export class Game {
     // 5. Basculer en phase de combat actif
     this.state = 'playing';
     this.updateObjectiveDisplay();
+    this.perfTracker?.recordTransition(tierNumber, performance.now() - t0);
   }
 
   public trySpawnZombie(): boolean {
-    const config = this.tierCandidateSpawns[this.currentTier - 1];
+    const t0 = performance.now();
+    const configs = this.encounterConfigs ?? (this as unknown as { tierCandidateSpawns?: EncounterSpec[] }).tierCandidateSpawns;
+    const config = configs?.[this.currentTier - 1];
     if (!config) return false;
 
     const playerPos = this.player.camera.position;
@@ -596,8 +771,9 @@ export class Game {
       score: number;
     }
     const eligible: CandidateScore[] = [];
+    const pool = config.spawnPool ?? (config as unknown as { pool: Point2D[] }).pool;
 
-    for (const c of config.pool) {
+    for (const c of pool) {
       // 1. Collision solide avec le décor
       if (this.level.isColliding(c.x, c.z, 0.45)) continue;
 
@@ -624,13 +800,9 @@ export class Game {
       });
       if (tooCloseToOther) continue;
 
-      // 5. Chemin praticable jusqu'au combat
+      // 5. Évaluation du champ de vision (FOV) et de la visibilité réelle (rejet rapide)
       const spawnFloorY = this.level.getFloorHeightAt(c.x, c.z);
       const spawnPos3D = new THREE.Vector3(c.x, spawnFloorY + 1.0, c.z);
-      const hasPath = this.level.findNextWaypoint(spawnPos3D, playerPos, 0.4);
-      if (!hasPath) continue;
-
-      // 6. Évaluation du champ de vision (FOV) et de la visibilité réelle
       const dirX = dx / dist;
       const dirZ = dz / dist;
       const dot = dirX * cameraDir.x + dirZ * cameraDir.z;
@@ -638,6 +810,10 @@ export class Game {
 
       // Rejeter si le point est en plein champ de vision direct dégagé
       if (dot > 0.45 && hasLOS) continue;
+
+      // 6. Chemin praticable jusqu'au joueur
+      const hasPath = this.level.findNextWaypoint(spawnPos3D, playerPos, 0.4);
+      if (!hasPath) continue;
 
       let score = dist;
       if (!hasLOS) score += 12; // Fort bonus pour les points masqués par un mur ou une porte
@@ -648,6 +824,8 @@ export class Game {
 
     if (eligible.length === 0) {
       // Aucun point n'est immédiatement éligible : conserver en file d'attente
+      this.perfTracker?.recordSpawn(performance.now() - t0);
+      this.perfTracker?.recordPathfinding(this.level?.getLastPathfindingDurationMs?.() ?? 0);
       return false;
     }
 
@@ -655,10 +833,9 @@ export class Game {
     eligible.sort((a, b) => b.score - a.score);
     const chosen = eligible[Math.floor(Math.random() * Math.min(2, eligible.length))];
 
-    // Détermination de la variante : Le Coureur (agile) apparaît à partir du Palier 2
-    // Plafond strict : au plus 1 agile simultané au Palier 2, au plus 2 au Palier 3
-    const maxAgileThisTier = this.currentTier === 2 ? 2 : this.currentTier >= 3 ? 3 : 0;
-    const maxSimultaneousAgile = this.currentTier === 2 ? 1 : this.currentTier >= 3 ? 2 : 0;
+    // Détermination de la variante selon la configuration de la rencontre
+    const maxAgileThisTier = config.maxAgile;
+    const maxSimultaneousAgile = config.maxSimultaneousAgile;
     const livingAgile = livingZombies.filter((z) => z.getKind() === 'agile').length;
 
     let chosenKind: ZombieKind = 'standard';
@@ -679,6 +856,8 @@ export class Game {
       this.weapon.setTargets(this.zombies.map((z) => z.getMesh()));
     }
 
+    this.perfTracker?.recordSpawn(performance.now() - t0);
+    this.perfTracker?.recordPathfinding(this.level?.getLastPathfindingDurationMs?.() ?? 0);
     return true;
   }
 
@@ -687,25 +866,22 @@ export class Game {
     const livingZombies = this.zombies.filter((z) => z.isAlive()).length;
     const totalRemaining = livingZombies + this.spawnQueue;
     if (this.state === 'won') {
-      this.objectiveDisplay.textContent = 'MANOIR PURGÉ — SURVIE RÉUSSIE (Les 3 paliers ont été éliminés)';
+      this.objectiveDisplay.textContent = 'PROTOTYPE PURGÉ — LES 4 RENCONTRES ONT ÉTÉ ÉLIMINÉES';
       this.objectiveDisplay.style.color = 'var(--sage)';
     } else if (this.state === 'lost') {
       this.objectiveDisplay.textContent = 'MISSION ÉCHOUÉE';
       this.objectiveDisplay.style.color = 'var(--blood)';
     } else if (this.state === 'respite') {
-      this.objectiveDisplay.textContent = `PALIER ${this.currentTier} PURGÉ · CHOISISSEZ VOTRE RÉCOMPENSE`;
+      this.objectiveDisplay.textContent = `PALIER ${this.currentTier} PURGÉ · ACCALMIE EN COURS`;
       this.objectiveDisplay.style.color = 'var(--gold, #dfba73)';
     } else if (this.state === 'exploration') {
-      const nextWing = this.pendingTierStart === 2 ? 'DU GRAND HALL' : 'DE LA BIBLIOTHÈQUE';
-      this.objectiveDisplay.textContent = `PALIER ${this.currentTier} PURGÉ · OUVREZ LA PORTE ${nextWing}`;
+      const nextEncounter = this.encounterConfigs[this.pendingTierStart - 1];
+      this.objectiveDisplay.textContent = nextEncounter?.explorationPrompt ?? `PALIER ${this.currentTier} PURGÉ · EXPLORATION EN COURS`;
       this.objectiveDisplay.style.color = 'var(--gold, #dfba73)';
     } else {
       const plural = totalRemaining > 1 ? 'MENACES' : 'MENACE';
-      const sectorName = this.currentTier === 1
-        ? 'VESTIBULE, SALON & GALERIE'
-        : this.currentTier === 2
-        ? 'GRAND HALL NORD'
-        : 'BIBLIOTHÈQUE & ATELIER (+2,4M)';
+      const encounter = this.encounterConfigs[this.currentTier - 1];
+      const sectorName = encounter?.sectorName ?? `SECTEUR ${this.currentTier}`;
       this.objectiveDisplay.textContent = `PALIER ${this.currentTier} (${sectorName}) · ${totalRemaining} ${plural}`;
       this.objectiveDisplay.style.color = 'var(--ivory)';
     }
@@ -724,7 +900,9 @@ export class Game {
   }
 
   private updateHealthDisplay(): void {
-    if (this.healthDisplay) this.healthDisplay.textContent = `VIE : ${this.player.getHealth()}`;
+    if (this.healthDisplay) {
+      this.healthDisplay.textContent = `VIE : ${this.player.getHealth()} / ${this.player.getMaxHealth()}`;
+    }
   }
 
   private updateFlashlightDisplay(enabled: boolean): void {
@@ -744,6 +922,9 @@ export class Game {
     if (this.promptDisplay) this.promptDisplay.hidden = true;
     if (this.ambianceAudio && this.ambianceAudio.isPlaying) {
       this.ambianceAudio.stop();
+    }
+    if (this.creakAudio && this.creakAudio.isPlaying) {
+      this.creakAudio.stop();
     }
     const message = result === 'won' ? this.victoryDisplay : this.gameOverDisplay;
     if (message) message.hidden = false;
@@ -767,7 +948,19 @@ export class Game {
       if (this.ambianceAudio && !this.ambianceAudio.isPlaying) this.ambianceAudio.play();
     } else {
       if (this.ambianceAudio?.isPlaying) this.ambianceAudio.pause();
+      if (this.creakAudio?.isPlaying) this.creakAudio.stop();
       for (const zombie of this.zombies) zombie.stopAudio();
     }
+  }
+
+  public dispose(): void {
+    for (const zombie of this.zombies) {
+      zombie.dispose(this.scene);
+    }
+    this.zombies = [];
+    this.encounterBell?.dispose(this.scene);
+    for (const p of (this.upgradePedestals ?? [])) p.dispose(this.scene);
+    if (this.creakAudio?.isPlaying) this.creakAudio.stop();
+    disposeAllZombieResources();
   }
 }

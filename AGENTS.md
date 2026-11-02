@@ -10,7 +10,7 @@ Après chaque implémentation, fournir un débrief pédagogique : fichiers modif
 
 Ces consignes s'appliquent jusqu'à instruction contraire de l'utilisateur.
 
-Direction de jeu validée le 2 novembre 2026 : même manoir-arène labyrinthique ouvert progressivement, ennemis à éliminer par palier, récompense gratuite à choisir entre les paliers ; pas d'objectif d'extraction dans la nouvelle cible. Lire `docs/ORIENTATION_JEU.md` pour les détails validés et ceux encore proposés. Ne pas confondre cette cible avec le code existant : la migration n'est pas encore implémentée et le plan seul ne l'autorise pas.
+Direction de jeu validée le 2 novembre 2026 : même manoir-arène labyrinthique ouvert progressivement, ennemis à éliminer par palier, récompenses gratuites entre les combats ; tentative finie de 10 à 15 minutes avec rencontre finale, sans extraction. Aucun menu automatique après la dernière élimination ne doit casser le déplacement. Direction d'horreur privilégiée : psychologique, par sons, silhouettes et événements inquiétants. Lire `docs/ORIENTATION_JEU.md` et le jalon pertinent de `docs/ROADMAP.md` pour distinguer les décisions des propositions (huit paliers et dispositif de choix notamment). Vérifier le code et `docs/ETAT_PROJET.md` pour l'avancement réel ; le plan seul n'autorise pas l'implémentation de tous les ateliers.
 
 ## Reprise du projet par un autre modèle
 

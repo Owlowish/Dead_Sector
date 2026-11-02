@@ -725,4 +725,21 @@ export class Weapon {
       flash.classList.toggle('visible', this.shotAnimationTime < 0.07 && !this.isReloading)
     );
   }
+
+  public upgradeAmmoCapacity(multiplier = 1.5): void {
+    for (const key of Object.keys(this.weapons) as WeaponId[]) {
+      const w = this.weapons[key];
+      w.maxReserve = Math.round(w.maxReserve * multiplier);
+      w.reserve = w.maxReserve; // Ravitaillement plein immédiat
+    }
+    this.notifyAmmoChange();
+  }
+
+  public upgradeAccuracy(multiplier = 0.65): void {
+    for (const key of Object.keys(this.weapons) as WeaponId[]) {
+      const w = this.weapons[key];
+      w.hipSpreadDeg = Number((w.hipSpreadDeg * multiplier).toFixed(2));
+    }
+    this.notifyAmmoChange();
+  }
 }

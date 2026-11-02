@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { Level } from './Level';
 import { visualColors } from './VisualStyle.ts';
-import { zombieAnimation, attackFrame, atlasRegion } from './ZombieAnimation.ts';
+import { zombieAnimation, attackFrame, createAtlasFrameGeometry } from './ZombieAnimation.ts';
 import { ZombieRemains, type ZombieKind } from './ZombieRemains.ts';
 import {
   agileZombieConfig,
@@ -9,10 +9,138 @@ import {
   agileAttackFrameIndex,
   getAgileSharedResources,
   releaseAgileSharedResources,
+  disposeAgileSharedResources,
   type AgileSharedResources,
 } from './AgileZombieAnimation.ts';
 
 type ZombieState = 'IDLE' | 'CHASE' | 'SEARCH' | 'ATTACK' | 'RECOVER';
+
+export interface StandardSharedResources {
+  users: number;
+  textures: {
+    idle: THREE.Texture;
+    walk: THREE.Texture;
+    attack: THREE.Texture;
+    hurt: THREE.Texture;
+  };
+  geometries: {
+    idle: THREE.BufferGeometry;
+    walk: THREE.BufferGeometry[];
+    attack: THREE.BufferGeometry[];
+    hurt: THREE.BufferGeometry[];
+  };
+  depthMaterials: {
+    idle: THREE.MeshDepthMaterial;
+    walk: THREE.MeshDepthMaterial;
+    attack: THREE.MeshDepthMaterial;
+    hurt: THREE.MeshDepthMaterial;
+  };
+  distanceMaterials: {
+    idle: THREE.MeshDistanceMaterial;
+    walk: THREE.MeshDistanceMaterial;
+    attack: THREE.MeshDistanceMaterial;
+    hurt: THREE.MeshDistanceMaterial;
+  };
+}
+
+let standardSharedInstance: StandardSharedResources | null = null;
+
+export function getStandardSharedResources(): StandardSharedResources {
+  if (standardSharedInstance) {
+    standardSharedInstance.users++;
+    return standardSharedInstance;
+  }
+
+  const loader = new THREE.TextureLoader();
+  const idle = loader.load('/assets/zombies/zombie_idle.png');
+  const walk = loader.load('/assets/zombies/zombie_walk_v2.png');
+  const attack = loader.load('/assets/zombies/zombie_attack.png');
+  const hurt = loader.load('/assets/zombies/zombie_hurt_v2.png');
+
+  for (const texture of [idle, walk, attack, hurt]) {
+    texture.magFilter = THREE.NearestFilter;
+    texture.minFilter = THREE.NearestFilter;
+    texture.colorSpace = THREE.SRGBColorSpace;
+  }
+
+  const textures = { idle, walk, attack, hurt };
+
+  const createDepth = (map: THREE.Texture) =>
+    new THREE.MeshDepthMaterial({
+      depthPacking: THREE.RGBADepthPacking,
+      map,
+      alphaTest: 0.4,
+    });
+
+  const createDistance = (map: THREE.Texture) =>
+    new THREE.MeshDistanceMaterial({
+      map,
+      alphaTest: 0.4,
+    });
+
+  const geometries = {
+    idle: new THREE.PlaneGeometry(1, 2),
+    walk: Array.from({ length: zombieAnimation.walk.frames }, (_, i) =>
+      createAtlasFrameGeometry(1, 2, i, zombieAnimation.walk)
+    ),
+    attack: Array.from({ length: zombieAnimation.attack.frames }, (_, i) =>
+      createAtlasFrameGeometry(1, 2, i, zombieAnimation.attack)
+    ),
+    hurt: Array.from({ length: zombieAnimation.hurt.frames }, (_, i) =>
+      createAtlasFrameGeometry(1, 2, i, zombieAnimation.hurt)
+    ),
+  };
+
+  const depthMaterials = {
+    idle: createDepth(textures.idle),
+    walk: createDepth(textures.walk),
+    attack: createDepth(textures.attack),
+    hurt: createDepth(textures.hurt),
+  };
+
+  const distanceMaterials = {
+    idle: createDistance(textures.idle),
+    walk: createDistance(textures.walk),
+    attack: createDistance(textures.attack),
+    hurt: createDistance(textures.hurt),
+  };
+
+  standardSharedInstance = {
+    users: 1,
+    textures,
+    geometries,
+    depthMaterials,
+    distanceMaterials,
+  };
+
+  return standardSharedInstance;
+}
+
+export function releaseStandardSharedResources(): void {
+  if (!standardSharedInstance) return;
+  standardSharedInstance.users--;
+  // Ne pas détruire les ressources graphiques entre les paliers :
+  // elles restent en mémoire GPU/VRAM pour les paliers 2 et 3.
+}
+
+export function disposeStandardSharedResources(): void {
+  if (!standardSharedInstance) return;
+  const res = standardSharedInstance;
+  Object.values(res.textures).forEach((t) => t.dispose());
+  res.geometries.idle.dispose();
+  res.geometries.walk.forEach((g) => g.dispose());
+  res.geometries.attack.forEach((g) => g.dispose());
+  res.geometries.hurt.forEach((g) => g.dispose());
+  Object.values(res.depthMaterials).forEach((m) => m.dispose());
+  Object.values(res.distanceMaterials).forEach((m) => m.dispose());
+  standardSharedInstance = null;
+}
+
+export function disposeAllZombieResources(): void {
+  disposeStandardSharedResources();
+  disposeAgileSharedResources();
+  ZombieRemains.disposeSharedResources();
+}
 
 export class Zombie {
   private mesh: THREE.Mesh;
@@ -22,11 +150,8 @@ export class Zombie {
   private disposed = false;
   private readonly kind: ZombieKind;
 
-  // Ressources zombie standard (propres à l'instance)
-  private idleTexture: THREE.Texture | null = null;
-  private walkTexture: THREE.Texture | null = null;
-  private attackTexture: THREE.Texture | null = null;
-  private hurtTexture: THREE.Texture | null = null;
+  // Ressources zombie standard (partagées en cache)
+  private standardResources: StandardSharedResources | null = null;
 
   // Ressources zombie agile (partagées en cache pour économiser la VRAM)
   private agileResources: AgileSharedResources | null = null;
@@ -108,20 +233,9 @@ export class Zombie {
       this.frameCount = zombieAnimation.walk.frames;
       this.frameDuration = zombieAnimation.walk.frameDuration;
 
-      const loader = new THREE.TextureLoader();
-      this.idleTexture = loader.load('/assets/zombies/zombie_idle.png');
-      this.walkTexture = loader.load('/assets/zombies/zombie_walk_v2.png');
-      this.attackTexture = loader.load('/assets/zombies/zombie_attack.png');
-      this.hurtTexture = loader.load('/assets/zombies/zombie_hurt_v2.png');
-
-      for (const texture of [this.idleTexture, this.walkTexture, this.attackTexture, this.hurtTexture]) {
-        texture.magFilter = THREE.NearestFilter;
-        texture.minFilter = THREE.NearestFilter;
-        texture.colorSpace = THREE.SRGBColorSpace;
-      }
-
+      this.standardResources = getStandardSharedResources();
       this.material = new THREE.MeshStandardMaterial({
-        map: this.idleTexture,
+        map: this.standardResources.textures.idle,
         roughness: 0.9,
         metalness: 0.0,
         transparent: true,
@@ -129,20 +243,12 @@ export class Zombie {
         side: THREE.DoubleSide,
       });
 
-      const geometry = new THREE.PlaneGeometry(1, 2);
-      this.mesh = new THREE.Mesh(geometry, this.material);
+      this.mesh = new THREE.Mesh(this.standardResources.geometries.idle, this.material);
       this.mesh.position.set(x, initialFloorY + 1.0, z);
       this.mesh.castShadow = true;
       this.mesh.receiveShadow = true;
-      this.mesh.customDepthMaterial = new THREE.MeshDepthMaterial({
-        depthPacking: THREE.RGBADepthPacking,
-        map: this.idleTexture,
-        alphaTest: 0.4,
-      });
-      this.mesh.customDistanceMaterial = new THREE.MeshDistanceMaterial({
-        map: this.idleTexture,
-        alphaTest: 0.4,
-      });
+      this.mesh.customDepthMaterial = this.standardResources.depthMaterials.idle;
+      this.mesh.customDistanceMaterial = this.standardResources.distanceMaterials.idle;
     }
 
     scene.add(this.mesh);
@@ -178,6 +284,12 @@ export class Zombie {
     if (this.groanAudio?.isPlaying) this.groanAudio.stop();
   }
 
+  public static warmup(): void {
+    getStandardSharedResources();
+    getAgileSharedResources();
+    ZombieRemains.warmup();
+  }
+
   public dispose(scene: THREE.Scene): void {
     if (this.disposed) return;
     this.disposed = true;
@@ -197,14 +309,9 @@ export class Zombie {
       releaseAgileSharedResources();
       this.agileResources = null;
     } else {
-      this.mesh.geometry.dispose();
       this.material.dispose();
-      this.mesh.customDepthMaterial?.dispose();
-      this.mesh.customDistanceMaterial?.dispose();
-      this.idleTexture?.dispose();
-      this.walkTexture?.dispose();
-      this.attackTexture?.dispose();
-      this.hurtTexture?.dispose();
+      releaseStandardSharedResources();
+      this.standardResources = null;
     }
   }
 
@@ -224,7 +331,7 @@ export class Zombie {
     if (!this.alive) return;
     this.lastSeenPosition = targetPosition.clone();
     this.searchWaypoint = null;
-    this.searchReplanTimer = 0;
+    this.searchReplanTimer = Math.random() * 0.1;
     if (this.state === 'IDLE') {
       this.state = 'SEARCH';
     }
@@ -249,8 +356,8 @@ export class Zombie {
 
       if (this.kind === 'agile') {
         this.showAgileFrame('hurt', 0);
-      } else if (this.hurtTexture) {
-        this.showFrame(this.hurtTexture, 0, zombieAnimation.hurt);
+      } else {
+        this.showStandardFrame('hurt', 0);
       }
       this.material.color.setHex(visualColors.blood);
     }
@@ -316,8 +423,8 @@ export class Zombie {
       const frame = Math.min(1, Math.floor(elapsed / (this.hurtDuration / 2)));
       if (this.kind === 'agile') {
         this.showAgileFrame('hurt', frame);
-      } else if (this.hurtTexture) {
-        this.showFrame(this.hurtTexture, frame, zombieAnimation.hurt);
+      } else {
+        this.showStandardFrame('hurt', frame);
       }
       this.material.color.setHex(this.hitFlashRemaining > 0 ? visualColors.blood : 0xffffff);
       this.mesh.rotation.y = Math.atan2(playerPosition.x - this.mesh.position.x, playerPosition.z - this.mesh.position.z);
@@ -365,7 +472,7 @@ export class Zombie {
         this.searchReplanTimer -= delta;
         if (this.searchReplanTimer <= 0) {
           this.searchWaypoint = this.level.findNextWaypoint(this.mesh.position, this.lastSeenPosition, this.radius);
-          this.searchReplanTimer = 0.5;
+          this.searchReplanTimer = 0.4 + Math.random() * 0.2;
         }
         if (this.searchWaypoint) {
           const sx = this.searchWaypoint.x - this.mesh.position.x;
@@ -447,17 +554,17 @@ export class Zombie {
   }
 
   private updateStandardAnimation(delta: number): void {
-    if (!this.idleTexture || !this.walkTexture || !this.attackTexture) return;
+    if (!this.standardResources) return;
     if (this.attackAnimationTime !== null) {
       this.frameIndex = 0;
       this.frameTimer = 0;
-      this.showFrame(this.attackTexture, attackFrame(this.attackAnimationTime), zombieAnimation.attack);
+      this.showStandardFrame('attack', attackFrame(this.attackAnimationTime));
       return;
     }
     if (!this.isWalking) {
       this.frameIndex = 0;
       this.frameTimer = 0;
-      this.showTexture(this.idleTexture);
+      this.showStandardFrame('idle');
       return;
     }
 
@@ -467,7 +574,28 @@ export class Zombie {
       this.frameIndex = (this.frameIndex + 1) % this.frameCount;
     }
 
-    this.showFrame(this.walkTexture, this.frameIndex, zombieAnimation.walk);
+    this.showStandardFrame('walk', this.frameIndex);
+  }
+
+  private showStandardFrame(animKey: 'idle' | 'walk' | 'attack' | 'hurt', frameIdx = 0): void {
+    if (!this.standardResources) return;
+
+    const geom = animKey === 'idle'
+      ? this.standardResources.geometries.idle
+      : this.standardResources.geometries[animKey][frameIdx];
+    const texture = this.standardResources.textures[animKey];
+
+    if (this.mesh.geometry !== geom) {
+      this.mesh.geometry = geom;
+    }
+
+    if (this.material.map !== texture) {
+      this.material.map = texture;
+      this.material.needsUpdate = true;
+    }
+
+    this.mesh.customDepthMaterial = this.standardResources.depthMaterials[animKey];
+    this.mesh.customDistanceMaterial = this.standardResources.distanceMaterials[animKey];
   }
 
   private updateAgileAnimation(delta: number): void {
@@ -507,33 +635,6 @@ export class Zombie {
       this.mesh.material = mat;
       this.mesh.customDepthMaterial = this.agileResources.depthMaterials[animKey];
       this.mesh.customDistanceMaterial = this.agileResources.distanceMaterials[animKey];
-    }
-  }
-
-  private showFrame(
-    texture: THREE.Texture,
-    frame: number,
-    atlas: { columns: number; rows: number; cropTop: number; cropHeight: number }
-  ): void {
-    const region = atlasRegion(frame, atlas);
-    texture.repeat.set(region.repeatX, region.repeatY);
-    texture.offset.set(region.offsetX, region.offsetY);
-    this.showTexture(texture);
-  }
-
-  private showTexture(texture: THREE.Texture): void {
-    if (this.material.map === texture) return;
-    this.material.map = texture;
-    this.material.needsUpdate = true;
-    const depth = this.mesh.customDepthMaterial as THREE.MeshDepthMaterial;
-    const distance = this.mesh.customDistanceMaterial as THREE.MeshDistanceMaterial;
-    if (depth) {
-      depth.map = texture;
-      depth.needsUpdate = true;
-    }
-    if (distance) {
-      distance.map = texture;
-      distance.needsUpdate = true;
     }
   }
 

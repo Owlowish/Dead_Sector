@@ -148,8 +148,8 @@ session.game.startTier(2);
 assert.equal(scene.children.length, 0, 'Démarrage du palier : plus aucun acteur ni cadavre ancien');
 assert.deepEqual(session.game.zombies, []);
 assert.deepEqual(session.targetUpdates.at(-1), [], 'Anciennes cibles détachées de Weapon');
-assert.equal(materialDisposals, 1);
-assert(disposedTextures.includes(corpseTexture), 'Dernier utilisateur : texture libérée');
+// Les ressources partagées survivent désormais à startTier pour éviter les à-coups de rechargement
+assert(!disposedTextures.includes(corpseTexture), 'Ressource commune conservée en cache pour le palier suivant');
 
 // Plusieurs cycles sans accumulation et mort pendant une chute encore inachevée.
 for (let tier = 0; tier < 3; tier++) {
@@ -162,7 +162,13 @@ for (let tier = 0; tier < 3; tier++) {
   f.game.startTier(2);
   assert.equal(scene.children.length, 0);
 }
-assert.equal(new Set(disposedTextures).size, textures.length, 'Toutes les textures créées ont été libérées');
+
+// Libération explicite finale à la fin de partie / destruction du jeu
+const { disposeAllZombieResources } = await import('../src/Zombie.ts');
+disposeAllZombieResources();
+assert.equal(materialDisposals, 1, 'Matériau libéré lors de la libération finale');
+assert(disposedTextures.includes(corpseTexture), 'Texture de cadavre libérée lors de la destruction finale');
+assert.equal(new Set(disposedTextures).size, textures.length, 'Toutes les textures créées ont été libérées à la fin');
 wall.geometry.dispose();
 wall.material.dispose();
 console.log('OK : mort immédiate, aucune attaque ni collision de tir, 4 poses indépendantes, cadavre billboard vertical ancré au sol.');

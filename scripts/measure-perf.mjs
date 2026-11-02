@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process';
 
 console.log('=== MESURE DES PERFORMANCES RÉELLES — DEAD SECTOR ===\n');
-console.log('Démarrage de Chrome headless pour profilage en direct...');
+console.log('Démarrage de Chrome headless pour profilage de combat et transitions...');
 
 const chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 const chrome = spawn(chromePath, [
@@ -24,7 +24,7 @@ async function runBenchmark() {
       const res = await fetch('http://127.0.0.1:9222/json');
       if (res.ok) {
         const targets = await res.json();
-        const page = targets.find((t) => t.type === 'page');
+        const page = targets.find((t) => t.type === 'page' && t.url.includes('5173'));
         if (page && page.webSocketDebuggerUrl) {
           wsUrl = page.webSocketDebuggerUrl;
           break;
@@ -88,13 +88,62 @@ async function runBenchmark() {
     await sleep(200);
   }
 
-  console.log('Simulation active en cours (rendu Three.js, shaders, boucle de jeu)...');
-  // Laisser tourner le jeu pendant 3 secondes pour que WebGL accumule des frames
-  await sleep(3000);
+  console.log('Activation de la simulation de combat (Pointer Lock virtuel)...');
+  await send('Runtime.evaluate', {
+    expression: `(() => {
+      const canvas = document.querySelector('canvas');
+      Object.defineProperty(document, 'pointerLockElement', {
+        configurable: true,
+        get: () => canvas
+      });
+      document.dispatchEvent(new Event('pointerlockchange'));
+    })()`
+  });
+
+  console.log('Attente de la fin du délai de grâce (2s) et de la 1ère apparition ennemie...');
+  // Le délai de grâce du Palier 1 est de 2.0s : attendre 2.5s pour que le premier zombie apparaisse
+  await sleep(2500);
+
+  // Vérifier l'état après apparition
+  const spawnCheck = await send('Runtime.evaluate', {
+    expression: 'window.__DEAD_SECTOR_PERF ? window.__DEAD_SECTOR_PERF() : null',
+    returnByValue: true,
+  });
+
+  console.log('Simulation d\'une transition de palier (Palier 1 -> Palier 2)...');
+  await send('Runtime.evaluate', {
+    expression: `(() => {
+      if (typeof window.__DEAD_SECTOR_START_TIER === 'function') {
+        window.__DEAD_SECTOR_START_TIER(2);
+      }
+    })()`
+  });
+  await sleep(1000);
+
+  console.log('Simulation d\'une transition vers Palier 3 (+2.4m)...');
+  await send('Runtime.evaluate', {
+    expression: `(() => {
+      if (typeof window.__DEAD_SECTOR_START_TIER === 'function') {
+        window.__DEAD_SECTOR_START_TIER(3);
+      }
+    })()`
+  });
+  await sleep(1000);
+
+  console.log('Simulation de la transition F1 vers Palier 4 (Manoir Ouvert)...');
+  await send('Runtime.evaluate', {
+    expression: `(() => {
+      if (typeof window.__DEAD_SECTOR_START_TIER === 'function') {
+        window.__DEAD_SECTOR_START_TIER(4);
+      }
+    })()`
+  });
+  // Laisser tourner 1.5 seconde supplémentaire en combat actif au Palier 4
+  await sleep(1500);
 
   // 1. Récupération des métriques du jeu exposées par Game.ts
   const evalResult = await send('Runtime.evaluate', {
-    expression: 'window.__DEAD_SECTOR_PERF ? window.__DEAD_SECTOR_PERF() : null',
+    expression: 'JSON.stringify(window.__DEAD_SECTOR_PERF ? window.__DEAD_SECTOR_PERF() : null)',
     returnByValue: true,
   });
 
@@ -108,20 +157,32 @@ async function runBenchmark() {
   console.log('RAPPORT TECHNIQUE DÉTAILLÉ : RESSOURCES, RENDU ET CPU');
   console.log('=============================================================\n');
 
-  const gameStats = evalResult?.result?.value;
-  if (lastGamePerf) {
-    console.log('1. FLUIDITÉ & RENDU WEBGL (Moteur de jeu Three.js) :');
-    console.log(`   ${lastGamePerf}`);
-  } else if (gameStats) {
-    console.log('1. FLUIDITÉ & RENDU WEBGL (Three.js) :');
+  let gameStats = null;
+  try {
+    const rawVal = evalResult?.result?.result?.value ?? evalResult?.result?.value;
+    if (rawVal) gameStats = JSON.parse(rawVal);
+  } catch (err) {
+    console.warn('Erreur parsing métriques gameStats:', err);
+  }
+  if (gameStats) {
+    console.log('1. FLUIDITÉ & RENDU WEBGL (Three.js sous simulation active) :');
     console.log(`   - Framerate cible / mesuré : ${gameStats.fps} FPS`);
-    console.log(`   - Temps de frame moyen     : ${gameStats.frameTimeMs} ms (budget 60 FPS = 16.6 ms)`);
+    console.log(`   - Temps de frame médian    : ${gameStats.medianFrameTimeMs} ms (budget 60 FPS = 16.6 ms)`);
+    console.log(`   - Percentile p95           : ${gameStats.p95FrameTimeMs} ms`);
+    console.log(`   - Percentile p99           : ${gameStats.p99FrameTimeMs} ms`);
+    console.log(`   - Temps de frame max       : ${gameStats.maxFrameTimeMs} ms`);
+    console.log(`   - Saccades > 33.3 ms       : ${gameStats.framesOver33Ms} frame(s)`);
+    console.log(`   - Saccades > 50.0 ms       : ${gameStats.framesOver50Ms} frame(s)`);
+    console.log(`   - Durée dernière apparition: ${gameStats.lastSpawnMs} ms`);
+    console.log(`   - Durée navigation         : ${gameStats.lastPathfindingMs} ms`);
+    if (gameStats.lastTransitionMs !== null) {
+      console.log(`   - Durée transition palier  : ${gameStats.lastTransitionMs} ms`);
+    }
     console.log(`   - Draw calls par frame     : ${gameStats.drawCalls}`);
     console.log(`   - Triangles par frame      : ${gameStats.triangles.toLocaleString('fr-FR')}`);
     console.log(`   - Géométries en mémoire    : ${gameStats.geometries}`);
     console.log(`   - Textures chargées GPU    : ${gameStats.textures}`);
     console.log(`   - Shaders compilés         : ${gameStats.shaders}`);
-    console.log(`   - Résolution interne rétro : ${gameStats.internalResolution} (sur écran ${gameStats.viewportResolution})`);
     console.log(`   - Entités actives          : ${gameStats.activeZombies} zombie(s), file: ${gameStats.spawnQueue}`);
 
     console.log('\n2. CONSOMMATION MÉMOIRE (RAM JS / HEAP) :');

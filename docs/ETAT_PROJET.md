@@ -1,12 +1,150 @@
 # DEAD SECTOR — État et reprise
 
-Dernière intervention ciblée : 2 novembre 2026 (Atelier 2 complété et validé : Manoir Demi-niveau à +2,4 m avec 2 escaliers, moteur d'altitude O(1), logique 3D euclidienne pour l'IA, ancrage vertical des objets et portes multi-axes. Compilation npm run build propre et 8 suites de tests 100% PASS).
+Dernière intervention ciblée : 2 novembre 2026 (Atelier F3 « Salle témoin visuelle et sonore » complété et validé : Grand Salon des Réceptions réhaussé sans surcoût d'ombres ; cheminée monumentale sculptée avec manteau en pierre, jambages, âtre en brique réfractaire et lit de braises rougeoyantes emissive sous collider physique strict 2.4x3.0x4.0m ; tapis damassé d'apparat au sol matérialisant la boucle de circulation du Secteur 1 ; linteaux sculptés en relief au-dessus des 3 passages ; synthèse procédurale et intégration d'ambiance d'horreur psychologique avec craquements de boiseries feutrés espacés de 18 à 35s ; documentation des 4 sprites d'offrandes manquants avec spriteAssetId cible ; budget strict de 2 ombres respecté, 0 frame > 33ms, 60 FPS constants, build npm propre et 13 suites de tests 100% PASS).
 
 ## État prioritaire pour la prochaine reprise
 
+**Dernière intervention — Atelier F3 : Salle témoin visuelle et sonore (2 novembre 2026) :**
+- **Salle témoin choisie — Grand Salon des Réceptions (Secteur 1)** :
+  * Espace de combat initial et première boucle d'apprentissage du joueur ($X \in [-23,5; -3,5]$, $Z \in [6,5; 19,5]$).
+  * **Cheminée monumentale sculptée (`Level.ts`)** : Remplacement du bloc d'obstacle générique par un manteau en pierre de taille (`visualColors.stone`), deux jambages latéraux sculptés, un fond d'âtre en briques réfractaires noircies (`visualColors.hearthDark`) et un lit de braises mourantes rougeoyantes avec matériau `emissive: visualColors.ember`. Collider physique et surface d'impact des tirs strictement préservés à $2,4 \times 3,0 \times 4,0$ m.
+  * **Boucle de circulation et contraste utile (`Level.ts`)** : Grand tapis d'apparat damassé victorien bordeaux (`visualColors.carpet`) avec fine bordure d'or (`visualColors.carpetGold`) posé au sol ($Y = 0,005$). Il relie l'arche Sud ($Z=16,5$), longe la cheminée et dessert l'arche Nord ($Z=9,5$) et la Galerie ($Z=6,0$), guidant naturellement les déplacements du joueur sous stress sans texte intrusif.
+  * **Linteaux sculptés en relief (`Level.ts`)** : Ajout de linteaux en bois mouluré au-dessus des deux arches du mur de refend et du passage de la Galerie Ouest, découpant les issues en silhouette même dans la pénombre ou à contre-jour.
+- **Préservation absolue du budget de rendu d'ombres et lumière** :
+  * Respect strict du plafond de **2 lumières projetant des ombres** (`MANSION_BUDGET.maxShadowCastingLights === 2`) : clair de lune directionnel et grand lustre du Hall.
+  * Zéro ombre ponctuelle ajoutée pour la cheminée : la lueur d'âtre repose sur la propriété `emissive` des braises et sur la bougie douce sans ombre du Grand Salon, maintenant le nombre de passes d'ombres à 2.
+- **Conception sonore espacée & horreur psychologique (`scripts/generate_soft_audio.py` & `Game.ts`)** :
+  * Génération procédurale du micro-asset feutré `creak-soft.wav` (friction basse fréquence feutrée de fibres de bois de 0,85 s, bande passante douce).
+  * Intégration dans `Game.ts` avec déclenchement espacé : premier délai d'observation garanti de 18 s, puis réarmement aléatoire entre 18 et 35 secondes de silence. Aucun bombardement auditif ni boucle courte agressive.
+  * Synchronisation stricte : coupure immédiate en pause, perte de focus (`pointerlockchange`) ou game over via `syncAmbientAudio`.
+- **Documentation des assets manquants pour la suite artistique (`UpgradeConfig.ts`)** :
+  * Les 4 offrandes F2 disposent désormais d'un `spriteAssetId` explicite (`upgrade-ammo-pouch.png`, `upgrade-tight-choke.png`, `upgrade-vitality-vial.png`, `upgrade-light-boots.png`) et de repères sémantiques clairs afin de guider le futur travail des sprites 2D pixel art.
+- **Vérifications réelles et métriques** :
+  * `npm.cmd run build` : compilé avec succès (code 0, 258 ms).
+  * Nouvelle suite `scripts/check-visual-room-f3.mjs` créée et 100% PASS (4/4 épreuves).
+  * Les **13 suites de tests** du projet (`visual-room-f3`, `upgrades-f2`, `encounters-f1`, `perf-tracker`, `navigation-perf`, `tiers`, `split-level`, `zombie`, `zombie-agile`, `zombie-remains`, `combat-feedback`, `weapon`, `shotgun`) sont **100% PASS**.
+  * **Profilage Chromium headless (`measure-perf.mjs`)** :
+    - Framerate : **60 FPS** parfaitement stables.
+    - Temps de frame médian : **16,7 ms** (budget 16,6 ms).
+    - Percentile p95 : **16,9 ms**, p99 : **17,4 ms**, max : **21,1 ms**.
+    - Saccades $> 33,3$ ms : **0 frame**, $> 50$ ms : **0 frame**.
+    - Durée de transition de palier : **0,3 ms**.
+    - Triangles : 5 266, Géométries : 143, Shaders : 8 (aucun surcoût GPU).
+- **Prochaine étape proposée — Atelier F4 : Progression complète et accalmies** :
+  * Étendre la structure d'accalmies et de rencontres à l'ensemble du cycle de tentative (rythme des 4 à 8 rencontres, calibrage des stocks de ressources en manoir ouvert et tension croissante).
+
+**Intervention antérieure — Atelier F2 : Choisir une amélioration sans menu imposé (2 novembre 2026) :**
+- **Catalogue d'améliorations équilibrées (`UpgradeConfig.ts`)** :
+  * 4 améliorations bornées et observables :
+    - *Cartouchière Renforcée* (`ammo_capacity`) : +50% réserve maximale (Pistolet 60->90, Fusil 30->45) et réapprovisionnement immédiat.
+    - *Canon Ajusté* (`hip_accuracy`) : dispersion de hanche réduite de 35% pour des tirs groupés.
+    - *Élixir de Vitalité* (`vitality`) : santé max augmentée à 120 PV et soin immédiat de +40 PV.
+    - *Bottes de Cuir Souple* (`agility`) : vitesse normale et sprint accrues de +12%.
+  * Tirage déterministe de 2 offres distinctes à chaque accalmie de palier.
+- **Présentoirs 3D in-world sans menu bloquant (`UpgradePedestal.ts`)** :
+  * Deux pupitres en chêne sombre et stèle en pierre implantés dans le Grand Hall Sud en $(-2,5; 2,5)$ et $(+2,5; 2,5)$, encadrant l'allée centrale et le carillon.
+  * Détection conique de visée ($\le 2,8$ m, $\text{dot} > 0,65$) révélant le nom et l'effet sur le HUD (`[E] CHOISIR : NOM · EFFET`).
+  * Veilleuse pulsée douce quand l'offre est active.
+  * **Note explicite d'assets manquants pour le prototype** : Les stèles utilisent des primitives 3D provisoires. Il manque actuellement un sprite 2D pixel art dédié pour chaque offrande (icône de fiole, cartouchière, parchemin scellé). Ce point est expressément répertorié pour la passe artistique F3.
+- **Règles d'exclusion mutuelle, départ distinct et péremption (`Game.ts`)** :
+  * **Choix unique** : Valider une stèle consomme l'offre et ferme immédiatement la stèle concurrente. Impossible d'obtenir deux bonus sur la même accalmie.
+  * **Départ distinct** : Le départ (ouverture de porte ou sonnerie de carillon) est totalement séparé du choix d'amélioration. La même pression de touche ne peut jamais choisir et démarrer simultanément.
+  * **Péremption** : Si le joueur lance le combat sans choisir, les deux offres sont immédiatement fermées (`pedestal.close()`). Aucun bonus ne peut être ramassé rétroactivement pendant la bataille.
+  * **Remise à zéro** : À la mort ou au redémarrage d'une tentative, les bonus ne persistent pas (`appliedUpgrades = []`).
+- **Garantie de non-régression et tests** :
+  * `npm.cmd run build` propre (code 0, 230 ms).
+  * Nouvelle suite `scripts/check-upgrades-f2.mjs` créée et 100% PASS (4/4 épreuves).
+  * Les 12 suites de tests du projet (`upgrades-f2`, `encounters-f1`, `perf-tracker`, `navigation-perf`, `tiers`, `split-level`, `zombie`, `zombie-agile`, `zombie-remains`, `combat-feedback`, `weapon`, `shotgun`) sont **100% PASS**.
+- **Prochaine étape proposée — Atelier F3 : Salle témoin visuelle et sonore** :
+  * Choix d'une salle de référence (ex: Grand Salon ou Grand Hall), travail sur les silhouettes, les repères de circulation, la cohérence des textures pixel art, l'intégration des sprites d'offrandes manquants et l'atmosphère sonore feutrée sans surcoût d'ombres.
+
+**Intervention antérieure — Atelier F1 : Séparer rencontres et secteurs (2 novembre 2026) :**
+- **Découplage rencontres vs secteurs physiques (`EncounterConfig.ts`)** :
+  * Définition d'une table centralisée de 4 rencontres indépendantes des pièces physiques du manoir.
+  * Palier 1 : Incursion initiale (Vestibule, Salon & Galerie), 4 zombies standards, déverrouille le Grand Hall Nord (`unlockSectorTier: 1`).
+  * Palier 2 : Assaut du Grand Hall, 5 zombies (dont 2 coureurs agiles max, 1 simultané), déverrouille le plateau haut (+2,4 m) et ses escaliers (`unlockSectorTier: 2`).
+  * Palier 3 : Hauteurs gothiques (Bibliothèque & Atelier), 6 zombies (dont 3 agiles max, 2 simultanés), achève l'ouverture de l'enceinte entière (`unlockSectorTier: null`).
+  * Palier 4 (Validation F1) : Patrouille combinée en manoir complet ouvert, 4 zombies (dont 2 agiles max), réutilise les cachettes masquées des 3 secteurs sans nouveau secteur ni refermeture de porte.
+- **Activation volontaire sans rupture de contrôle (`EncounterBell.ts`)** :
+  * Création d'un carillon d'arène 3D victorien en laiton et chêne sombre implanté au Grand Hall Sud en $(0; 2,5)$.
+  * Actif uniquement pendant l'exploration sécurisée après l'ouverture complète du manoir.
+  * Veilleuse dorée pulsée attirant le regard, détection 3D conique en vision directe ($< 2,8$ m, $\text{dot} > 0,65$).
+  * Déclenchement volontaire via touche `[E]` : retour sonore métallique, extinction immédiate de la veilleuse et anti-rebond matériel garantissant qu'un appui prolongé n'enchaîne pas deux paliers.
+- **Intégration du flux de partie (`Game.ts` & `index.html`)** :
+  * La victoire n'est plus déduite de la taille des secteurs physiques mais de la validation de la table des rencontres (`this.currentTier >= this.encounterConfigs.length`).
+  * Aucune fin prématurée après le Palier 3 : transition fluide vers l'accalmie avec liberté totale de mouvement et visée (souris conservée, aucun menu bloquant).
+  * Les portes ouvertes aux Paliers 1 et 2 **restent rigoureusement ouvertes** au Palier 4 (aucune refermeture intempestive).
+  * Les quotas d'agiles et les pools de spawn sont paramétrés par rencontre et non codés en dur.
+  * Fin explicite du prototype : écran de victoire célébrant les 4 rencontres validées sans prétendre être la finale complète F6.
+- **Vérifications et mesures réelles** :
+  * `npm.cmd run build` : compilé avec succès (code 0, 205 ms).
+  * Nouvelle suite de tests `scripts/check-encounters-f1.mjs` créée et validée (4/4 épreuves 100% PASS).
+  * Les 11 suites de tests du projet (`encounters-f1`, `perf-tracker`, `navigation-perf`, `tiers`, `split-level`, `zombie`, `zombie-agile`, `zombie-remains`, `combat-feedback`, `weapon`, `shotgun`) sont **100% PASS**.
+  * Profilage Chromium headless traversant les 4 paliers (`scripts/measure-perf.mjs`) : framerate stable à 60 FPS (médiane 16,7 ms, p95 17,0 ms, p99 17,2 ms, max 20,2 ms, 0 frame $> 33$ ms, durée de transition 0,2 ms).
+- **Prochaine étape proposée — Atelier F2 : Choisir une amélioration sans menu imposé** :
+  * Présentation des deux premières offres d'amélioration dans le monde (ex: pupitres ou stèles d'offrandes à lecture conique), sélection unique `[E]` et départ distinct sans coupure de mouvement, selon le contrat validé de `ROADMAP.md`.
+
+**Intervention antérieure — Atelier F0 : Transitions fluides et élimination des micro-saccades (2 novembre 2026) :**
+- **Mesure et instrumentation (`PerfTracker.ts` & `Game.ts`)** :
+  * Séparation du delta brut réel entre frames (mesuré via `performance.now()`) et du delta simulé plafonné à 0,05 s pour la physique du jeu.
+  * Calcul glissant sur tampon circulaire (`Float32Array`) de la médiane, du p95, du p99, du maximum et du compte d'images > 33,3 ms et > 50 ms.
+  * Isolation stricte des phases de combat actif : pause, game over, menus et déconnexion d'onglet (visibilité / blur) ne polluent plus les statistiques.
+  * Chronométrage précis des événements ponctuels : apparitions d'ennemis, transitions de palier et requêtes de navigation Dijkstra.
+- **Navigation réutilisable & portes mobiles (`Level.ts`, `Game.ts`, `Zombie.ts`)** :
+  * Préconstruction unique au chargement du maillage d'arêtes statiques (`staticNavEdges`) reliant les 45 waypoints fixes du manoir.
+  * Validation dynamique $O(1)$ des franchissements de portes : chaque arête traversant une porte mobile vérifie directement son état (`door.getState() === 'OPEN'`). Zéro raycasting de décor redondant sur le graphe statique.
+  * Raccordement dynamique ciblé : seules la position de départ et la position cible testent leurs liaisons de ligne de vue vers leurs waypoints les plus proches pour se brancher au graphe.
+  * Résolution Dijkstra avec early-exit dès que la destination est atteinte (temps moyen par recherche : **0,063 ms**).
+  * Filtrage anticipé des apparitions dans `Game.trySpawnZombie` : les candidats directement visibles par le joueur (distance, cône de vue $\pm 55^\circ$ et rayon de vue dégagé) sont rejetés immédiatement avant même de lancer une recherche de chemin.
+  * Jitter temporel sur les replanifications de recherche des zombies (`0.4 + Math.random() * 0.2` s) évitant que plusieurs IA n'exécutent leur Dijkstra simultanément sur la même frame.
+- **Cycle de vie et conservation des ressources (`ZombieAnimation.ts`, `Zombie.ts`, `ZombieRemains.ts`, `AgileZombieAnimation.ts`)** :
+  * Découpage des poses d'animation dans les coordonnées UV des géométries (`createAtlasFrameGeometry`) au lieu de muter `repeat/offset` sur la texture de matériau. Chaque zombie standard possède ses géométries de poses dédiées tout en partageant les mêmes textures 2D en mémoire.
+  * Conservation des textures, matériaux de profondeur et atlas entre les paliers : `Game.startTier` ne détruit plus les caches communs lors du nettoyage des entités.
+  * Préchauffage complet (`Zombie.warmup()`) à l'initialisation du jeu préparant les textures et shaders des zombies standards, agiles et restes mortels avant tout affrontement.
+  * Mécanisme de libération explicite final et idempotent (`Zombie.disposeAllZombieResources()`, `Game.dispose()`).
+- **Résultats comparatifs mesurés** :
+  * **CPU isolé (`node scripts/audit-tier-cpu.mjs`)** :
+    - Palier 1 : 66,55 ms -> **1,19 ms** (-98,2 %, x56 plus rapide).
+    - Palier 2 : 8,55 ms -> **0,64 ms** (-92,5 %, x13 plus rapide).
+    - Palier 3 : 36,30 ms -> **1,10 ms** (-97,0 %, x33 plus rapide).
+    - Rechargements de textures après suppression d'un palier : **0** (anciens caches détruits : 5 et 6).
+  * **Navigateur en conditions réelles (`node scripts/measure-perf.mjs`, Chromium headless)** :
+    - Temps de frame médian : 16,6 ms (parfaitement calé sur 60 FPS).
+    - Latence p99 : 82,2 ms -> **17,1 ms** (élimination totale des à-coups).
+    - Temps de frame max : 126,8 ms -> **20,2 ms** (plus aucun dépassement de budget).
+    - Saccades > 33,3 ms : 3+ -> **0 frame**.
+    - Saccades > 50,0 ms : 3 -> **0 frame**.
+    - Durée d'apparition d'un ennemi : 67,2 ms -> **2,8 ms** (divisée par 24).
+    - Durée d'une transition de palier : 83,2 ms -> **5,2 ms** (divisée par 16).
+- **Garantie de non-régression et tests** :
+  * `npm.cmd run build` propre (code 0, 215ms).
+  * 10 suites de tests automatisées 100% PASS : `check-perf-tracker`, `check-navigation-perf`, `check-tiers`, `check-split-level`, `check-zombie`, `check-zombie-agile`, `check-zombie-remains`, `check-combat-feedback`, `check-weapon`, `check-shotgun`.
+  * Respect des règles physiques : escaliers Ouest et Est navigables, balustrades étanches aux tirs et raccourcis, portes en mouvement ou fermées infranchissables, portée d'attaque 3D euclidienne.
+- **Prochaine étape proposée** :
+  * Engager le jalon F1 de la roadmap validée : conception et implémentation du système de tables de rencontres et progression par secteurs/vagues sans bloquer le mouvement.
+
+**Dernière demande — roadmap d'une tentative finie et horreur psychologique (2 novembre 2026) :** l'utilisateur a choisi 10–15 minutes avec rencontre finale, progression au-delà du palier 3, améliorations gratuites sans menu automatique coupant le mouvement. Il a confirmé l'horreur psychologique (sons, silhouettes, événements inquiétants). `ROADMAP.md` et `ORIENTATION_JEU.md` réécrits ; versions trois paliers archivées. Ordre F0 performance → F1 rencontres/secteurs → F2 choix dans le monde → F3 salle témoin visuelle/sonore → F4 progression complète → F5 événements → F6 finale → F7 variantes/confort. Huit paliers et dispositif d'amélioration sont des propositions à tester. Prompt limité à F1 dans `PROMPT_GEMINI_TENTATIVE_FINIE.md` ; ne pas implémenter toute la roadmap d'un coup. L'accord F0 est acquis et son implémentation est confiée à Gemini ; `PerfTracker.ts` et changements Game sont présents localement, sans validation renouvelée ici. Cette intervention modifie uniquement les documents/consignes ; aucun code du jeu modifié, aucune nouvelle compilation ou validation navigateur. Prochaine action : vérifier F0, puis demander F1 via le prompt ; ergonomie exacte de F2 et identité de la finale restent à valider.
+
+**Dernière demande — audit performance des transitions et propositions de suite (2 novembre 2026) :** voir `docs/AUDIT_PERFORMANCES_PALIERS.md`. Aucun code de gameplay modifié. Audit CPU reproductible ajouté : `node scripts/audit-tier-cpu.mjs` (vrai Level, textures simulées, portes ouvertes, pas de GPU). Première mesure : balayages de chemins médians 66,55 / 8,55 / 36,30 ms selon les trois positions testées ; ne pas assimiler à des FPS de gameplay ni à une reproduction du changement de palier. Causes prioritaires : reconstruction des connexions de navigation par candidat ; destruction/recréation des caches de ressources entre paliers. Le compteur perf utilise un delta plafonné à 50 ms et ne mesure pas correctement les pics. Pas de profil GPU ni parcours navigateur de transition pendant cet audit. Optimisations proposées, aucune encore implémentée ; accord utilisateur à obtenir pour l'atelier « transitions fluides ». Les modifications locales préexistantes de Level et du test demi-niveau ont été préservées. Fonctionnalités suggérées ensuite : choix gratuits utiles, variation contrôlée avec graine, anticipation des apparitions, réglages persistants.
+
+**Dernière intervention — Atelier 3 : Plafonds étagés et fermeture gothique du manoir (2 novembre 2026) :**
+- **Toiture gothique intégrale et atmosphère de huis clos** :
+  * **Plafond inférieur Sud ($Y = 4,0$ m)** : couvre le Secteur 1 ($Z \in [6, 20]$, Vestibule, Grand Salon, Galerie) pour une ambiance feutrée et oppressante.
+  * **Plafond supérieur monumental ($Y = 6,4$ m)** : couvre le Grand Hall, les deux escaliers et le plateau surélevé ($Z \in [-20, 6]$).
+    - Offre $6,4$ m de hauteur libre dans le Grand Hall autour du grand lustre.
+    - Offre $4,0$ m de hauteur sous plafond sur le plateau haut (+2,4 m) de la Bibliothèque et de l'Atelier.
+    - Assure un dégagement vertical continu au-dessus des escaliers sans aucun risque de collision de tête.
+  * **Imposte verticale de démarcation ($Z = 6$, $Y \in [4,0, 6,4]$)** : relie hermétiquement le plafond bas du salon au plafond cathédrale du Grand Hall.
+  * **4 poutres maîtresses transversales en chêne massif** (à $Z = 13, 0, -7, -14$) qui accrochent le faisceau de la lampe torche et projettent des ombres dynamiques.
+  * Matériau et texture : boiseries sombres avec `receiveShadow = true` et intégration dans `solidMeshes` (les tirs vers le haut produisent des impacts de bois et ne s'échappent plus dans le vide).
+- **Garantie de non-régression et tests** :
+  * `npm.cmd run build` propre (code 0, 220ms).
+  * Suite `scripts/check-split-level.mjs` étendue avec l'Épreuve 6 (raycasting vertical des plafonds et dégagement d'escalier validés).
+  * Les 8 suites de tests du projet (`split-level`, `tiers`, `shotgun`, `weapon`, `zombie-agile`, `zombie`, `zombie-remains`, `combat-feedback`) sont **100% PASS**.
+
 **Versionnement Git initialisé :** branche locale `main`, remote `origin` vers `https://github.com/Owlowish/Dead_Sector.git`. L'utilisateur a autorisé le premier commit et son push. Identité Git locale au dépôt : `Owlowish`, adresse GitHub noreply ; configuration globale inchangée. Dépendances, builds, aperçus/profils navigateur, archive ZIP et fichiers d'environnement exclus par `.gitignore`. README aligné sur le prototype actuel. Build et tests fusil/pistolet réussis avant le premier commit ; aucun nouveau test navigateur pour cette opération. Consulter `git status` et `git log` pour l'état de synchronisation exact.
 
-**Dernière intervention — Atelier 2 : Architecture du Manoir Demi-niveau (+2,4 m) (2 novembre 2026) :**
+**Atelier 2 antérieur — Architecture du Manoir Demi-niveau (+2,4 m) (2 novembre 2026) :**
 - **Option 1 implémentée intégralement** d'après `docs/PROPOSITIONS_MANOIR_ETAGES.md` :
   * Rez-de-chaussée ($Y = 0$ m) : Vestibule (P1), Grand Salon (P1), Galerie Ouest (P1) en boucle immédiate, et Grand Hall Nord (P2).
   * Demi-niveau surélevé ($Y = +2,4$ m) : Grande Bibliothèque et Atelier d'Art (P3), reposant sur un socle plein en maçonnerie (aucune pièce jouable superposée).

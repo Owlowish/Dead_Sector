@@ -29,9 +29,11 @@ for (let i = 0; i < 11; i++) attack.step(0.05);
 assert.equal(attack.hits.length, 0, 'Préparation sans dégâts');
 attack.step(0.06);
 assert.deepEqual(attack.hits, [10]);
-assert.equal(attack.zombie.getMesh().material.map.offset.x, 0.5, 'Pose du coup au moment des dégâts');
+const attackUv1 = attack.zombie.getMesh().geometry.getAttribute('uv');
+assert.equal(attackUv1.getX(2), 0.5, 'Pose du coup au moment des dégâts via UV de géométrie');
 attack.step(0.15);
-assert.equal(attack.zombie.getMesh().material.map.offset.x, 0.75, 'Pose de récupération');
+const attackUv2 = attack.zombie.getMesh().geometry.getAttribute('uv');
+assert.equal(attackUv2.getX(2), 0.75, 'Pose de récupération via UV de géométrie');
 attack.step(0.2);
 assert.equal(attack.hits.length, 1, 'Un seul coup pour une animation');
 
@@ -60,14 +62,16 @@ const walk = fixture();
 for (let i = 0; i < 10; i++) walk.step(0.05, 6);
 const mesh = walk.zombie.getMesh();
 assert.match(mesh.material.map.userData.url, /walk_v2/);
-assert(Math.abs(mesh.material.map.offset.y - 0.02) < 1e-9, 'Deuxième ligne de marche, UV inversés');
+const walkUv = mesh.geometry.getAttribute('uv');
+assert(Math.abs(walkUv.getY(2) - 0.02) < 1e-6, 'Deuxième ligne de marche, UV inversés');
 assert.equal(mesh.customDepthMaterial.map, mesh.material.map, 'Ombre directionnelle synchronisée');
 assert.equal(mesh.customDistanceMaterial.map, mesh.material.map, 'Ombre ponctuelle synchronisée');
 walk.level.blocked = true;
 walk.step(0.05, 6);
 assert.match(mesh.material.map.userData.url, /idle/);
 const other = fixture();
-assert.notEqual(other.zombie.getMesh().material.map, mesh.material.map, 'Textures propres à chaque instance');
+assert.equal(other.zombie.getMesh().material.map, mesh.material.map, 'Textures partagées en cache réutilisable');
+assert.notEqual(other.zombie.getMesh().material, mesh.material, 'Matériaux et couleurs propres à chaque instance');
 
 const hurt = fixture();
 hurt.step(0);
@@ -82,7 +86,8 @@ for (let i = 0; i < 4; i++) {
   assert(hurt.zombie.getPosition().equals(heldPosition), 'Aucun déplacement pendant la blessure');
 }
 assert.equal(hurt.hits.length, 0, 'Ancienne attaque annulée par la blessure');
-assert.equal(hurt.zombie.getMesh().material.map.offset.x, 0.5, 'Deuxième pose de blessure');
+const hurtUv = hurt.zombie.getMesh().geometry.getAttribute('uv');
+assert.equal(hurtUv.getX(2), 0.5, 'Deuxième pose de blessure via UV');
 assert.equal(hurt.zombie.getMesh().customDistanceMaterial.map, hurt.zombie.getMesh().material.map);
 hurt.step(0.05, 6);
 assert(hurt.zombie.getPosition().distanceTo(heldPosition) > 0, 'Reprise de la poursuite après arrêt');

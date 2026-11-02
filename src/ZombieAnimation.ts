@@ -1,3 +1,5 @@
+import * as THREE from 'three';
+
 // Repères en coordonnées de cellule, communs au jeu et à l'aperçu.
 export const zombieAnimation = {
   walk: { columns: 3, rows: 2, frames: 6, frameDuration: 0.14, cropTop: 0, cropHeight: 0.96 },
@@ -52,4 +54,25 @@ export function atlasRegion(frame: number, atlas: { columns: number; rows: numbe
     // Les cellules se lisent de haut en bas, les UV Three.js partent du bas.
     offsetY: 1 - (row + atlas.cropTop + atlas.cropHeight) / atlas.rows,
   };
+}
+
+export function createAtlasFrameGeometry(
+  width: number,
+  height: number,
+  frame: number,
+  atlas: { columns: number; rows: number; cropTop: number; cropHeight: number }
+): THREE.PlaneGeometry {
+  const geom = new THREE.PlaneGeometry(width, height);
+  const region = atlasRegion(frame, atlas);
+  const uv = geom.getAttribute('uv');
+  for (let i = 0; i < uv.count; i++) {
+    const u = uv.getX(i);
+    const v = uv.getY(i);
+    uv.setXY(
+      i,
+      region.offsetX + u * region.repeatX,
+      region.offsetY + v * region.repeatY
+    );
+  }
+  return geom;
 }
