@@ -1,10 +1,112 @@
 # DEAD SECTOR — État et reprise
 
-Dernière intervention ciblée : 2 novembre 2026 (Atelier F3 « Salle témoin visuelle et sonore » complété et validé : Grand Salon des Réceptions réhaussé sans surcoût d'ombres ; cheminée monumentale sculptée avec manteau en pierre, jambages, âtre en brique réfractaire et lit de braises rougeoyantes emissive sous collider physique strict 2.4x3.0x4.0m ; tapis damassé d'apparat au sol matérialisant la boucle de circulation du Secteur 1 ; linteaux sculptés en relief au-dessus des 3 passages ; synthèse procédurale et intégration d'ambiance d'horreur psychologique avec craquements de boiseries feutrés espacés de 18 à 35s ; documentation des 4 sprites d'offrandes manquants avec spriteAssetId cible ; budget strict de 2 ombres respecté, 0 frame > 33ms, 60 FPS constants, build npm propre et 13 suites de tests 100% PASS).
+## Saccade de lampe et audit de performances — 3 novembre 2026 (état le plus récent)
 
-## État prioritaire pour la prochaine reprise
+- Deux causes corrigées : `Player` conserve le SpotLight et commute son intensité 22/0 ; `WeaponPresentation` remplace les longues URL data héritées par des Blob URL courtes, révoquées au remplacement, avec protection contre les anciens encodages asynchrones. Clic de lampe réutilisé/préchargé. Images, luminosité artistique, rechargements et recul de deux secondes conservés.
+- Chrome headless ANGLE/AMD/D3D11, vrai Game à 427 × 300 : avant, premier arrêt = cinq nouveaux programmes et première soumission de rendu de 3 660 ms ; après, aucun nouveau programme et 6,5 ms dans le dernier essai. Trace CSS : maximum UpdateLayoutTree 33,369 → 1,491 ms. Durées CPU de soumission/style, pas une mesure GPU ni une garantie « zéro saccade ».
+- `Game` et l'aperçu décor utilisent directement PCF, déjà le secours effectif du moteur. `Game`/`PerfTracker` ne masquent plus les images > 1 s : vrais blocages conservés, changements d'onglet détectés exclus, delta de simulation plafonné inchangé.
+- Build réussi ; 17 suites Node passent. Chrome vérifie dix cartes/alpha, poses et cycles d'armes, resize et révocation, ainsi que F/HUD/intensité sur le vrai Player. Captures inspectées, aucune exception ni asset HTTP manquant. Pas de tentative longue à la souris physique, écoute ou benchmark de production.
+- Autres coûts : 480 draw calls contre 155 en gelant les ombres uniquement pour diagnostic ; programmes créés aux premiers ennemis ; dernières apparitions CPU ≈ 24–25 ms ; huit textures décor ≈ 64 Mio estimés RGBA8 + mipmaps. Intervalle brut à froid ≈ 115–123 ms hors soumission Three.js encore non isolé. Ombres/images non dégradées pour masquer ces coûts.
+- Rapport : `docs/PERFORMANCES_LAMPE_2026-11-03.md` ; résumé dans `docs/asset-packs/PERF_LAMPE_2026-11-03.json`. Reproduction : `node scripts/profile-rendering.mjs current` (Vite 5173), option `--trace-toggle`. Sorties locales dans `tmp/render-profile/`.
+- Prochaine vérification : F en déplacement réel. Atelier proposé ensuite : préparation GPU des ennemis avant premier combat, à autoriser pour ce travail plus important. Pas de nouveau gameplay, refonte des ombres, commit ou push.
 
-**Dernière intervention — Atelier F3 : Salle témoin visuelle et sonore (2 novembre 2026) :**
+## Habillage global des surfaces — 3 novembre 2026 (état le plus récent)
+
+- Accord utilisateur pour générer et intégrer le lot de décor proposé. Huit textures opaques `image_gen` intégrées : bois structurel, pierre, porte à panneaux, plafond à caissons, briques, tapis, bibliothèque et façade d'atelier. Sources dans `public/assets/textures/mansion/` ; prompts dans `docs/asset-packs/DECOR_2026-11-03_PROMPTS.json` ; détails et limites dans `docs/DECOR_SURFACES_2026-11-03.md`.
+- `MansionMaterials` centralise les ressources partagées et les UV des boîtes ; `MansionConfig.surface` attribue l'habillage sans changer les dimensions ; `Level` et `Door` l'appliquent. Dessus/chants des meubles restent en bois, panneaux sur les battants existants. Tapis raccordé par UV mondiaux. Lanternes et anneau de lustre en géométries simples aux sources lumineuses existantes, répétitions par instanciation.
+- Vérifications : build réussi et 17 suites passent. Comparaison avec l'instantané antérieur au lot : 28 colliders, 92 volumes solides de tir, 28 configurations physiques et 9 lumières strictement identiques (dont 2 projetant des ombres). Les armes et leurs réglages n'ont pas été modifiés par cette passe.
+- Chrome headless : huit textures chargées, aucune exception ni asset HTTP manquant, neuf vues de pièces/surfaces inspectées à résolution rétro avec le vrai Level et la lampe de Player ; Salon également sans lampe. Ce sont des vues fixes isolées, pas une tentative complète ni une validation de déplacement/animations au Pointer Lock. Aucun profil comparatif GPU/FPS ou écoute. Sources PNG d'environ 13,96 Mio au total.
+- Revoir : `node scripts/make-decor-preview.mjs`, puis `/tmp/decor-preview/index.html` via Vite. Prochaine vérification proposée : parcours réel avec/sans lampe et retour artistique utilisateur, avant un autre lot. Sculpture, accessoires d'atelier, carillon et usure localisée restent à choisir ; F6 reste séparé et non autorisé. Pas de commit/push.
+
+## Correction du rendu des armes — 3 novembre 2026 (prioritaire)
+
+- Retour utilisateur : armes trop nettes et trop claires, cadre transparent pendant le rechargement fusil. Corrections de présentation implémentées, sans nouvelle génération de sprites. Détails et limites dans `docs/ARMES_RENDU_RETRO.md`.
+- `WeaponPresentation.ts` prépare au chargement les dix images actives en résolution réduite nearest (environ trois pixels écran) et coupe les faibles alpha (seuil 128). Les PNG sources, grilles et ancrages sont conservés ; les variantes de rendu sont des URL de données CSS, recalculées après redimensionnement. `main`, `Weapon` et les aperçus utilisent cette présentation.
+- Lumière d'arme atténuée et plafonnée (0,18–0,65 hors éclair de tir), démarrage à 0,35, renfort de présentation de la lampe à 0,08. SpotLight, chronologies, cadence, munitions et recul à deux secondes conservés.
+- Vérifications : build réussi ; 16 suites passent. Dans Chrome headless : dix images traitées avec alpha uniquement 0/255, dimensions des atlas vérifiées, captures hanche/ADS et six phases de rechargement inspectées sans voile rectangulaire visible, cycles d'aperçu terminés, redimensionnement et capture du vrai Game au départ. Luminosité mesurée à 0,49 lors du dernier contrôle. Cela ne prouve pas une tentative complète au Pointer Lock ni une validation artistique de l'utilisateur ; aucun profil comparatif GPU ni écoute.
+- Prochaine vérification : apprécier le grain et la luminosité dans le manoir, puis effectuer plusieurs insertions/interruption du fusil à la souris. Les autres productions artistiques restent décrites dans le recensement ; F6 reste séparé. Pas de commit/push.
+
+## Passe artistique — icônes de bonus et cohérence des armes — 3 novembre 2026
+
+- Accord utilisateur : première production du recensement et examen des sprites d'armes utilisés, en préservant leurs mécanismes. Quatre icônes RGBA générées avec `image_gen` sont maintenant dans `public/assets/sprites/upgrades/` aux chemins du catalogue ; prompts exacts et provenance dans `docs/asset-packs/BONUS_2026-11-03_PROMPTS.json`.
+- `UpgradePedestal` utilise `PickupSprite` pour afficher l'icône correspondant à l'offre. `Game` transmet la position du joueur pour l'orientation autour de Y. Faible émission de l'image pour rester lisible dans le Salon sombre, sans nouvelle lumière ; disparition au choix et libération du mesh/matériau à la fermeture. Les règles de choix et les effets restent indépendants du visuel.
+- Rapport artistique et contrat des armes : `docs/COHERENCE_GRAPHIQUE_BONUS_ARMES_2026-11-03.md`. Le pistolet et le fusil ont déjà gants noirs fermés/manches gris bleuté/métaux sombres ; écarts de densité et de cadrage décrits. **Aucun nouveau sprite d'arme produit ou substitué** ; les 23 empreintes sources/rendu/chronologie contrôlées sont inchangées, recul à 2 s compris. Le fusil réutilise une main de la planche du pistolet : dépendance à préserver avant toute génération future.
+- Outils : `make-upgrade-preview.mjs` génère une galerie et une scène avec les vraies stèles ; aperçus d'armes corrigés (extraction CRLF du rig fusil, version HTTP, initialisation de la visée/cadrage de l'animation pistolet). Sources d'armes et CSS/HTML du jeu conservés.
+- Vérifications : build réussi ; 16 suites `check-*.mjs` passent, y compris armes et F2 (association icône/offre, orientation, choix, fermeture et six accalmies). Les captures Chrome headless des miniatures 48/72/96 px, du Level à résolution rétro et des poses d'armes ont été inspectées ; cycles d'aperçu pistolet et insertion fusil terminés sans exception ni asset graphique manquant. Ce sont des aperçus isolés, pas un parcours de combat à la souris. Pas de nouveau profil GPU, écoute ou tentative complète.
+- Reproduction : `node scripts/make-upgrade-preview.mjs`, puis `/tmp/upgrade-preview/index.html` via Vite ; liens vers les aperçus d'armes inclus. Sources grandes (1 254²), optimisation éventuelle à mesurer. Prochaine vérification : lecture des quatre symboles pendant une vraie accalmie et validation artistique utilisateur ; prochain lot proposé dans le recensement : repères du manoir (carillon/rayonnages/tapis/luminaires). F6 reste séparé. Pas de commit/push.
+
+## Recensement graphique — 3 novembre 2026 (documentaire)
+
+- Demande : inventorier les assets graphiques manquants et les ajouts possibles. Rapport : `docs/RECENSEMENT_ASSETS_GRAPHIQUES_2026-11-03.md` ; il distingue manques explicites, représentations simples existantes et propositions futures.
+- Constat : 33 PNG dans `public/assets` (environ 28,78 Mio compressés, références/variantes incluses). Quatre chemins littéraux absents sont les futures icônes du catalogue de bonus ; ces métadonnées ne sont pas encore chargées par les stèles. Le rechargement fusil est déjà animé par couches, mais n'a pas de séquence artistique dédiée complète.
+- Pistes prioritaires : quatre icônes d'amélioration, puis carillon, rayonnages/atelier, tapis et luminaires visibles. Les silhouettes, portraits altérés et assets d'élite restent liés à des mécaniques futures à autoriser.
+- Vérification : lecture du code/documentation, relevé des fichiers et dimensions PNG, recherche des références littérales et inspection isolée du portrait et du brouillon de rechargement. Aucun nouveau parcours navigateur ni profil GPU ; aucun code/bitmap modifié, build et tests non relancés pour ce recensement.
+- Prochaine production proposée : une icône de bonus validée sur sa stèle, puis les quatre icônes cohérentes. La demande de recensement n'autorise pas leur génération/intégration ; attendre la sélection et l'accord de l'utilisateur. L'état fonctionnel F5 ci-dessous reste le dernier état du gameplay.
+
+## Atelier F5 — Craquement spatial conditionnel — 3 novembre 2026 (prioritaire)
+
+- **Implémenté** : `HorrorDirector` remplace l'ancien timer du craquement. Il attend 18–30 secondes de temps éligible, ne joue qu'une fois par accalmie, réévalue toutes les 0,5 s si aucun emplacement ne convient, coupe la lecture à la pause et ajoute 4 s de silence à la reprise. Le délai initial et le délai restant n'avancent qu'avec le delta de simulation plafonné ; aucune reprise d'onglet ne rattrape du temps.
+- `Game.updateHorrorAudio` ne transmet l'éligibilité qu'en exploration avec rencontre suivante en attente, aucune apparition en file ni zombie vivant, souris verrouillée, onglet visible et application focalisée. `startTier` réarme l'accalmie à la transition vers un combat. P7 terminal n'est pas éligible et le déplacement existant reste intact.
+- `MANSION_HORROR_POINTS` déclare cinq emplacements fixes dans Vestibule, Grand Salon, Grand Hall, Bibliothèque et Atelier. `Level.getAccessibleHorrorPoints` exige l'état `OPEN` de la porte d'accès, puis calcule la hauteur de source avec `getFloorHeightAt` (+1,3 m). Chaque point a été vérifié dans son rectangle de pièce, contre les vrais colliders de `Level` (rayon joueur 0,3 m) et pour son altitude. Le point de Galerie repéré dans le piédestal solide a été supprimé.
+- Une seule `THREE.PositionalAudio` préchargée est réutilisée à 0,18, avec atténuation de distance, volume réglable de 0 à 1 dans le panneau de pause. La source est arrêtée, déconnectée et retirée de la scène lors de la libération ; le callback du chargement audio tardif est neutralisé après `dispose`. Nappe générale et grognements zombies conservent leurs sources et leurs réglages.
+- **Compilation** : `npm.cmd run build` réussi après l'intégration finale. L'avertissement Vite sur le bundle de plus de 500 kB reste non bloquant.
+- **Tests Node** : les 16 scripts `scripts/check-*.mjs` passent. `check-horror-f5.mjs` exerce la vraie logique de `HorrorDirector` et le calcul `Game.updateHorrorAudio` avec sources simulées : limites 18/30 s, lecture unique, combat/terminal/file/zombie/souris/visibilité/focus, reprise, aucun point, distance, regard, portes OPEN, altitude, volume nul, arrêt et libération. `check-visual-room-f3.mjs` teste maintenant le directeur remplaçant l'ancien ordonnanceur ; F4 vérifie aussi le réarmement seulement par `startTier` valide.
+- **Non vérifié** : aucun parcours navigateur, aucune écoute au casque, aucune validation de spatialisation/direction perçue, aucun essai de pause en jeu, aucune mesure de temps d'image comparative. Les tests avec audio simulé ne valident pas le rendu audio du navigateur ni l'effet artistique ; Three.js n'atténue pas le son derrière les murs comme une occlusion acoustique.
+- **Prochaine étape proposée** : essai navigateur non chronométré dans deux orientations, au rez-de-chaussée puis en hauteur, puis pause/reprise et lancement d'un combat pendant un craquement. L'atelier F6 reste à proposer et à faire autoriser séparément. Aucun commit/push effectué.
+
+## Corrections ciblées F3/F4 — 3 novembre 2026 (prioritaire)
+
+- Réparations exécutées selon `docs/PROMPT_LUNA_CORRECTIONS_F3_F4.md`, en préservant les changements F4 déjà présents et les autres modifications locales.
+- Après P7, `Game` passe à l'exploration terminale : `pendingTierStart=0`, offres et carillon fermés, message HUD « 7 rencontres purgées · finale F6 à venir », aucune victoire/overlay ni libération de souris. La défaite reste inchangée ; aucun P8 ni boss ajouté.
+- Les bonus acquis sont exclus du tirage et `applyUpgrade` refuse les doublons. Les accalmies acceptent 0, 1 ou 2 offres ; le ravitaillement indépendant est conservé. Les deux stèles sont définies dans `MANSION_UPGRADE_PEDESTALS`, dans le Grand Salon du secteur 1, et le test vérifie collision et chemin depuis le départ.
+- `startTier(n)` synchronise `currentTier` après validation, avant toute initialisation ; les numéros invalides ne nettoient pas l'état courant. F5 remplace maintenant le craquement ambiant par `HorrorDirector`, avec ses propres tests de temps éligible, pause/reprise et sélection spatiale.
+- Vérifications Node actualisées en tête : build réussi et 16 scripts `scripts/check-*.mjs` passés, notamment F1/F2/F3/F4/F5, paliers, sécurité des apparitions et zombies. F4 exerce la vraie transition P7 et des `startTier` directs. L'avertissement Vite sur le bundle de plus de 500 kB reste non bloquant.
+- Les spawns ont été évalués avec hasard contrôlé à partir de deux positions et filtrés par collision, secteur, distance, séparation, visibilité et chemin. Le contrôle de diversité obtient 4 quadrants sur cet échantillon ; cela ne garantit pas les quatre directions dans chaque pièce.
+- **Non vérifié en navigateur** : tentative de lancement interrompue par la touche Échap physique avant le chargement de la page ; déplacement/interaction E, rendu réel des supports et absence visuelle d'overlay après P7 restent à vérifier. **Non vérifiés avec périphériques réels** : écoute du son, rendu GPU et durée/équilibre d'une tentative 10–15 min. Les tests audio sont Node avec audio simulé.
+- Prochaine étape historique (remplacée par la proposition F5 ci-dessus) : essai navigateur des choix et de la purge P7, puis deux tentatives chronométrées pour relever rythme/munitions/santé. Pas de commit/push effectué.
+
+## Audit de reprise — état avant ces corrections, 3 novembre 2026
+
+Référence d'audit : `docs/AUDIT_F3_F4_2026-11-03.md`. Il consigne les défauts avant réparation, les changements locaux F4 déjà présents, ainsi que les limites de preuve alors connues. Les anciennes formulations de validation complète ci-dessous sont historiques et ne remplacent pas les vérifications listées dans la mise à jour prioritaire.
+
+Résumé historique antérieur aux corrections : l'atelier F4 avait étendu la table à 7 paliers, le pool à 26 cachettes, l'apparition multidirectionnelle et le carillon des paliers 4 à 7. Les références historiques à une victoire après P7 sont remplacées par l'exploration terminale ; les preuves actualisées sont en tête de ce fichier.
+
+## État détaillé F4 avant les corrections (historique)
+
+**Dernière intervention — Atelier F4 : Progression complète et imprévisibilité (3 novembre 2026) :**
+- **Extension à 7 rencontres complètes (`src/EncounterConfig.ts`)** :
+  * Palier 1 : Incursion Initiale (4 lents, apprentissage tir & boucle, déverrouille Grand Hall).
+  * Palier 2 : Assaut du Grand Hall (5 zombies dont 2 agiles max, 1 simultané, déverrouille étage haut).
+  * Palier 3 : Hauteurs Gothiques (6 zombies dont 3 agiles max, 2 simultanés, manoir entièrement ouvert).
+  * Palier 4 : Patrouille Combinée (4 zombies dont 2 agiles max, 2 simultanés, déclenchement par Carillon d'arène).
+  * Palier 5 : Pression & Mobilité (6 zombies dont 3 agiles max, 2 simultanés, déclenchement par Carillon d'arène).
+  * Palier 6 : Embuscade Échelonnée (7 zombies dont 3 agiles max, 2 simultanés, renforts échelonnés).
+  * Palier 7 : L'Épreuve d'Avant-Garde (8 zombies dont 4 agiles max, 2 simultanés, maîtrise des itinéraires).
+- **Pool d'apparition étendu du manoir ouvert (`MANSION_OPEN_SPAWN_POOL`)** :
+  * 26 points candidats vérifiés sans collision, répartis sur les 4 quadrants :
+    - Sud-Ouest (Grand Salon) : 5 points
+    - Sud-Est (Vestibule) : 4 points
+    - Ouest (Galerie) : 4 points
+    - Centre / Nord (Grand Hall) : 5 points
+    - Nord-Ouest haut (+2,4 m, Bibliothèque) : 4 points
+    - Nord-Est haut (+2,4 m, Atelier) : 4 points
+- **Algorithme d'imprévisibilité et distribution multidirectionnelle (`src/Game.ts`)** :
+  * Suivi du quadrant d'apparition relatif au joueur ($\theta = \text{atan2}(dz, dx)$ découpé en 4 secteurs de $90^\circ$).
+  * Décompte en temps réel des zombies vivants par quadrant.
+  * Score dynamique favorisant les quadrants vides (+16 pts) et pénalisant les regroupements dans la même direction (-12 pts si $\ge 2$).
+  * Bonus d'alternance directionnelle (+10 pts) si différent du dernier zombie apparu (`this.lastSpawnQuadrant`).
+  * Fenêtre de sélection aléatoire parmi les 5 meilleurs candidats variés pour casser toute prévisibilité.
+- **Cycle complet et affichage HUD (`src/Game.ts` & `index.html`)** :
+  * Réarmement systématique du Carillon d'arène après chaque accalmie des paliers 4 à 6.
+  * Victoire célébrée à l'issue de la purge du Palier 7 (`TENTATIVE SURVÉCUE · 7 RENCONTRES PURGÉES`).
+- **Vérifications réelles et métriques** :
+  * `npm.cmd run build` : compilé avec succès (code 0, 1.27 s).
+  * Nouvelle suite `scripts/check-encounters-f4.mjs` créée et validée (4/4 épreuves 100% PASS, avec couverture prouvée des 4/4 quadrants).
+  * Les **14 suites de tests** du projet (`encounters-f4`, `encounters-f1`, `upgrades-f2`, `visual-room-f3`, `perf-tracker`, `navigation-perf`, `tiers`, `split-level`, `zombie`, `zombie-agile`, `zombie-remains`, `combat-feedback`, `weapon`, `shotgun`) sont **100% PASS**.
+- **Prochaine étape proposée — Atelier F5 : Horreur psychologique contrôlée** :
+  * Implémenter le catalogue de micro-événements rares durant les phases d'exploration et d'accalmies (bruits sourds lointains dans les ailes inoccupées, silhouettes furtives disparaissant au détour d'un couloir, altérations discrètes de portraits).
+
+**Intervention antérieure — Atelier F3 : Salle témoin visuelle et sonore (2 novembre 2026) :**
 - **Salle témoin choisie — Grand Salon des Réceptions (Secteur 1)** :
   * Espace de combat initial et première boucle d'apprentissage du joueur ($X \in [-23,5; -3,5]$, $Z \in [6,5; 19,5]$).
   * **Cheminée monumentale sculptée (`Level.ts`)** : Remplacement du bloc d'obstacle générique par un manteau en pierre de taille (`visualColors.stone`), deux jambages latéraux sculptés, un fond d'âtre en briques réfractaires noircies (`visualColors.hearthDark`) et un lit de braises mourantes rougeoyantes avec matériau `emissive: visualColors.ember`. Collider physique et surface d'impact des tirs strictement préservés à $2,4 \times 3,0 \times 4,0$ m.

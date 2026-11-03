@@ -1,7 +1,7 @@
 /**
  * DEAD SECTOR — Configuration centralisée des rencontres (Paliers de combat).
  * Découple la progression des rencontres de l'ouverture des secteurs du manoir.
- * Version F1 : 4 rencontres (Paliers 1 à 3 d'ouverture progressive + Palier 4 en manoir complet ouvert).
+ * Version F4 : Progression complète de 7 rencontres (Paliers 1 à 3 d'ouverture + Paliers 4 à 7 en manoir ouvert multidirectionnel).
  */
 
 import type { Point2D } from './MansionConfig.ts';
@@ -38,31 +38,57 @@ export interface EncounterSpec {
 }
 
 /**
- * Cachettes réparties dans l'ensemble du manoir pour le Palier 4 (Manoir Ouvert).
- * Couvre le Secteur 1 (Salon, Galerie, Vestibule), le Secteur 2 (Grand Hall) et le Secteur 3 (Bibliothèque, Atelier).
+ * Pool étendu de points d'apparition candidats dans l'ensemble du manoir ouvert (Paliers 4 à 7).
+ * Couvre équitablement les 4 points cardinaux et les deux niveaux (+0m et +2.4m) :
+ * - Sud / Sud-Ouest : Grand Salon (masqué par le refend et la cheminée)
+ * - Sud-Est : Vestibule d'entrée
+ * - Ouest : Galerie Ouest et abords escalier ouest
+ * - Centre / Nord : Grand Hall Nord et colonnade
+ * - Nord-Ouest (+2.4m) : Grande Bibliothèque haute
+ * - Nord-Est (+2.4m) : Atelier d'Art haut
  */
-const ENCOUNTER_4_SPAWN_POOL: Point2D[] = [
-  // Secteur 1 : Grand Salon (masqué derrière la cheminée et le refend)
+export const MANSION_OPEN_SPAWN_POOL: Point2D[] = [
+  // 1. Grand Salon (Sud-Ouest, Y = 0m)
   { x: -20, z: 13 },
   { x: -14, z: 9 },
   { x: -14, z: 17 },
-  // Secteur 1 : Galerie Ouest
+  { x: -8, z: 16.5 },
+  { x: -8, z: 13 },
+
+  // 2. Vestibule d'Entrée (Sud-Est, Y = 0m)
+  { x: 16, z: 9 },
+  { x: 8, z: 16 },
+  { x: 0, z: 16 },
+  { x: 16, z: 16 },
+
+  // 3. Galerie Ouest (Ouest, Y = 0m)
   { x: -18, z: 3 },
   { x: -8, z: 0 },
-  // Secteur 1 : Angles Vestibule
-  { x: 16, z: 9 },
-  // Secteur 2 : Grand Hall Nord (angles et colonnade)
+  { x: -18, z: -2 },
+  { x: -12, z: 3 },
+
+  // 4. Grand Hall Nord (Centre / Nord, Y = 0m)
   { x: 17, z: 0 },
   { x: 17, z: -4 },
   { x: 9, z: -3 },
   { x: 0, z: -4 },
-  // Secteur 3 : Grande Bibliothèque haute (+2,4 m)
+  { x: 9, z: 2.5 },
+
+  // 5. Grande Bibliothèque haute (+2.4m, Nord-Ouest)
   { x: -19, z: -14 },
   { x: -13, z: -18 },
-  // Secteur 3 : Atelier d'Art haut (+2,4 m)
+  { x: -7, z: -14 },
+  { x: -12.25, z: -9.5 },
+
+  // 6. Atelier d'Art haut (+2.4m, Nord-Est)
   { x: 18, z: -14 },
   { x: 12, z: -18 },
+  { x: 6, z: -14 },
+  { x: 12.25, z: -9.5 },
 ];
+
+/** Alias pour rétrocompatibilité F1 */
+export const ENCOUNTER_4_SPAWN_POOL: Point2D[] = MANSION_OPEN_SPAWN_POOL;
 
 export const ENCOUNTER_CONFIGS: EncounterSpec[] = [
   // RENCONTRE 1 : Apprendre le tir, le rechargement et la boucle du Secteur 1
@@ -107,7 +133,7 @@ export const ENCOUNTER_CONFIGS: EncounterSpec[] = [
     sectorBounds: MANSION_SPAWNS[2].sectorBounds,
     spawnPool: MANSION_SPAWNS[2].pool,
   },
-  // RENCONTRE 4 (Validation F1) : Réutilisation du manoir ouvert sans nouvelle aile
+  // RENCONTRE 4 : Réutilisation du manoir ouvert et attaques multi-ailes
   {
     tierNumber: 4,
     name: 'Patrouille Combinée',
@@ -117,8 +143,50 @@ export const ENCOUNTER_CONFIGS: EncounterSpec[] = [
     maxSimultaneousAgile: 2,
     unlockSectorTier: null, // Pas de nouveau secteur, l'enceinte entière est libre
     activationType: 'arena_signal',
-    explorationPrompt: 'TENTATIVE COMPLÉTÉE · PROTOTYPE DE COMBAT PURGÉ',
+    explorationPrompt: 'PALIER 4 PURGÉ · ACCALMIE · ACTIVEZ LE CARILLON POUR LE PALIER 5',
     sectorBounds: { minX: -23.5, maxX: 23.5, minZ: -19.5, maxZ: 19.5 },
-    spawnPool: ENCOUNTER_4_SPAWN_POOL,
+    spawnPool: MANSION_OPEN_SPAWN_POOL,
+  },
+  // RENCONTRE 5 : Alterner précision et mobilité face aux mélanges lents/agiles
+  {
+    tierNumber: 5,
+    name: 'Pression & Mobilité',
+    sectorName: 'MANOIR OUVERT (TOUS SECTEURS)',
+    totalZombies: 6,
+    maxAgile: 3,
+    maxSimultaneousAgile: 2,
+    unlockSectorTier: null,
+    activationType: 'arena_signal',
+    explorationPrompt: 'PALIER 5 PURGÉ · ACCALMIE · ACTIVEZ LE CARILLON POUR LE PALIER 6',
+    sectorBounds: { minX: -23.5, maxX: 23.5, minZ: -19.5, maxZ: 19.5 },
+    spawnPool: MANSION_OPEN_SPAWN_POOL,
+  },
+  // RENCONTRE 6 : Anticiper les renforts échelonnés et préserver ses munitions
+  {
+    tierNumber: 6,
+    name: 'Embuscade Échelonnée',
+    sectorName: 'MANOIR OUVERT (TOUS SECTEURS)',
+    totalZombies: 7,
+    maxAgile: 3,
+    maxSimultaneousAgile: 2,
+    unlockSectorTier: null,
+    activationType: 'arena_signal',
+    explorationPrompt: 'PALIER 6 PURGÉ · ACCALMIE · ACTIVEZ LE CARILLON POUR LE PALIER 7',
+    sectorBounds: { minX: -23.5, maxX: 23.5, minZ: -19.5, maxZ: 19.5 },
+    spawnPool: MANSION_OPEN_SPAWN_POOL,
+  },
+  // RENCONTRE 7 : Maîtriser les itinéraires et l'espace avant l'épreuve finale
+  {
+    tierNumber: 7,
+    name: "L'Épreuve d'Avant-Garde",
+    sectorName: 'MANOIR OUVERT (TOUS SECTEURS)',
+    totalZombies: 8,
+    maxAgile: 4,
+    maxSimultaneousAgile: 2,
+    unlockSectorTier: null,
+    activationType: 'arena_signal',
+    explorationPrompt: 'TENTATIVE COMPLÉTÉE · 7 PALIERS PURGÉS · MANOIR MAÎTRISÉ',
+    sectorBounds: { minX: -23.5, maxX: 23.5, minZ: -19.5, maxZ: 19.5 },
+    spawnPool: MANSION_OPEN_SPAWN_POOL,
   },
 ];

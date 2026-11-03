@@ -65,7 +65,7 @@ console.log('=== SUITE DE TESTS COMPORTEMENTAUX : RENCONTRES & PROGRESSION F1 ==
 // ============================================================================
 console.log('1. Test de la table des rencontres (EncounterConfig)...');
 
-assert.equal(ENCOUNTER_CONFIGS.length, 4, 'La configuration F1 doit comporter exactement 4 rencontres');
+assert.ok(ENCOUNTER_CONFIGS.length >= 4, 'La configuration des rencontres doit comporter au moins 4 rencontres');
 
 const [enc1, enc2, enc3, enc4] = ENCOUNTER_CONFIGS;
 
@@ -148,7 +148,7 @@ Object.assign(game, {
   scene: gameScene,
   level: gameLevel,
   encounterBell: gameBell,
-  encounterConfigs: ENCOUNTER_CONFIGS,
+  encounterConfigs: ENCOUNTER_CONFIGS.slice(0, 4),
   currentTier: 1,
   pendingTierStart: 0,
   spawnQueue: 0,
@@ -258,11 +258,11 @@ game['zombies'] = [];
 game['spawnQueue'] = 0;
 game['checkTierCompletion']();
 
-assert.equal(game['state'], 'won', 'La victoire est obtenue à l\'issue des 4 rencontres');
-assert.match(game['objectiveDisplay'].textContent, /PROTOTYPE PURGÉ/i);
-assert.match(game['objectiveDisplay'].textContent, /4 RENCONTRES/i);
+assert.equal(game['state'], 'terminal', 'Le prototype reste explorable à la fin de sa table de rencontres');
+assert.match(game['objectiveDisplay'].textContent, /7 RENCONTRES PURGÉES/i);
+assert.match(game['objectiveDisplay'].textContent, /FINALE F6 À VENIR/i);
 
-console.log('   -> PASS : Cycle complet 1->2->3->4->Victoire validé sans rupture de contrôle.\n');
+console.log('   -> PASS : Cycle complet 1->2->3->4->Exploration terminale validé.\n');
 
 // ============================================================================
 // ÉPREUVE 4 : SÉCURITÉ ET DISPERSION DES APPARITIONS DU PALIER 4

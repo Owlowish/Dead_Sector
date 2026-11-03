@@ -52,6 +52,15 @@ assert.equal(tabMetrics.count, 2, 'La reprise d\'onglet de 2500ms doit être ign
 assert.equal(tabMetrics.maxMs, 16.6);
 console.log('   -> PASS : Reprise d\'onglet ignorée, aucun faux pic de latence introduit.\n');
 
+tracker.recordFrame(2500, true, false);
+const blockedMetrics = tracker.getCombatMetrics();
+assert.equal(blockedMetrics.count, 3, 'Un vrai blocage au premier plan doit rester mesuré');
+assert.equal(blockedMetrics.maxMs, 2500);
+assert.equal(blockedMetrics.over50Ms, 1);
+tracker.recordFrame(NaN, true, false);
+tracker.recordFrame(-1, true, false);
+assert.equal(tracker.getCombatMetrics().count, 3, 'Les mesures invalides restent exclues');
+
 // 4. Test du chronométrage des spawns, pathfinding et transitions
 console.log('4. Test du chronométrage des événements système...');
 tracker.recordSpawn(12.45);

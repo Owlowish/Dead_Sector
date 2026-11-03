@@ -2,9 +2,13 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { shotgunPump, isShotgunPumpBack, isShotgunKick, shotgunKickAmount, shotgunReload, getShotgunReloadPose } from '../src/ShotgunAnimation.ts';
+import { installWeaponArt, weaponArtCss } from '../src/WeaponPresentation.ts';
 
-const source = readFileSync('index.html', 'utf8');
-const rig = source.slice(source.indexOf('<div id="shotgun-rig"'), source.indexOf('</div>\n      </div>', source.indexOf('<div id="shotgun-rig"')) + 6).replace(' hidden', '');
+const source = readFileSync('index.html', 'utf8').replaceAll('\r\n', '\n');
+const rigStart = source.indexOf('<div id="shotgun-rig"');
+const rigEnd = source.indexOf('</div>\n      </div>', rigStart);
+if (rigStart < 0 || rigEnd < 0) throw new Error('Structure du rig fusil introuvable dans index.html');
+const rig = source.slice(rigStart, rigEnd + 6).replace(' hidden', '');
 const assets = pathToFileURL(resolve('public/assets')).href + '/';
 const css = readFileSync('src/style.css', 'utf8').replaceAll('/assets/', assets);
 const timing = Object.fromEntries(Object.entries(shotgunPump).map(([key,value]) => [key, typeof value === 'string' ? value.replace('/assets/', assets) : value]));
@@ -18,8 +22,11 @@ button{font:inherit;padding:8px}#stage{position:relative;height:calc(100vh - 110
 #stage{--aim:0;--recoil:0px;--kick-angle:0deg}
 #stage::after{content:'+';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:#ddd}
 </style><header><button id="play">Un cycle</button><button id="slow">Un cycle ralenti × 4</button><label><input id="ads" type="checkbox"> ADS</label><label><input id="loading" type="checkbox"> Insertion d’une cartouche</label><span id="phase" aria-live="polite">Repos</span></header>
-<div id="stage">${rig}</div>
+<div id="stage"><div class="weapon-view">${rig}</div></div>
 <script>
+const installWeaponArt=${installWeaponArt.toString()};
+const weaponArtCss=${weaponArtCss.toString()};
+window.__weaponArtReady=installWeaponArt('${assets}');
 const timing=${JSON.stringify(timing)};
 const shotgunPump=timing;
 const isPumpBack=${isShotgunPumpBack.toString()};
@@ -52,7 +59,7 @@ function show(t){
  rig.style.setProperty('--shotgun-pump',back?'0%':'100%');
  rig.style.setProperty('--shotgun-kick-scale',1+power*0.035);
  rig.style.setProperty('--recoil',(power*12)+'px');
- rig.style.setProperty('--shotgun-hip-image','url("'+(kick?timing.hipKickAsset:back?timing.backAsset:timing.restAsset)+'")');
+ rig.style.setProperty('--shotgun-hip-image',weaponArtCss(kick?timing.hipKickAsset:back?timing.backAsset:timing.restAsset));
  phase.textContent=kick?'Choc du tir':back?(t<timing.ejectAt?'Pompe arrière':'Pompe arrière — éjection passée'):'Repos';
 }
 function play(speed){
@@ -65,3 +72,5 @@ buttons[0].onclick=()=>play(1);buttons[1].onclick=()=>play(0.25);
 const pose=new URLSearchParams(location.search).get('pose');show(pose==='back'?0.2:pose==='kick'?0.03:Infinity);
 </script></html>`);
 console.log(resolve('tmp/shotgun-preview/standalone.html'));
+writeFileSync('tmp/shotgun-preview/index.html',
+  readFileSync('tmp/shotgun-preview/standalone.html', 'utf8').replaceAll(assets, '/assets/'));

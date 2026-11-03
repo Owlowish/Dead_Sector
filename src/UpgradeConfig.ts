@@ -2,10 +2,7 @@
  * DEAD SECTOR — Catalogue et gestion des améliorations de tentative (Atelier F2).
  * Offres gratuites proposées dans le monde pendant les accalmies, sans menu bloquant.
  *
- * NOTE DE CONCEPTION / ASSETS :
- * En phase prototype, les améliorations utilisent des descriptions textuelles sur le HUD
- * et des stèles 3D en chêne/pierre. Les sprites pixel art dédiés (icônes d'offrandes, sceaux)
- * sont à réaliser lors de la passe de direction artistique F3.
+ * Les stèles affichent les icônes pixel art du catalogue ; le HUD décrit leurs effets.
  */
 
 export type UpgradeId = 'ammo_capacity' | 'hip_accuracy' | 'vitality' | 'agility';
@@ -15,8 +12,8 @@ export interface UpgradeSpec {
   name: string;
   shortDesc: string;
   fullDesc: string;
-  iconPlaceholder: string; // Repère sémantique pour le futur sprite 2D
-  spriteAssetId: string;   // Fichier cible prévu pour la passe artistique
+  iconPlaceholder: string; // Identifiant sémantique historique
+  spriteAssetId: string;   // Chemin relatif à public, chargé par la stèle
 }
 
 export const UPGRADE_CATALOG: Record<UpgradeId, UpgradeSpec> = {
@@ -57,15 +54,16 @@ export const UPGRADE_CATALOG: Record<UpgradeId, UpgradeSpec> = {
 export const UPGRADE_CONFIGS: UpgradeSpec[] = Object.values(UPGRADE_CATALOG);
 
 /**
- * Tire deux offres d'amélioration distinctes pour le palier courant.
+ * Tire jusqu'à deux améliorations inédites pour le palier courant.
  */
-export function drawTierUpgrades(appliedUpgrades: UpgradeId[] = []): [UpgradeSpec, UpgradeSpec] {
+export function drawTierUpgrades(appliedUpgrades: UpgradeId[] = []): UpgradeSpec[] {
   const allIds: UpgradeId[] = ['ammo_capacity', 'hip_accuracy', 'vitality', 'agility'];
   const applied = appliedUpgrades ?? [];
   const available = allIds.filter((id) => !applied.includes(id));
-  const pool = available.length >= 2 ? available : allIds;
-
-  // Mélange déterministe simple
-  const shuffled = [...pool].sort(() => Math.random() - 0.5);
-  return [UPGRADE_CATALOG[shuffled[0]], UPGRADE_CATALOG[shuffled[1]]];
+  // Mélange de Fisher-Yates : seules les améliorations encore disponibles sont tirées.
+  for (let i = available.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [available[i], available[j]] = [available[j], available[i]];
+  }
+  return available.slice(0, 2).map((id) => UPGRADE_CATALOG[id]);
 }

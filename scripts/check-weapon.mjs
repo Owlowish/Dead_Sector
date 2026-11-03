@@ -238,6 +238,14 @@ target.material.dispose();
 blocker.geometry.dispose();
 blocker.material.dispose();
 
+weapon.setEnvironmentalLighting(0.5, 0);
+assert.ok(weapon.targetBrightness >= 0.18 && weapon.targetBrightness < 0.4, 'Une ambiance sombre ne laisse pas l’arme à sa luminosité source');
+const darkTarget = weapon.targetBrightness;
+weapon.setEnvironmentalLighting(0.9, 0.2);
+assert.ok(weapon.targetBrightness > darkTarget, 'La présentation réagit encore aux zones éclairées');
+weapon.setEnvironmentalLighting(4, 0);
+assert.ok(weapon.targetBrightness <= 0.65, 'Le renfort ambiant ne blanchit pas les sprites');
+
 console.log('TOUS LES TESTS SONT VALIDES :');
 console.log('✓ Chargeur, capacité, réserve, plafond max');
 console.log('✓ Tir accepté / refusé / cooldown');

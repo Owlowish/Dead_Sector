@@ -1,0 +1,36 @@
+{
+  "date": "2026-11-03",
+  "tool": "built-in image_gen",
+  "references": [
+    "public/assets/pickups/medkit.png",
+    "public/assets/sprites/upgrades/upgrade-ammo-pouch.png (pour les trois autres icônes)"
+  ],
+  "alpha": true,
+  "retouches": "Aucune retouche bitmap, copie des sources générées.",
+  "assets": [
+    {
+      "id": "ammo",
+      "path": "public/assets/sprites/upgrades/upgrade-ammo-pouch.png",
+      "source": "exec-b8d36b04-58d6-4ac0-a49b-133b6d8dd40c.png",
+      "prompt": "Use case: stylized-concept. Asset type: ONE transparent pixel-art item icon for DEAD SECTOR, a retro FPS in a Victorian haunted mansion. Input image 1 is a STYLE REFERENCE ONLY: copy its chunky hand-painted pixel clusters, worn leather, restrained brass and readable silhouette, do not draw a medical kit. Primary request: a reinforced compact dark brown leather ammunition pouch, closed flap, broad strap, two aged brass fasteners, subtle stitching. No loose ammunition, no weapons. Composition: single centered object in front three-quarter view, square canvas, object occupies about 70% of canvas width and height, entire silhouette inside canvas, generous transparent margins, bottom baseline around 85% canvas. Palette: walnut leather, muted ochre brass, deep charcoal outlines, small cool slate highlights consistent with black gloves and slate sleeves elsewhere in game. Strong 3-value shading and large readable shapes at 48-96 screen pixels; crisp deliberately stepped pixel clusters, no airbrush or noisy microtexture. Soft upper-left light painted consistently, no cast ground shadow, no pedestal, no border, no background scene, no lettering, no symbols or watermark. Genuine transparent alpha outside object."
+    },
+    {
+      "id": "accuracy",
+      "path": "public/assets/sprites/upgrades/upgrade-tight-choke.png",
+      "source": "exec-0fc7261f-fe21-40f4-9da5-18eb1c5e7e26.png",
+      "prompt": "Use case: stylized-concept. Asset type: ONE transparent pixel-art bonus icon for DEAD SECTOR, retro Victorian haunted mansion FPS. Input image 1 is an existing medical pickup STYLE reference; input image 2 is the accepted pouch icon STYLE AND COMPOSITION reference for this new set. Do not copy their subjects. Same chunky hand-painted clusters, dark stepped outlines, worn materials, walnut/leather brown, muted brass, charcoal with restrained slate highlights. Single object centered on square canvas occupying 70% of canvas, bottom baseline at85%, generous transparent margins. Strong simple three-value shading, readable silhouette at48–96 screen pixels. Soft upper-left lighting. No lettering, no symbols, no border, no ground shadow, no scene, no pedestal, no watermark, no gradients or noisy microtexture. Genuine alpha transparency. Subject: one compact machined dark steel cylindrical precision fitting with a muted brass collar and simple readable screw threads, presented diagonally in front three-quarter view. This is the isolated small upgrade item representing precision, no complete firearm, no hands, no ammunition or other objects."
+    },
+    {
+      "id": "vitality",
+      "path": "public/assets/sprites/upgrades/upgrade-vitality-vial.png",
+      "source": "exec-02c3367e-2f36-4bd7-9a87-a6adc7caed29.png",
+      "prompt": "Use case: stylized-concept. Asset type: ONE transparent pixel-art bonus icon for DEAD SECTOR, retro Victorian haunted mansion FPS. Input image 1 is an existing medical pickup STYLE reference; input image 2 is the accepted pouch icon STYLE AND COMPOSITION reference for this new set. Do not copy their subjects. Same chunky hand-painted clusters, dark stepped outlines, worn materials, walnut/leather brown, muted brass, charcoal with restrained slate highlights. Single object centered on square canvas occupying 70% of canvas, bottom baseline at85%, generous transparent margins. Strong simple three-value shading, readable silhouette at48–96 screen pixels. Soft upper-left lighting. No lettering, no symbols, no border, no ground shadow, no scene, no pedestal, no watermark, no gradients or noisy microtexture. Genuine alpha transparency. Subject: one small squat Victorian apothecary vial filled with muted ruby-red elixir, pale glass highlights, broad cork stopper, aged brass neck band and a small blank ivory label. Clear bottle silhouette, red liquid visible at thumbnail scale, no writing, no cross and no extra objects."
+    },
+    {
+      "id": "agility",
+      "path": "public/assets/sprites/upgrades/upgrade-light-boots.png",
+      "source": "exec-59fdf619-9b85-4c5c-8b36-0e7082f74dc5.png",
+      "prompt": "Use case: stylized-concept. Asset type: ONE transparent pixel-art bonus icon for DEAD SECTOR, retro Victorian haunted mansion FPS. Input image 1 is an existing medical pickup STYLE reference; input image 2 is the accepted pouch icon STYLE AND COMPOSITION reference for this new set. Do not copy their subjects. Same chunky hand-painted clusters, dark stepped outlines, worn materials, walnut/leather brown, muted brass, charcoal with restrained slate highlights. Single object centered on square canvas occupying 70% of canvas, bottom baseline at85%, generous transparent margins. Strong simple three-value shading, readable silhouette at48–96 screen pixels. Soft upper-left lighting. No lettering, no symbols, no border, no ground shadow, no scene, no pedestal, no watermark, no gradients or noisy microtexture. Genuine alpha transparency. Subject: one pair of supple dark brown leather ankle boots, one slightly behind the other, shown in front three-quarter view. Broad folded cuffs, simple laces and restrained brass eyelets. Distinct left and right boots, chunky soles, simplified large highlights. No legs, no person, no extra objects."
+    }
+  ]
+}

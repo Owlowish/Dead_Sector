@@ -12,6 +12,7 @@ export interface BoxCollider {
   height: number;
   depth: number;
   materialType?: 'wall' | 'obstacle' | 'metal';
+  surface?: 'wood' | 'stone' | 'books' | 'workbench';
 }
 
 export interface DoorSpec {
@@ -81,6 +82,11 @@ export interface PickupSpec {
   weaponType?: 'pistol' | 'shotgun';
 }
 
+export interface HorrorPointSpec extends Point2D {
+  roomId: string;
+  requiredOpenDoorId?: string;
+}
+
 // 1. Budget formel et limites documentées du manoir
 export const MANSION_BUDGET = {
   bounds: {
@@ -97,6 +103,15 @@ export const MANSION_BUDGET = {
   maxShadowCastingLights: 2, // 1 clair de lune directionnel + 1 lustre Grand Hall
   maxPointLights: 6,
 } as const;
+
+// Emplacements stables dans des pièces réellement praticables, jamais choisis dans les murs.
+export const MANSION_HORROR_POINTS: HorrorPointSpec[] = [
+  { roomId: 'vestibule', x: 16, z: 11 },
+  { roomId: 'salon', x: -7, z: 14 },
+  { roomId: 'grand_hall', x: 9, z: 1, requiredOpenDoorId: 'door_grand_hall' },
+  { roomId: 'bibliotheque', x: -18, z: -13, requiredOpenDoorId: 'door_library_stair' },
+  { roomId: 'atelier', x: 18, z: -13, requiredOpenDoorId: 'door_workshop_stair' },
+];
 
 // 2. Moteur de hauteur du manoir demi-niveau (0 m et +2,4 m)
 export const MANSION_ELEVATION = {
@@ -215,15 +230,15 @@ export const MANSION_WALLS: BoxCollider[] = [
 
   // --- Ligne de démarcation Z = -7 (Mur de soutènement et garde-corps de surplomb du plateau à +2.4m) ---
   // Ouvertures : Escalier Ouest (x in [-14.0, -10.5], larg 3.5m) et Escalier Est (x in [10.5, 14.0], larg 3.5m)
-  { x: -19.0, y: 1.7, z: -7, width: 10.0, height: 3.4, depth: 1, materialType: 'wall' }, // Flanc Ouest
-  { x: 0.0, y: 1.7, z: -7, width: 21.0, height: 3.4, depth: 1, materialType: 'wall' },   // Balustrade centrale de surplomb
-  { x: 19.0, y: 1.7, z: -7, width: 10.0, height: 3.4, depth: 1, materialType: 'wall' },  // Flanc Est
+  { x: -19.0, y: 1.7, z: -7, width: 10.0, height: 3.4, depth: 1, materialType: 'wall', surface: 'wood' }, // Flanc Ouest
+  { x: 0.0, y: 1.7, z: -7, width: 21.0, height: 3.4, depth: 1, materialType: 'wall', surface: 'wood' },   // Balustrade centrale de surplomb
+  { x: 19.0, y: 1.7, z: -7, width: 10.0, height: 3.4, depth: 1, materialType: 'wall', surface: 'wood' },  // Flanc Est
 
   // --- Garde-corps latéraux des escaliers (empèchent de tomber sur les côtés entre Z = -1 et Z = -7) ---
-  { x: -14.25, y: 1.7, z: -4.0, width: 0.5, height: 3.4, depth: 6.0, materialType: 'wall' }, // Escalier Ouest extérieur
-  { x: -10.25, y: 1.7, z: -4.0, width: 0.5, height: 3.4, depth: 6.0, materialType: 'wall' }, // Escalier Ouest intérieur
-  { x: 10.25, y: 1.7, z: -4.0, width: 0.5, height: 3.4, depth: 6.0, materialType: 'wall' },  // Escalier Est intérieur
-  { x: 14.25, y: 1.7, z: -4.0, width: 0.5, height: 3.4, depth: 6.0, materialType: 'wall' },  // Escalier Est extérieur
+  { x: -14.25, y: 1.7, z: -4.0, width: 0.5, height: 3.4, depth: 6.0, materialType: 'wall', surface: 'wood' }, // Escalier Ouest extérieur
+  { x: -10.25, y: 1.7, z: -4.0, width: 0.5, height: 3.4, depth: 6.0, materialType: 'wall', surface: 'wood' }, // Escalier Ouest intérieur
+  { x: 10.25, y: 1.7, z: -4.0, width: 0.5, height: 3.4, depth: 6.0, materialType: 'wall', surface: 'wood' },  // Escalier Est intérieur
+  { x: 14.25, y: 1.7, z: -4.0, width: 0.5, height: 3.4, depth: 6.0, materialType: 'wall', surface: 'wood' },  // Escalier Est extérieur
 
   // --- Colonne vertébrale centrale X = -3 (séparation Est/Ouest) ---
   // Secteur 1 : Arches Vestibule <-> Salon à z = 9.5m (z in [7.75, 11.25]) et z = 16.5m (z in [14.75, 18.25])
@@ -244,18 +259,18 @@ export const MANSION_WALLS: BoxCollider[] = [
   { x: -14, y: 1.5, z: 13, width: 2.4, height: 3.0, depth: 4.0, materialType: 'obstacle' },
 
   // 1C. Galerie Ouest : Piédestal de sculpture adossé au mur ouest
-  { x: -18, y: 1.2, z: 0.0, width: 2.4, height: 2.4, depth: 2.4, materialType: 'obstacle' },
+  { x: -18, y: 1.2, z: 0.0, width: 2.4, height: 2.4, depth: 2.4, materialType: 'obstacle', surface: 'stone' },
 
   // 2. Grand Hall Nord : Deux colonnes monumentales bordant l'allée centrale (dégagement complet devant l'escalier Est)
-  { x: 5.0, y: 2.0, z: -2.5, width: 1.4, height: 4.0, depth: 1.4, materialType: 'obstacle' },
-  { x: 5.0, y: 2.0, z: 2.5, width: 1.4, height: 4.0, depth: 1.4, materialType: 'obstacle' },
+  { x: 5.0, y: 2.0, z: -2.5, width: 1.4, height: 4.0, depth: 1.4, materialType: 'obstacle', surface: 'stone' },
+  { x: 5.0, y: 2.0, z: 2.5, width: 1.4, height: 4.0, depth: 1.4, materialType: 'obstacle', surface: 'stone' },
 
   // 3A. Grande Bibliothèque (+2.4m) : Deux rangées de rayonnages hauts
-  { x: -13, y: 4.2, z: -12.0, width: 7.0, height: 3.6, depth: 1.2, materialType: 'obstacle' },
-  { x: -13, y: 4.2, z: -16.0, width: 7.0, height: 3.6, depth: 1.2, materialType: 'obstacle' },
+  { x: -13, y: 4.2, z: -12.0, width: 7.0, height: 3.6, depth: 1.2, materialType: 'obstacle', surface: 'books' },
+  { x: -13, y: 4.2, z: -16.0, width: 7.0, height: 3.6, depth: 1.2, materialType: 'obstacle', surface: 'books' },
 
   // 3B. Atelier d'Art (+2.4m) : Établi et générateur industriel
-  { x: 12, y: 3.6, z: -14.0, width: 3.2, height: 2.4, depth: 3.2, materialType: 'obstacle' },
+  { x: 12, y: 3.6, z: -14.0, width: 3.2, height: 2.4, depth: 3.2, materialType: 'obstacle', surface: 'workbench' },
 ];
 
 // 5. Portes de progression et accès du manoir demi-niveau
@@ -443,6 +458,12 @@ export const MANSION_SPAWNS: SpawnPoolConfig[] = [
 ];
 
 // 8. Ressources de survie (Trousses de soin et caisses de munitions)
+// Offrandes du premier palier : accessibles depuis le Grand Salon après l'ouverture P1.
+export const MANSION_UPGRADE_PEDESTALS: Point2D[] = [
+  { x: -7, z: 8.5 },
+  { x: -7, z: 17 },
+];
+
 export const MANSION_PICKUPS: PickupSpec[] = [
   // Soins (+30 PV)
   { type: 'medkit', x: 18, z: 16, value: 30 },   // Vestibule Sud (Y = 0)

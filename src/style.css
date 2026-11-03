@@ -80,6 +80,9 @@ canvas {
   letter-spacing: 1px;
 }
 .message { top: 20%; left: 50%; transform: translateX(-50%); text-align: center; padding: 16px 22px; width: max-content; max-width: 85vw; box-sizing: border-box; background: var(--panel); border-block: 1px solid var(--brass); }
+.horror-volume { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 12px; color: var(--ivory); font: 12px 'Courier New', monospace; pointer-events: auto; }
+.horror-volume input { width: 110px; accent-color: var(--brass); cursor: pointer; }
+.horror-volume output { min-width: 36px; text-align: right; }
 .game-over { color: var(--blood); font-size: clamp(24px, 4vw, 36px); }
 .victory { color: var(--sage); }
 .respite { color: var(--gold, #dfba73); border-block-color: var(--gold, #dfba73); font-size: clamp(20px, 3.2vw, 30px); }
@@ -203,7 +206,7 @@ canvas {
   inset: 0;
   pointer-events: none;
   /* Intégration lumineuse réactive : luminosité et teinte ambrée / froide */
-  filter: brightness(var(--weapon-brightness, 1)) sepia(var(--weapon-warmth, 0));
+  filter: brightness(var(--weapon-brightness, 0.35)) sepia(var(--weapon-warmth, 0));
 }
 
 .weapon-hip {
@@ -246,7 +249,7 @@ canvas {
   image-rendering: pixelated;
 }
 .weapon-hip .weapon-body, .weapon-hip .weapon-slide {
-  background-image: url('/assets/weapons/pistol_actions_v3.png');
+  background-image: var(--weapon-art-pistol_actions_v3, url('/assets/weapons/pistol_actions_v3.png'));
   background-size: 300% 300%;
   background-position: 0 0;
 }
@@ -266,7 +269,7 @@ canvas {
   clip-path: polygon(37% 29%, 38.5% 28.5%, 55% 38.5%, 55% 40.5%, 53% 41%, 37% 31%);
 }
 .reload-hand, .reload-magazine {
-  background-image: url('/assets/weapons/pistol_actions_v3.png');
+  background-image: var(--weapon-art-pistol_actions_v3, url('/assets/weapons/pistol_actions_v3.png'));
   background-size: 300% 300%;
   background-position: 0 50%;
   /* Une seule main et son chargeur : aucune arme des anciennes poses latérales. */
@@ -282,7 +285,7 @@ canvas {
   z-index: 3;
 }
 .weapon-ads .weapon-body, .weapon-ads .weapon-slide {
-  background: url('/assets/weapons/modern_ads.png') 0 0 / 100% 100% no-repeat;
+  background: var(--weapon-art-modern_ads, url('/assets/weapons/modern_ads.png')) 0 0 / 100% 100% no-repeat;
 }
 .weapon-ads .weapon-slide {
   clip-path: polygon(49% 42.5%, 51% 42.5%, 52% 44.5%, 54% 44.5%, 57.5% 50%, 58% 61.5%, 55% 64%, 44% 64%, 42% 60%, 42% 51%, 46% 44.5%, 48.5% 44.5%);
@@ -362,18 +365,18 @@ canvas {
 }
 
 .shotgun-hip .shotgun-sprite {
-  background-image: var(--shotgun-hip-image, url('/assets/weapons/shotgun/hip-rest-v2.png'));
+  background-image: var(--shotgun-hip-image, var(--weapon-art-hip-rest-v2, url('/assets/weapons/shotgun/hip-rest-v2.png')));
   background-size: 100% 100%;
   background-position: 0 0;
 }
 
 .shotgun-ads .shotgun-sprite {
-  background-image: url('/assets/weapons/shotgun/ads_pump_v2.png');
+  background-image: var(--weapon-art-ads_pump_v2, url('/assets/weapons/shotgun/ads_pump_v2.png'));
   background-position: var(--shotgun-pump, 100%) 0;
 }
 
 #shotgun-rig.is-kicking .shotgun-ads .shotgun-sprite {
-  background-image: url('/assets/weapons/shotgun/ads-kick-v2.png');
+  background-image: var(--weapon-art-ads-kick-v2, url('/assets/weapons/shotgun/ads-kick-v2.png'));
   background-size: 100% 100%;
   background-position: 0 0;
 }
@@ -394,7 +397,7 @@ canvas {
 #shotgun-rig.is-reloading .shotgun-load-rig { display: block; }
 .shotgun-load-body, .shotgun-load-hand { position: absolute; inset: 0; background-repeat: no-repeat; image-rendering: pixelated; }
 .shotgun-load-body {
-  background: url('/assets/weapons/shotgun/reload_draft.png') 0 0 / 100% 100% no-repeat;
+  background: var(--weapon-art-reload_draft, url('/assets/weapons/shotgun/reload_draft.png')) 0 0 / 100% 100% no-repeat;
   /* Conserver seulement l'arme et le bras droit, sans la cartouche dessinée à l'envers. */
   clip-path: polygon(0 0, 100% 0, 100% 100%, 58% 100%, 58% 78%, 52% 72%, 52% 49%, 0 49%);
 }
@@ -403,7 +406,7 @@ canvas {
   background: #14171b; border-bottom: 2px solid #56585c; transform: rotate(34deg);
 }
 .shotgun-load-hand {
-  background-image: url('/assets/weapons/pistol_actions_v3.png');
+  background-image: var(--weapon-art-pistol_actions_v3, url('/assets/weapons/pistol_actions_v3.png'));
   /* Cellule 7 : main réellement vide, sans fragment de chargeur à masquer. */
   background-size: 300% 300%; background-position: 50% 100%;
   clip-path: polygon(0 78%, 13% 70%, 18% 58%, 26% 47%, 30% 46%, 32% 49%, 31% 52%, 36% 53%, 38% 56%, 35% 60%, 40% 62%, 41% 67%, 36% 72%, 35% 75%, 28% 81%, 26% 100%, 0 100%);
@@ -414,7 +417,7 @@ canvas {
 .shotgun-load-shell {
   position: absolute; left: var(--load-shell-x, 44%); top: var(--load-shell-y, 63%);
   width: 14%; height: 9%;
-  background: url('/assets/weapons/shotgun/live_shell.png') 50% 50% / 170% 165% no-repeat;
+  background: var(--weapon-art-live_shell, url('/assets/weapons/shotgun/live_shell.png')) 50% 50% / 170% 165% no-repeat;
   transform: rotate(20deg) scaleY(-1); opacity: var(--load-shell-opacity, 0);
   clip-path: inset(0 0 0 var(--load-shell-hide, 0%)); image-rendering: pixelated;
   z-index: 3;
@@ -427,7 +430,7 @@ canvas {
   width: 19%;
   height: 19%;
   transform: translate(-50%, -50%) rotate(-35deg);
-  background: url('/assets/weapons/shotgun/flash.png') 0 0 / 200% 100% no-repeat;
+  background: var(--weapon-art-flash, url('/assets/weapons/shotgun/flash.png')) 0 0 / 200% 100% no-repeat;
   clip-path: none;
   opacity: 0;
 }
@@ -439,7 +442,7 @@ canvas {
   width: 26%;
   height: 26%;
   transform: translate(-50%, -50%);
-  background: url('/assets/weapons/shotgun/flash.png') 0 0 / 200% 100% no-repeat;
+  background: var(--weapon-art-flash, url('/assets/weapons/shotgun/flash.png')) 0 0 / 200% 100% no-repeat;
   clip-path: none;
   opacity: 0;
 }

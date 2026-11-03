@@ -20,6 +20,8 @@ export class Player {
   private flashlight: THREE.SpotLight;
   private flashlightTarget: THREE.Object3D;
   private flashlightOn = true;
+  private readonly flashlightIntensity = 22;
+  private readonly flashlightClick = new Audio('/assets/sounds/empty-soft.wav');
 
   private keys = new Set<string>();
   private yaw = 0;
@@ -65,13 +67,15 @@ export class Player {
     this.camera.add(this.audioListener);
 
     // Initialisation du faisceau de la lampe torche (SpotLight attaché à la caméra)
-    this.flashlight = new THREE.SpotLight(0xfffaec, 22, 28, Math.PI / 5.2, 0.5, 1.8);
+    this.flashlight = new THREE.SpotLight(0xfffaec, this.flashlightIntensity, 28, Math.PI / 5.2, 0.5, 1.8);
     this.flashlight.position.set(0.2, -0.15, -0.1);
     this.flashlightTarget = new THREE.Object3D();
     this.flashlightTarget.position.set(0.2, -0.15, -5);
     this.camera.add(this.flashlightTarget);
     this.flashlight.target = this.flashlightTarget;
     this.camera.add(this.flashlight);
+    this.flashlightClick.volume = 0.35;
+    this.flashlightClick.preload = 'auto';
 
     this.setupControls();
   }
@@ -126,11 +130,11 @@ export class Player {
 
   public toggleFlashlight(): boolean {
     this.flashlightOn = !this.flashlightOn;
-    this.flashlight.visible = this.flashlightOn;
+    // Garder le nombre de lumières stable évite de recompiler les shaders au premier arrêt.
+    this.flashlight.intensity = this.flashlightOn ? this.flashlightIntensity : 0;
     this.onFlashlightToggle?.(this.flashlightOn);
-    const clickSound = new Audio('/assets/sounds/empty-soft.wav');
-    clickSound.volume = 0.35;
-    void clickSound.play().catch(() => {});
+    this.flashlightClick.currentTime = 0;
+    void this.flashlightClick.play().catch(() => {});
     return this.flashlightOn;
   }
 

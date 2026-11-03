@@ -67,8 +67,8 @@ export class PerfTracker {
   }
 
   public recordFrame(rawDeltaMs: number, isCombat: boolean, isTabSwitch: boolean): void {
-    // Si la page était inactive ou l'écart est gigantesque (> 1000 ms), ne pas biaiser les percentiles
-    if (isTabSwitch || rawDeltaMs > 1000) {
+    // Une image très longue peut être un vrai blocage ; seule l'inactivité détectée l'exclut.
+    if (isTabSwitch || !Number.isFinite(rawDeltaMs) || rawDeltaMs < 0) {
       return;
     }
 

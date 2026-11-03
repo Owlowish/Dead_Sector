@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { visualColors } from './VisualStyle.ts';
+import { mansionMaterial, mansionBoxGeometry } from './MansionMaterials.ts';
 
 export type DoorState = 'LOCKED' | 'CLOSED' | 'OPENING' | 'OPEN' | 'CLOSING';
 export type DoorType = 'interior' | 'sector_access' | 'permanent_limit';
@@ -31,6 +32,7 @@ export class Door {
   private readonly leafHeight = 3.5;
   private readonly leafThickness = 0.12;
   private readonly name: string;
+  private readonly id: string;
   private readonly type: DoorType;
   private readonly unlockAfterTier: number;
   private readonly axis: 'X' | 'Z';
@@ -61,6 +63,7 @@ export class Door {
       this.z = configOrX.z;
       this.passageWidth = configOrX.passageWidth ?? 4.0;
       this.name = configOrX.name;
+      this.id = configOrX.id ?? configOrX.name;
       this.type = configOrX.type;
       this.unlockAfterTier = configOrX.unlockAfterTier ?? 1;
       this.axis = configOrX.axis ?? 'X';
@@ -70,26 +73,16 @@ export class Door {
       this.z = z;
       this.passageWidth = passageWidth;
       this.name = name;
+      this.id = name;
       this.type = type;
       this.unlockAfterTier = unlockAfterTier;
       this.axis = 'X';
     }
     this.leafWidth = (this.passageWidth - 0.12) / 2;
 
-    const textureLoader = new THREE.TextureLoader();
-    const woodTexture = textureLoader.load('/assets/textures/wood_floor_v2.png');
-    woodTexture.wrapS = THREE.RepeatWrapping;
-    woodTexture.wrapT = THREE.RepeatWrapping;
-    woodTexture.repeat.set(1, 2);
-    woodTexture.magFilter = THREE.NearestFilter;
-    woodTexture.minFilter = THREE.NearestMipmapNearestFilter;
-    woodTexture.colorSpace = THREE.SRGBColorSpace;
-
-    const woodMaterial = new THREE.MeshStandardMaterial({
-      map: woodTexture,
-      roughness: 0.8,
-      metalness: 0.05,
-    });
+    const woodMaterial = mansionMaterial('wood');
+    const panelMaterial = mansionMaterial('door');
+    const leafMaterials = [woodMaterial, panelMaterial];
 
     const ironMaterial = new THREE.MeshStandardMaterial({
       color: visualColors.iron,
@@ -138,8 +131,8 @@ export class Door {
     this.leftPivot = new THREE.Group();
     this.leftPivot.position.set(-this.passageWidth / 2 + 0.03, 0, 0);
 
-    const leafGeo = new THREE.BoxGeometry(this.leafWidth, this.leafHeight, this.leafThickness);
-    this.leftMesh = new THREE.Mesh(leafGeo, woodMaterial);
+    const leafGeo = mansionBoxGeometry(this.leafWidth, this.leafHeight, this.leafThickness, 2, 'door');
+    this.leftMesh = new THREE.Mesh(leafGeo, leafMaterials);
     // Décalage local : le bord gauche du battant coïncide avec l'axe de rotation du pivot
     this.leftMesh.position.set(this.leafWidth / 2, this.leafHeight / 2, 0);
     this.leftMesh.castShadow = true;
@@ -170,7 +163,7 @@ export class Door {
     this.rightPivot = new THREE.Group();
     this.rightPivot.position.set(this.passageWidth / 2 - 0.03, 0, 0);
 
-    this.rightMesh = new THREE.Mesh(leafGeo, woodMaterial);
+    this.rightMesh = new THREE.Mesh(leafGeo, leafMaterials);
     // Décalage local : le bord droit du battant coïncide avec l'axe de rotation du pivot
     this.rightMesh.position.set(-this.leafWidth / 2, this.leafHeight / 2, 0);
     this.rightMesh.castShadow = true;
@@ -221,6 +214,10 @@ export class Door {
 
   public getName(): string {
     return this.name;
+  }
+
+  public getId(): string {
+    return this.id;
   }
 
   public getType(): DoorType {

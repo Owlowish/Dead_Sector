@@ -15,6 +15,7 @@ registerHooks({ resolve(specifier, context, next) {
 } });
 const { Game } = await import('../src/Game.ts');
 const { Weapon } = await import('../src/Weapon.ts');
+const { ENCOUNTER_CONFIGS } = await import('../src/EncounterConfig.ts');
 const textures = [];
 const disposedTextures = [];
 THREE.TextureLoader.prototype.load = function (url) {
@@ -33,7 +34,7 @@ function makeSession(scene, zombies) {
   Object.assign(game, {
     scene, zombies, level, state: 'playing', renderer: { domElement: canvas },
     player: { camera: { position: new THREE.Vector3(0, 1.7, 4) } },
-    medkits: [], ammoBoxes: [], tierCandidateSpawns: [], spawnQueue: 0,
+    medkits: [], ammoBoxes: [], encounterConfigs: ENCOUNTER_CONFIGS, spawnQueue: 0,
     weapon: { setTargets: targets => targetUpdates.push(targets) },
   });
   return { game, canvas, targetUpdates };
@@ -144,7 +145,7 @@ assert.deepEqual(audioCalls, { stop: 1, disconnect: 1, gain: 1 }, 'Voix détach�
 assert.equal(voice.parent, null);
 
 // Exécuter le vrai startTier, sans constructeur WebGL ; seuls ses collaborateurs sont fournis.
-session.game.startTier(2);
+session.game.startTier(1);
 assert.equal(scene.children.length, 0, 'Démarrage du palier : plus aucun acteur ni cadavre ancien');
 assert.deepEqual(session.game.zombies, []);
 assert.deepEqual(session.targetUpdates.at(-1), [], 'Anciennes cibles détachées de Weapon');
@@ -159,7 +160,7 @@ for (let tier = 0; tier < 3; tier++) {
   f.game.state = 'won';
   f.game.updateZombieRemains(0.15);
   assert.notEqual(remains(actors[0]).geometry, firstFrameGeometry);
-  f.game.startTier(2);
+  f.game.startTier(1);
   assert.equal(scene.children.length, 0);
 }
 

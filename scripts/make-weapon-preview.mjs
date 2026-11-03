@@ -3,6 +3,7 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { reloadPoses } from '../src/WeaponAnimation.ts';
+import { installWeaponArt } from '../src/WeaponPresentation.ts';
 const html = readFileSync('index.html', 'utf8');
 const markup = html.slice(html.indexOf('<div class="hud"'), html.indexOf('<div id="objective"'));
 const cases = [
@@ -23,13 +24,16 @@ body{overflow:auto;background:#32363c;color:#d4c6a5;font:14px monospace;margin:1
 .card .weapon-hip{width:100%;bottom:0;left:20%;transform:none}
 .card .weapon-ads{width:150%;top:34%}
 .card .crosshair{top:34%}
-.animation{width:min(600px,95vw);margin-bottom:20px}
+.animation{width:min(600px,95vw);margin-bottom:20px;--aim:0;--slide:0}
+.animation .weapon-hip{width:70%;left:30%}
 button{padding:10px;cursor:pointer;font:inherit}
 </style><h1>Vérification des couches de l'arme</h1>
 <button id="play">Jouer un seul rechargement (1,6 s)</button>
 <section class="card animation" id="animation"><header id="phase">Repos</header>${markup}</section>
 <div class="grid">${cases.map(c => `<section class="card" style="--aim:${c.aim};--slide:${c.slide};--hand-x:${c.x ?? 0}%;--hand-y:${c.y ?? 0}%;--hand-opacity:${c.opacity ?? 0};--magazine-opacity:${c.magazine ?? 0}"><header>${c.label}</header>${markup.replace('class="hud"', `class="hud" style="--aim:${c.aim}"`)}</section>`).join('')}</div>
 <script>
+const installWeaponArt = ${installWeaponArt.toString()};
+window.__weaponArtReady = installWeaponArt();
 const poses = ${JSON.stringify(reloadPoses)};
 const rig = document.querySelector('#animation #weapon-hip-sprite');
 const button = document.querySelector('#play');

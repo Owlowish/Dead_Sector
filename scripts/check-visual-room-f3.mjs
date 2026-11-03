@@ -59,7 +59,7 @@ import { Level } from '../src/Level.ts';
 import { MANSION_BUDGET } from '../src/MansionConfig.ts';
 import { UPGRADE_CONFIGS } from '../src/UpgradeConfig.ts';
 import { visualColors } from '../src/VisualStyle.ts';
-const { Game } = await import('../src/Game.ts');
+import { HorrorDirector } from '../src/HorrorDirector.ts';
 
 console.log('=== SUITE DE TESTS COMPORTEMENTAUX : SALLE TÉMOIN VISUELLE & SONORE F3 ===\n');
 
@@ -98,13 +98,13 @@ scene.traverse((obj) => {
   if (obj instanceof THREE.Mesh) {
     const mat = obj.material;
     if (mat && 'color' in mat) {
-      if (mat.color.getHex() === visualColors.stone) {
+      if (mat.map?.name === 'mansion-stone') {
         if (obj.geometry.parameters?.height < 0.5) {
           hasStoneMantle = true;
         } else if (obj.geometry.parameters?.height > 2.0) {
           hasStonePillars = true;
         }
-      } else if (mat.color.getHex() === visualColors.hearthDark) {
+      } else if (mat.map?.name === 'mansion-brick') {
         hasHearthBack = true;
       }
       if ('emissive' in mat && mat.emissive.getHex() === visualColors.ember) {
@@ -127,7 +127,7 @@ scene.traverse((obj) => {
   if (obj instanceof THREE.Mesh) {
     const mat = obj.material;
     if (mat && 'color' in mat) {
-      if (mat.color.getHex() === visualColors.carpet) {
+      if (mat.map?.name === 'mansion-carpet') {
         hasCarpet = true;
       } else if (mat.color.getHex() === visualColors.carpetGold) {
         hasCarpetGoldBorder = true;
@@ -178,10 +178,10 @@ scene.traverse((obj) => {
 assert.equal(
   fireplaceLightsWithShadow.length,
   0,
-  'La cheminée ne doit pas projeter d\'ombres dynamiques pour préserver le framerate à 60 FPS'
+  'La cheminée ne doit pas ajouter de lumière à ombre au budget existant'
 );
 
-console.log('   -> PASS : Plafond strict de 2 ombres respecté sans surcharge GPU.\n');
+console.log('   -> PASS : Budget nominal de 2 lumières à ombre respecté (pas de mesure GPU).\n');
 
 // ============================================================================
 // ÉPREUVE 3 : AMBIANCE SONORE ESPACÉE & HORREUR PSYCHOLOGIQUE
@@ -205,39 +205,29 @@ const waveTag = headerBuffer.toString('ascii', 8, 12);
 assert.equal(riffTag, 'RIFF', 'Le fichier doit avoir un en-tête RIFF valide');
 assert.equal(waveTag, 'WAVE', 'Le format audio doit être du WAV');
 
-// Vérification de l'intégration dans Game
-const game = Object.create(Game.prototype);
-game.scene = new THREE.Scene();
-game.creakTimer = 18.0;
-game.creakAudio = {
+// Vérifier le nouveau directeur, qui remplace l'ancien timer local de Game.
+const source = {
   isPlaying: false,
-  played: false,
-  play() { this.isPlaying = true; this.played = true; },
-  stop() { this.isPlaying = false; }
+  playCount: 0,
+  position: new THREE.Vector3(),
+  setVolume() {},
+  play() { this.isPlaying = true; this.playCount++; },
+  stop() { this.isPlaying = false; },
+  disconnect() {},
 };
-game.isSimulationActive = () => true;
-game.renderer = { domElement: {} };
-globalThis.document.pointerLockElement = game.renderer.domElement;
+const director = new HorrorDirector(() => 0);
+director.setSource(source);
+const backPoint = [{ x: 0, y: 1.3, z: 10 }];
+for (let i = 0; i < 359; i++) director.update(0.05, true, new THREE.Vector3(0, 1.7, 0), new THREE.Vector3(0, 0, -1), backPoint);
+assert.equal(source.playCount, 0, 'Aucun craquement avant 18 secondes de temps éligible');
+director.update(0.05, true, new THREE.Vector3(0, 1.7, 0), new THREE.Vector3(0, 0, -1), backPoint);
+assert.equal(source.playCount, 1, 'Le craquement démarre après le délai hors regard');
+director.update(0.05, true, new THREE.Vector3(0, 1.7, 0), new THREE.Vector3(0, 0, -1), backPoint);
+assert.equal(source.playCount, 1, 'Une seule lecture est autorisée par accalmie');
+director.suspend();
+director.dispose();
 
-// Simuler 10 secondes de jeu : le craquement ne doit PAS encore jouer (silence préservé)
-let simulatedDelta = 10.0;
-game.creakTimer -= simulatedDelta;
-assert.ok(!game.creakAudio.played, 'Le craquement ne doit pas jouer avant l\'expiration du délai initial (18s)');
-
-// Simuler les 9 secondes restantes (total 19s > 18s)
-simulatedDelta = 9.0;
-game.creakTimer -= simulatedDelta;
-if (game.creakTimer <= 0) {
-  if (game.creakAudio && !game.creakAudio.isPlaying) {
-    game.creakAudio.play();
-  }
-  game.creakTimer = 18.0 + Math.random() * 17.0;
-}
-
-assert.ok(game.creakAudio.played, 'Le craquement feutré doit s\'activer à l\'expiration du timer');
-assert.ok(game.creakTimer >= 18.0 && game.creakTimer <= 35.0, `Le prochain intervalle doit être compris entre 18s et 35s (reçu: ${game.creakTimer.toFixed(1)}s)`);
-
-console.log('   -> PASS : Audio WAV feutré valide et cycle d\'espacement (18-35s) vérifié.\n');
+console.log('   -> PASS : Audio WAV valide et ordonnanceur F5 unique, temporisé et sans répétition vérifiés.\n');
 
 // ============================================================================
 // ÉPREUVE 4 : DOCUMENTATION DES SPRITES MANQUANTS POUR LA PASSE GRAPHIQUE

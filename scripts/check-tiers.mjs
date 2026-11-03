@@ -451,6 +451,14 @@ assert.ok(spotLight, 'Un SpotLight doit être attaché directement à la caméra
 assert.equal(spotLight.decay, 1.8, 'Le SpotLight doit avoir une atténuation physique decay');
 assert.ok(spotLight.angle < Math.PI / 4, 'Le faisceau doit avoir un angle conique focalisé (< 45°)');
 assert.equal(spotLight.visible, true);
+const litIntensity = spotLight.intensity;
+assert.ok(litIntensity > 0, 'La lampe doit contribuer à l’éclairage au démarrage');
+const activeLights = () => {
+  let count = 0;
+  player.camera.traverseVisible((object) => { if (object.isLight) count++; });
+  return count;
+};
+const lightCount = activeLights();
 
 let lastToggleState = null;
 player.setOnFlashlightToggle((enabled) => {
@@ -460,12 +468,14 @@ player.setOnFlashlightToggle((enabled) => {
 const newState = player.toggleFlashlight();
 assert.equal(newState, false, 'La lampe doit être éteinte après un premier toggle');
 assert.equal(player.isFlashlightOn(), false);
-assert.equal(spotLight.visible, false);
+assert.equal(spotLight.intensity, 0, 'Éteindre doit supprimer la contribution lumineuse');
+assert.equal(activeLights(), lightCount, 'Éteindre doit conserver la structure des lumières pour les shaders');
 assert.equal(lastToggleState, false, 'Le callback de toggle doit être déclenché pour notifier le HUD');
 
 player.toggleFlashlight();
 assert.equal(player.isFlashlightOn(), true);
 assert.equal(spotLight.visible, true);
+assert.equal(spotLight.intensity, litIntensity, 'Rallumer restaure exactement l’intensité initiale');
 assert.equal(lastToggleState, true);
 
 console.log('   -> PASS : Lampe torche SpotLight attachée, commutable et réactive.\n');

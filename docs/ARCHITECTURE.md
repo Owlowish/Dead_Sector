@@ -26,11 +26,15 @@ Ces couches ne sont pas encore séparées en modules stricts. Zombie et Weapon a
 | --- | --- | --- |
 | `src/main.ts` | Charge le CSS, construit Game, démarre | Game |
 | `src/Game.ts` | Possède scène/rendu, instances, état de partie, orchestration et HUD | Tous les systèmes |
+| `src/HorrorDirector.ts` | Temporise l'événement rare, filtre regard/distance, pilote le volume et la source audio unique | Contexte de phase et caméra via Game ; points admissibles via Level ; `PositionalAudio` attachée à la scène |
+| `src/UpgradePedestal.ts` | Offre choisissable, icône éclairée orientée vers le joueur, veilleuse et consommation unique | `UpgradeSpec` attribué par Game ; `PickupSprite` partage les textures ; Game applique le bonus après le choix |
 | `src/Player.ts` | Caméra, entrées, déplacement, collision, santé | Level, fonction canPlay fournie par Game |
-| `src/Level.ts` | Géométrie fixe, éclairage, boîtes de collision et meshes solides | Player et Zombie pour collisions ; Weapon pour tirs |
+| `src/Level.ts` | Géométrie fixe, habillage, éclairage et lanternes, boîtes de collision et meshes solides | Player et Zombie pour collisions ; Weapon pour tirs ; MansionConfig et MansionMaterials pour les surfaces |
+| `src/MansionMaterials.ts` | Catalogue des huit textures de décor, matériaux partagés et UV des boîtes | Level et Door ; les données artistiques `MansionConfig.surface` restent distinctes des dimensions physiques |
 | `src/Zombie.ts` | Une instance ennemie : santé, poursuite, attaque, sprite et animation | Level, position joueur et callback d'attaque |
 | `src/ZombieRemains.ts` | Représentation de mort : chute et corps au sol, ressources GPU communes et libération | Zombie, données ZombieAnimation ; mises à jour coordonnées par Game |
 | `src/Weapon.ts` | Entrée de tir, cadence, rayon, sélection de cible, effets et sons | Caméra, meshes, callback onHit et canPlay |
+| `src/WeaponPresentation.ts` | Prépare les images à résolution réduite, coupe les faibles alpha, gère les Blob URL de rendu et atténue l'éclairage des armes | Initialisé par main et les aperçus ; références CSS choisies par Weapon ; anciennes URL libérées après resize ; sources et chronologies inchangées |
 | `src/Medkit.ts` | Ressource de soin : billboard pixel art éclairé, flottement, détection de contact et consommation | PickupSprite, Player (pour soigner), Game |
 | `src/Door.ts` | Porte interactive : coulissement vertical, états d'ouverture, gestion de collision et interaction | Level (obstacles et tirs), Player/Game (touche E) |
 | `src/AmmoBox.ts` | Munitions : billboard pixel art éclairé, flottement, détection de ramassage et ravitaillement | PickupSprite, Weapon (réserve), Game |
@@ -38,6 +42,8 @@ Ces couches ne sont pas encore séparées en modules stricts. Zombie et Weapon a
 | `src/WeaponSpread.ts` | Direction aléatoire dans un cône, angle selon ADS et projection du viseur | Weapon |
 | `index.html`, `src/style.css` | Interface superposée à l'image 3D | Game et Weapon modifient certains éléments |
 | `public/assets` | Ressources accessibles par URL | TextureLoader et Audio |
+
+Pour F5, `Game.updateHorrorAudio` transmet au directeur le delta, la phase réelle, la position et le regard du joueur. `Level.getAccessibleHorrorPoints` fournit des positions fixes dont les portes d'accès sont réellement ouvertes et dont l'altitude vient de la géométrie du manoir. `HorrorDirector` choisit ensuite une position hors du cône de regard et place l'unique `PositionalAudio` à cet endroit ; il ne modifie ni les ennemis, ni les collisions, ni les portes.
 
 Pas de notion de projectile mobile : le tir est instantané, dit hitscan. L'altitude n'est plus strictement plane : un moteur d'altitude $O(1)$ continu (`Level.getFloorHeightAt` issu de `MansionConfig.ts`) calcule la hauteur du sol (rez-de-chaussée à 0 m, demi-niveau à +2,4 m et rampes continues) et ancre le joueur (avec amorti de caméra), les zombies, les objets et les cadavres, avec une logique de perception et d'attaque 3D euclidienne.
 

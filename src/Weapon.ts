@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { reloadPoses } from './WeaponAnimation.ts';
+import { weaponArtCss, weaponAmbientBrightness } from './WeaponPresentation.ts';
 import { shotgunPump, isShotgunPumpBack, isShotgunKick, shotgunKickAmount, shotgunReload, getShotgunReloadPose } from './ShotgunAnimation.ts';
 import {
   sampleShotDirection,
@@ -126,9 +127,9 @@ export class Weapon {
   private onCasingEject: ((aimAmount: number, casingType: CasingType) => void) | null = null;
   private onImpact: ((impact: ShotImpact) => void) | null = null;
   private readonly muzzleLight = new THREE.PointLight(0xffa733, 0, 15, 1.8);
-  private currentBrightness = 1.0;
+  private currentBrightness = 0.35;
   private currentWarmth = 0.0;
-  private targetBrightness = 1.0;
+  private targetBrightness = 0.35;
   private targetWarmth = 0.0;
   private canvas: HTMLCanvasElement;
 
@@ -538,7 +539,7 @@ export class Weapon {
   }
 
   public setEnvironmentalLighting(brightness: number, warmth: number): void {
-    this.targetBrightness = brightness;
+    this.targetBrightness = weaponAmbientBrightness(brightness);
     this.targetWarmth = warmth;
   }
 
@@ -704,7 +705,7 @@ export class Weapon {
     this.weaponView?.style.setProperty('--shotgun-pump', isPumping ? '0%' : '100%');
     const kickPose = this.activeWeaponId === 'shotgun' && !this.isReloading && isShotgunKick(this.shotAnimationTime);
     const hipAsset = kickPose ? shotgunPump.hipKickAsset : isPumping ? shotgunPump.backAsset : shotgunPump.restAsset;
-    this.shotgunRig?.style.setProperty('--shotgun-hip-image', `url("${hipAsset}")`);
+    this.shotgunRig?.style.setProperty('--shotgun-hip-image', weaponArtCss(hipAsset));
     this.shotgunRig?.classList.toggle('is-kicking', kickPose);
 
     this.hud?.style.setProperty('--aim', `${this.aimAmount}`);

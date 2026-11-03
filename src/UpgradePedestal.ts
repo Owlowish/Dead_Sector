@@ -1,22 +1,20 @@
 /**
  * DEAD SECTOR — Présentoir 3D in-world d'amélioration (Atelier F2).
  *
- * NOTE IMPORTANTE POUR LA DIRECTION ARTISTIQUE / PROTOTYPE :
- * Ce composant est un PROTOTYPE TECHNIQUE d'interaction sans menu.
- * Il manque actuellement un SPRITE / ICÔNE 2D pixel art dédié pour chaque offre
- * (par exemple : parchemin scellé, cartouchière illustrée, flacon d'élixir).
- * Actuellement représenté par un pupitre victorien en chêne avec stèle en pierre
- * et veilleuse douce. À habiller avec de vrais sprites lors de l'atelier visuel F3.
+ * Le bonus est représenté par une icône éclairée, orientée vers le joueur.
+ * Le pupitre et sa veilleuse restent indépendants du choix et de son effet.
  */
 
 import * as THREE from 'three';
 import type { UpgradeSpec } from './UpgradeConfig.ts';
+import { createPickupSprite } from './PickupSprite.ts';
 
 export class UpgradePedestal {
   private readonly group: THREE.Group;
   private readonly plaqueMesh: THREE.Mesh;
   private readonly beaconLight: THREE.PointLight;
   private readonly position: THREE.Vector3;
+  private offerSprite: THREE.Mesh | null = null;
 
   private currentOffer: UpgradeSpec | null = null;
   private active = false;
@@ -63,6 +61,15 @@ export class UpgradePedestal {
   }
 
   public setOffer(offer: UpgradeSpec): void {
+    this.clearOfferSprite();
+    this.offerSprite = createPickupSprite(`/${offer.spriteAssetId}`, 0.6);
+    // Repère de choix lisible même sans lampe ; aucune lumière supplémentaire.
+    const iconMaterial = this.offerSprite.material as THREE.MeshStandardMaterial;
+    iconMaterial.emissive.set(0xffffff);
+    iconMaterial.emissiveMap = iconMaterial.map;
+    iconMaterial.emissiveIntensity = 0.4;
+    this.offerSprite.position.set(0, 1.4, 0);
+    this.group.add(this.offerSprite);
     this.currentOffer = offer;
     this.active = true;
     this.chosen = false;
@@ -70,6 +77,7 @@ export class UpgradePedestal {
   }
 
   public close(): void {
+    this.clearOfferSprite();
     this.active = false;
     this.currentOffer = null;
     this.beaconLight.intensity = 0;
@@ -108,6 +116,7 @@ export class UpgradePedestal {
     const chosenOffer = this.currentOffer;
     this.chosen = true;
     this.active = false;
+    if (this.offerSprite) this.offerSprite.visible = false;
     this.beaconLight.intensity = 0;
 
     // Son de validation d'offrande
@@ -118,10 +127,17 @@ export class UpgradePedestal {
     return chosenOffer;
   }
 
-  public update(delta: number): void {
+  public update(delta: number, viewerPosition?: THREE.Vector3): void {
     if (!this.active || this.chosen) {
       if (this.beaconLight.intensity > 0) this.beaconLight.intensity = 0;
       return;
+    }
+
+    if (this.offerSprite && viewerPosition) {
+      this.offerSprite.rotation.y = Math.atan2(
+        viewerPosition.x - this.position.x,
+        viewerPosition.z - this.position.z,
+      );
     }
 
     this.pulseTimer += delta * 2.5;
@@ -138,6 +154,18 @@ export class UpgradePedestal {
   }
 
   public dispose(scene: THREE.Scene): void {
+    this.clearOfferSprite();
     scene.remove(this.group);
+  }
+
+  private clearOfferSprite(): void {
+    if (!this.offerSprite) return;
+    this.group.remove(this.offerSprite);
+    this.offerSprite.geometry.dispose();
+    const materials = Array.isArray(this.offerSprite.material)
+      ? this.offerSprite.material : [this.offerSprite.material];
+    for (const material of materials) material.dispose();
+    // La texture partagée appartient au cache de PickupSprite, pas à cette stèle.
+    this.offerSprite = null;
   }
 }
