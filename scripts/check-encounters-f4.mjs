@@ -77,7 +77,9 @@ for (let i = 0; i < ENCOUNTER_CONFIGS.length; i++) {
   assert.equal(enc.tierNumber, i + 1, `La rencontre à l'index ${i} doit avoir tierNumber = ${i + 1}`);
   assert.ok(enc.totalZombies >= 4, `La rencontre ${i + 1} doit proposer au moins 4 menaces`);
   assert.ok(enc.maxAgile <= enc.totalZombies, `Le quota d'agiles ne peut dépasser le total d'ennemis`);
-  assert.ok(enc.maxSimultaneousAgile <= 2, `Plafond d'agiles simultanés borné à 2 pour la lisibilité`);
+  assert.ok(enc.maxSimultaneousAgile <= 3, `Plafond d'agiles simultanés borné à 3 pour la lisibilité`);
+  assert.ok(enc.maxSpitter + enc.maxAgile < enc.totalZombies, `Au moins un zombie standard au palier ${enc.tierNumber}`);
+  assert.ok(enc.maxSimultaneousSpitter <= 2, `Pas plus de deux cracheurs simultanés`);
 }
 
 // Vérifications spécifiques des intentions tactiques
@@ -105,11 +107,9 @@ for (const e of [e4, e5, e6, e7]) {
 }
 
 // Quotas progressifs
-assert.equal(e4.totalZombies, 4);
-assert.equal(e5.totalZombies, 6);
-assert.equal(e6.totalZombies, 7);
-assert.equal(e7.totalZombies, 8);
-assert.equal(e7.maxAgile, 4, 'Le palier 7 déploie 4 coureurs agiles au total');
+assert.deepEqual([e4, e5, e6, e7].map((e) => e.totalZombies), [8, 10, 12, 14]);
+assert.deepEqual([e4, e5, e6, e7].map((e) => e.maxSpitter), [1, 2, 3, 3]);
+assert.deepEqual([e4, e5, e6, e7].map((e) => e.maxAgile), [4, 5, 6, 7]);
 
 console.log('   -> PASS : Structure des 7 rencontres et intentions tactiques conformes.\n');
 
@@ -268,10 +268,10 @@ console.log('   -> PASS : Cycle complet 1->2->3->4->5->6->7 validé avec carillo
 // L'appel public direct utilisé par l'instrumentation doit synchroniser son palier.
 game.startTier(7);
 assert.equal(game['currentTier'], 7, 'startTier(7) met à jour le palier courant');
-assert.equal(game['spawnQueue'], 8, 'startTier(7) lit la configuration du palier 7');
+assert.equal(game['spawnQueue'], e7.totalZombies, 'startTier(7) lit la configuration du palier 7');
 game.startTier(0);
 assert.equal(game['currentTier'], 7, 'Un numéro direct invalide ne change pas le palier');
-assert.equal(game['spawnQueue'], 8, 'Un numéro direct invalide ne détruit pas la file');
+assert.equal(game['spawnQueue'], e7.totalZombies, 'Un numéro direct invalide ne détruit pas la file');
 
 // ============================================================================
 // ÉPREUVE 4 : IMPRÉVISIBILITÉ & DISPERSION MULTIDIRECTIONNELLE DES APPARITIONS
@@ -285,7 +285,8 @@ assert.ok(salon);
 for (const pedestal of MANSION_UPGRADE_PEDESTALS) {
   assert.ok(pedestal.x >= salon.bounds.minX && pedestal.x <= salon.bounds.maxX, 'Présentoir dans le Grand Salon X');
   assert.ok(pedestal.z >= salon.bounds.minZ && pedestal.z <= salon.bounds.maxZ, 'Présentoir dans le Grand Salon Z');
-  assert.equal(placementLevel.isColliding(pedestal.x, pedestal.z, 0.45), false, 'Présentoir hors collision');
+  assert.equal(placementLevel.isColliding(pedestal.x, pedestal.z, 0.45), true, 'Le socle bloque les déplacements qui le traversent');
+  assert.equal(placementLevel.isColliding(pedestal.x, pedestal.z - 0.85, 0.4), false, 'Un joueur peut se placer devant le présentoir');
   const route = placementLevel.findNextWaypoint(
     new THREE.Vector3(PLAYER_START_POSITION.x, PLAYER_START_POSITION.y, PLAYER_START_POSITION.z),
     new THREE.Vector3(pedestal.x, 1.1, pedestal.z),

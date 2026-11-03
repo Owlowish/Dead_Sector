@@ -62,6 +62,25 @@ export interface Point3D {
   z: number;
 }
 
+export interface StormWindowSpec {
+  x: number;
+  y: number;
+  z: number;
+  rotationY: number;
+  width: number;
+  height: number;
+}
+
+// Panneaux rapportés aux murs extérieurs : ils n'ouvrent pas l'enveloppe physique.
+export const MANSION_STORM_WINDOWS: StormWindowSpec[] = [
+  { x: 8.5, y: 2.3, z: 19.46, rotationY: 0, width: 2.0, height: 3.0 }, // Vestibule, entre les portraits
+  { x: -8.5, y: 2.3, z: 19.46, rotationY: 0, width: 2.0, height: 3.0 }, // Salon, derrière les offrandes
+  { x: -23.46, y: 2.55, z: -3.4, rotationY: -Math.PI / 2, width: 2.0, height: 3.5 }, // Galerie, au nord du portrait
+  { x: -23.46, y: 2.55, z: 3.4, rotationY: -Math.PI / 2, width: 2.0, height: 3.5 }, // Galerie, au sud du portrait
+  { x: -23.46, y: 4.7, z: -10.5, rotationY: -Math.PI / 2, width: 2.0, height: 3.0 }, // Bibliothèque, au sud du portrait
+  { x: -23.46, y: 4.7, z: -17.5, rotationY: -Math.PI / 2, width: 2.0, height: 3.0 }, // Bibliothèque, au nord du portrait
+];
+
 export interface SpawnPoolConfig {
   tierNumber: number;
   totalZombies: number;
@@ -345,7 +364,7 @@ export const MANSION_WAYPOINTS: Point3D[] = [
   { x: 16, y: 1.0, z: 10 },
 
   // --- Secteur 1 : Grand Salon (Y = 1.0) ---
-  { x: -8, y: 1.0, z: 16.5 }, // Abords arcade sud
+  { x: -5.5, y: 1.0, z: 16.5 }, // Abords arcade sud, à l'est des piédestaux
   { x: -14, y: 1.0, z: 17 },  // Sud cheminée
   { x: -20, y: 1.0, z: 13 },  // Ouest cheminée
   { x: -8, y: 1.0, z: 13 },   // Est cheminée
@@ -380,14 +399,14 @@ export const MANSION_WAYPOINTS: Point3D[] = [
   { x: 0, y: 1.0, z: -1.0 },
 
   // --- Escalier Ouest (Galerie -> Bibliothèque) ---
-  { x: -12.25, y: 1.6, z: -2.5 }, // Entrée escalier (au-delà de la porte)
-  { x: -12.25, y: 2.2, z: -4.5 }, // Mi-pente (Y = 1.4)
-  { x: -12.25, y: 3.4, z: -6.5 }, // Sommet de l'escalier (Y = 2.2)
+  { x: -12.25, y: 1.6, z: -2.5 }, // Entrée escalier (sol +1 m)
+  { x: -12.25, y: 2.4, z: -4.5 }, // Mi-pente (sol +1 m)
+  { x: -12.25, y: 3.2, z: -6.5 }, // Sommet de l'escalier (sol +1 m)
 
   // --- Escalier Est (Grand Hall -> Atelier) ---
-  { x: 12.25, y: 1.6, z: -2.5 },  // Entrée escalier (au-delà de la porte)
-  { x: 12.25, y: 2.2, z: -4.5 },  // Mi-pente (Y = 1.4)
-  { x: 12.25, y: 3.4, z: -6.5 },  // Sommet de l'escalier (Y = 2.2)
+  { x: 12.25, y: 1.6, z: -2.5 },  // Entrée escalier (sol +1 m)
+  { x: 12.25, y: 2.4, z: -4.5 },  // Mi-pente (sol +1 m)
+  { x: 12.25, y: 3.2, z: -6.5 },  // Sommet de l'escalier (sol +1 m)
 
   // --- Secteur 3 : Grande Bibliothèque (+2.4m, Y = 3.4) ---
   { x: -12.25, y: 3.4, z: -9.5 }, // Débouché escalier ouest
@@ -458,10 +477,10 @@ export const MANSION_SPAWNS: SpawnPoolConfig[] = [
 ];
 
 // 8. Ressources de survie (Trousses de soin et caisses de munitions)
-// Offrandes du premier palier : accessibles depuis le Grand Salon après l'ouverture P1.
+// Deux choix côte à côte sur le tapis du Salon, visibles depuis l'arche sud après P1.
 export const MANSION_UPGRADE_PEDESTALS: Point2D[] = [
-  { x: -7, z: 8.5 },
-  { x: -7, z: 17 },
+  { x: -7.5, z: 16.5 },
+  { x: -11.5, z: 16.5 },
 ];
 
 export const MANSION_PICKUPS: PickupSpec[] = [
@@ -470,13 +489,13 @@ export const MANSION_PICKUPS: PickupSpec[] = [
   { type: 'medkit', x: 18, z: -3, value: 30 },   // Grand Hall Nord (Y = 0)
   { type: 'medkit', x: -19, z: -15, value: 30 }, // Grande Bibliothèque (Y = 2.4)
 
-  // Munitions 9mm (+8 balles de réserve)
-  { type: 'ammo', x: 0, z: 11, value: 8, weaponType: 'pistol' },       // Vestibule Sud
-  { type: 'ammo', x: -19, z: 9, value: 8, weaponType: 'pistol' },      // Grand Salon
-  { type: 'ammo', x: -18, z: 1, value: 8, weaponType: 'pistol' },      // Galerie Ouest
-  { type: 'ammo', x: 16, z: 2, value: 8, weaponType: 'pistol' },       // Grand Hall Nord
+  // Munitions 9mm (+12 balles de réserve, calibre calibré pour vagues P4-P7)
+  { type: 'ammo', x: 0, z: 11, value: 12, weaponType: 'pistol' },       // Vestibule Sud
+  { type: 'ammo', x: -19, z: 9, value: 12, weaponType: 'pistol' },      // Grand Salon
+  { type: 'ammo', x: -16, z: 3, value: 12, weaponType: 'pistol' },       // Galerie Ouest, dégagée du piédestal
+  { type: 'ammo', x: 16, z: 2, value: 12, weaponType: 'pistol' },       // Grand Hall Nord
 
   // Cartouches calibre 12 (+6 cartouches de fusil à pompe)
   { type: 'ammo', x: -14, z: -14, value: 6, weaponType: 'shotgun' },   // Bibliothèque (Palier 3)
-  { type: 'ammo', x: 14, z: -14, value: 6, weaponType: 'shotgun' },    // Atelier (Palier 3)
+  { type: 'ammo', x: 16, z: -14, value: 6, weaponType: 'shotgun' },     // Atelier, dégagée de l'établi
 ];

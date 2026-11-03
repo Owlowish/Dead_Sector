@@ -3,6 +3,7 @@ import type { Level } from './Level';
 import { visualColors } from './VisualStyle.ts';
 import { zombieAnimation, attackFrame, createAtlasFrameGeometry } from './ZombieAnimation.ts';
 import { ZombieRemains, type ZombieKind } from './ZombieRemains.ts';
+import { SpitterZombie } from './SpitterZombie.ts';
 import {
   agileZombieConfig,
   agileAnimationsData,
@@ -140,6 +141,7 @@ export function disposeAllZombieResources(): void {
   disposeStandardSharedResources();
   disposeAgileSharedResources();
   ZombieRemains.disposeSharedResources();
+  SpitterZombie.disposeSharedResources();
 }
 
 export class Zombie {
@@ -148,7 +150,7 @@ export class Zombie {
   private level: Level;
   private remains: ZombieRemains;
   private disposed = false;
-  private readonly kind: ZombieKind;
+  private readonly kind: Exclude<ZombieKind, 'spitter'>;
 
   // Ressources zombie standard (partagées en cache)
   private standardResources: StandardSharedResources | null = null;
@@ -189,6 +191,12 @@ export class Zombie {
   // Système de santé.
   private health: number;
   private alive = true;
+  private revivalPending = false;
+  private reviving = false;
+  private hasRevived = false;
+  private justRevived = false;
+  private revivalDelay = 0;
+  private readonly random: () => number;
   private readonly hitFlashDuration = 0.2;
   private hitFlashRemaining = 0;
   private groanAudio: THREE.PositionalAudio | null = null;
@@ -199,10 +207,12 @@ export class Zombie {
     level: Level,
     x: number,
     z: number,
-    kind: ZombieKind = 'standard'
+    kind: Exclude<ZombieKind, 'spitter'> = 'standard',
+    random: () => number = Math.random
   ) {
     this.level = level;
     this.kind = kind;
+    this.random = random;
     const initialFloorY = typeof this.level.getFloorHeightAt === 'function' ? this.level.getFloorHeightAt(x, z) : 0;
 
     if (kind === 'agile') {
@@ -255,7 +265,7 @@ export class Zombie {
     this.remains = new ZombieRemains(scene, this.kind);
   }
 
-  public getKind(): ZombieKind {
+  public getKind(): Exclude<ZombieKind, 'spitter'> {
     return this.kind;
   }
 
@@ -294,6 +304,7 @@ export class Zombie {
     if (this.disposed) return;
     this.disposed = true;
     this.alive = false;
+    this.revivalPending = false;
     this.mesh.visible = false;
     this.stopAudio();
     if (this.groanAudio) {
@@ -321,6 +332,10 @@ export class Zombie {
 
   public isAlive(): boolean {
     return this.alive;
+  }
+
+  public isThreat(): boolean {
+    return this.alive || this.revivalPending;
   }
 
   public getState(): ZombieState {
@@ -364,6 +379,9 @@ export class Zombie {
   }
 
   private die(): void {
+    const revivalChance = this.kind === 'agile' ? 0.12 : 0.2;
+    this.revivalPending = (this.kind === 'standard' || this.kind === 'agile') && !this.hasRevived && this.random() < revivalChance;
+    this.revivalDelay = this.revivalPending ? (this.kind === 'agile' ? 2.0 : 2.5) : 0;
     this.alive = false;
     this.mesh.visible = false;
     this.attackWindupRemaining = 0;
@@ -377,7 +395,48 @@ export class Zombie {
   }
 
   public updateDeath(delta: number, viewerPosition: THREE.Vector3): void {
-    if (!this.alive && !this.disposed) this.remains.update(delta, viewerPosition);
+    if (this.alive || this.disposed) return;
+    this.remains.update(delta, viewerPosition);
+    if (!this.revivalPending) return;
+    if (!this.reviving) {
+      const prevDelay = this.revivalDelay;
+      this.revivalDelay = Math.max(0, this.revivalDelay - delta);
+      if (prevDelay > 0.4 && this.revivalDelay <= 0.4) {
+        if (this.groanAudio && !this.groanAudio.isPlaying) {
+          this.groanAudio.play();
+        }
+      }
+      if (this.revivalDelay === 0) {
+        this.reviving = true;
+        this.remains.beginRevival();
+      }
+    } else if (this.remains.consumeRevivalFinished()) {
+      this.reviving = false;
+      this.revivalPending = false;
+      this.hasRevived = true;
+      this.alive = true;
+      this.justRevived = true;
+      this.health = 40;
+      this.mesh.visible = true;
+      this.mesh.castShadow = true;
+      this.mesh.receiveShadow = true;
+      this.material.color.setHex(0xffffff);
+      if (this.kind === 'agile') {
+        this.showAgileFrame('idle', 0);
+      } else {
+        this.showStandardFrame('idle');
+      }
+      this.state = 'SEARCH';
+      this.lastSeenPosition = viewerPosition.clone();
+      this.searchWaypoint = null;
+      this.attackCooldown = 0.8;
+    }
+  }
+
+  public consumeJustRevived(): boolean {
+    const val = this.justRevived;
+    this.justRevived = false;
+    return val;
   }
 
   public update(

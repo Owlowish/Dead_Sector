@@ -71,6 +71,10 @@ export class AmmoBox {
     return false;
   }
 
+  public isConsumed(): boolean {
+    return this.consumed;
+  }
+
   public respawn(): void {
     if (!this.consumed) return;
     this.consumed = false;

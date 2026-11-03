@@ -59,6 +59,7 @@ globalThis.Audio = class {
 import { UPGRADE_CATALOG, drawTierUpgrades } from '../src/UpgradeConfig.ts';
 import { UpgradePedestal } from '../src/UpgradePedestal.ts';
 import { Level } from '../src/Level.ts';
+import { MANSION_UPGRADE_PEDESTALS } from '../src/MansionConfig.ts';
 import { ENCOUNTER_CONFIGS } from '../src/EncounterConfig.ts';
 import { EncounterBell } from '../src/EncounterBell.ts';
 const { Game } = await import('../src/Game.ts');
@@ -196,6 +197,24 @@ console.log('4. Test de choix unique (exclusion mutuelle) et péremption au dép
 
 const gameScene = new THREE.Scene();
 const gameLevel = new Level(gameScene);
+const pedestalApproaches = MANSION_UPGRADE_PEDESTALS.map((point) => {
+  const approach = new THREE.Vector3(point.x, 1.7, point.z - 0.85);
+  const pedestal = new UpgradePedestal(gameScene, point.x, point.z, gameLevel.getFloorHeightAt(point.x, point.z));
+  pedestal.setOffer(UPGRADE_CATALOG.vitality);
+  const lookDirection = new THREE.Vector3(point.x - approach.x, 1.1 - approach.y, point.z - approach.z).normalize();
+  assert.equal(gameLevel.isCollidingFixed(approach.x, approach.z, 0.3), false, 'Approche joueur accessible hors collider');
+  assert.equal(pedestal.canInteract(approach, lookDirection), true, 'Chaque piédestal reste interactif depuis 0,85 m');
+  return approach;
+});
+assert.equal(gameLevel.isCollidingFixed(MANSION_UPGRADE_PEDESTALS[0].x, MANSION_UPGRADE_PEDESTALS[0].z, 0.4), true, 'Le socle bloque un joueur/ennemi au centre');
+const pedestalCenters = MANSION_UPGRADE_PEDESTALS.map((point) => new THREE.Vector3(point.x, 1, point.z));
+assert.equal(gameLevel.isPathClear(pedestalCenters[0], pedestalCenters[1], 0.4), false, 'Une trajectoire qui traverse les socles est bloquée');
+const salonApproach = new THREE.Vector3(-5.5, 1, 16.5);
+const salonTarget = new THREE.Vector3(-14, 1, 17);
+assert.equal(gameLevel.isPathClear(salonApproach, salonTarget, 0.4), false, 'L’arête droite du graphe qui coupe le socle est bloquée');
+const detour = gameLevel.findNextWaypoint(salonApproach, salonTarget, 0.4);
+assert.ok(detour, 'La navigation trouve un détour praticable autour des socles');
+assert.equal(gameLevel.isPathClear(salonApproach, detour, 0.4), true, 'La première étape du détour évite les colliders');
 const gameBell = new EncounterBell(gameScene, 0, 2.5, gameLevel.getFloorHeightAt(0, 2.5));
 const pedLeft = new UpgradePedestal(gameScene, -2.5, 2.5, 0, 'left');
 const pedRight = new UpgradePedestal(gameScene, 2.5, 2.5, 0, 'right');

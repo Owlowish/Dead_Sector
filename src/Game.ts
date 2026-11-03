@@ -23,6 +23,10 @@ import { EncounterBell } from './EncounterBell.ts';
 import { UpgradePedestal } from './UpgradePedestal.ts';
 import { drawTierUpgrades, type UpgradeId, type UpgradeSpec } from './UpgradeConfig.ts';
 import { HorrorDirector } from './HorrorDirector.ts';
+import { StormController } from './StormController.ts';
+import { SpitterZombie } from './SpitterZombie.ts';
+import { SpitProjectile } from './SpitProjectile.ts';
+import { TierDiagnosticsTracker, type TierDiagnosticRecord } from './TierDiagnostics.ts';
 
 type GameState = 'playing' | 'respite' | 'exploration' | 'terminal' | 'won' | 'lost';
 
@@ -32,7 +36,8 @@ export class Game {
 
   private level: Level;
   private player: Player;
-  private zombies: Zombie[] = [];
+  private zombies: Array<Zombie | SpitterZombie> = [];
+  private spitProjectiles: SpitProjectile[] = [];
   private medkits: Medkit[] = [];
   private ammoBoxes: AmmoBox[] = [];
   private shotgunPickup: ShotgunPickup;
@@ -48,6 +53,9 @@ export class Game {
   private spawnQueue = 0;
   private spawnCooldownTimer = 0;
   private tierAgileSpawned = 0;
+  private tierSpitterSpawned = 0;
+  private tierStandardSpawned = 0;
+  private tierDiagnostics = new TierDiagnosticsTracker();
   private lastSpawnQuadrant = -1;
   private readonly maxSimultaneousZombies = MANSION_BUDGET.maxSimultaneousZombies;
 
@@ -71,6 +79,7 @@ export class Game {
   private readonly retroScale = 3;
   private ambianceAudio: THREE.Audio | null = null;
   private readonly horrorDirector = new HorrorDirector();
+  private stormController: StormController;
   private disposed = false;
   private zombieGroanBuffer: AudioBuffer | null = null;
 
@@ -117,6 +126,11 @@ export class Game {
 
     // Intégrer la caméra du joueur à la scène pour que ses enfants (lumières 3D, audio) soient rendus.
     this.scene.add(this.player.camera);
+    this.stormController = new StormController(
+      this.level.getStormLights(),
+      Math.random,
+      () => this.player.audioListener.context.state === 'running',
+    );
 
     this.updateHealthDisplay();
     this.player.setOnFlashlightToggle((enabled) => {
@@ -194,9 +208,25 @@ export class Game {
     });
 
     if (typeof window !== 'undefined') {
-      (window as unknown as { __DEAD_SECTOR_PERF?: () => unknown; __DEAD_SECTOR_PERF_DETAILED?: () => unknown; __DEAD_SECTOR_START_TIER?: (tier: number) => void }).__DEAD_SECTOR_PERF = () => this.getPerformanceReport();
+      (window as unknown as {
+        __DEAD_SECTOR_PERF?: () => unknown;
+        __DEAD_SECTOR_PERF_DETAILED?: () => unknown;
+        __DEAD_SECTOR_START_TIER?: (tier: number) => void;
+        __DEAD_SECTOR_DIAGNOSTICS?: () => unknown;
+        __DEAD_SECTOR_DAMAGE_TARGET?: (amount?: number) => boolean;
+      }).__DEAD_SECTOR_PERF = () => this.getPerformanceReport();
       (window as unknown as { __DEAD_SECTOR_PERF_DETAILED?: () => unknown }).__DEAD_SECTOR_PERF_DETAILED = () => this.getDetailedPerformanceReport();
       (window as unknown as { __DEAD_SECTOR_START_TIER?: (tier: number) => void }).__DEAD_SECTOR_START_TIER = (tier: number) => this.startTier(tier);
+      (window as unknown as { __DEAD_SECTOR_DIAGNOSTICS?: () => unknown }).__DEAD_SECTOR_DIAGNOSTICS = () => this.getTierDiagnostics();
+      (window as unknown as { __DEAD_SECTOR_DAMAGE_TARGET?: (amount?: number) => boolean }).__DEAD_SECTOR_DAMAGE_TARGET = (amount = 100) => {
+        const target = this.zombies.find((z) => z.isAlive());
+        if (!target) return false;
+        target.takeDamage(amount);
+        this.tierDiagnostics?.recordDamageDealt();
+        this.checkTierCompletion();
+        this.updateObjectiveDisplay();
+        return true;
+      };
     }
 
     if (typeof document !== 'undefined') {
@@ -252,6 +282,33 @@ export class Game {
       this.horrorDirector.setSource(creak);
     }, undefined, (error) => console.warn('Chargement craquement sonore impossible :', error));
 
+    audioLoader.load('/assets/sounds/rain-soft.wav', (buffer) => {
+      if (this.disposed) return;
+      const rain = new THREE.PositionalAudio(this.player.audioListener);
+      rain.setBuffer(buffer);
+      rain.setLoop(true);
+      rain.setVolume(0.12);
+      rain.setRefDistance(4);
+      rain.setMaxDistance(24);
+      rain.setRolloffFactor(0.8);
+      rain.position.copy(this.level.getStormWindowPositions()[0]!);
+      this.scene.add(rain);
+      this.stormController.setRain(rain);
+    }, undefined, (error) => console.warn('Chargement de la pluie impossible :', error));
+
+    audioLoader.load('/assets/sounds/thunder-soft.wav', (buffer) => {
+      if (this.disposed) return;
+      const thunder = new THREE.PositionalAudio(this.player.audioListener);
+      thunder.setBuffer(buffer);
+      thunder.setLoop(false);
+      thunder.setVolume(0.32);
+      thunder.setRefDistance(6);
+      thunder.setMaxDistance(36);
+      thunder.setRolloffFactor(0.65);
+      this.scene.add(thunder);
+      this.stormController.setThunder(thunder);
+    }, undefined, (error) => console.warn('Chargement du tonnerre impossible :', error));
+
     // 2. Grognements spatiaux des zombies en 3D
     audioLoader.load('/assets/sounds/zombie-groan-soft.wav', (buffer) => {
       this.zombieGroanBuffer = buffer;
@@ -299,7 +356,10 @@ export class Game {
         const zombie = this.zombies.find(
           (candidate) => candidate.getMesh() === target
         );
-        zombie?.takeDamage(damage);
+        if (zombie) {
+          zombie.takeDamage(damage);
+          this.tierDiagnostics?.recordDamageDealt();
+        }
         this.checkTierCompletion();
         this.updateObjectiveDisplay();
       },
@@ -311,6 +371,7 @@ export class Game {
 
     // Préchauffage des ressources graphiques partagées (Warmup standard, agile et cadavres)
     Zombie.warmup();
+    SpitterZombie.warmup();
 
     // Initialisation du premier palier
     this.startTier(1);
@@ -321,6 +382,7 @@ export class Game {
 
     // Détonation, recul de caméra (View Punch) différencié et alerte sonore immédiate à t = 0
     this.weapon.setOnShoot((aimAmount, weaponId) => {
+      this.tierDiagnostics?.recordShot();
       const isShotgun = weaponId === 'shotgun';
       const pitchRecoil = isShotgun
         ? (aimAmount > 0.5 ? 0.05 : 0.09)
@@ -399,6 +461,12 @@ export class Game {
 
       this.updateDamageEffect(delta);
 
+      const stormActive = this.isSimulationActive()
+        && document.pointerLockElement === this.renderer.domElement
+        && !document.hidden
+        && (document.hasFocus?.() ?? true);
+      this.stormController.update(delta, stormActive, this.player.camera.position, this.level.getStormWindowPositions());
+
       // Mise à jour des systèmes en jeu, en phase de répit ou en exploration d'accès.
       if (this.isSimulationActive() && document.pointerLockElement === this.renderer.domElement) {
         this.player.update(delta);
@@ -416,24 +484,50 @@ export class Game {
 
         // Simulation des zombies pendant le combat actif
         if (this.state === 'playing') {
+          this.spitProjectiles = this.spitProjectiles.filter((projectile) => projectile.update(delta, this.scene, this.level, this.player.camera.position, (damage) => {
+            const previousHealth = this.player.getHealth();
+            this.player.takeDamage(damage);
+            this.tierDiagnostics?.recordDamageTaken(damage);
+            if (this.player.getHealth() < previousHealth) {
+              this.damageEffectRemaining = this.damageEffectDuration;
+              if (this.damageOverlay) this.damageOverlay.style.opacity = '1';
+            }
+            this.updateHealthDisplay();
+            if (!this.player.isAlive()) this.endGame('lost');
+          }));
           // Gestion échelonnée de la file d'apparition
           this.spawnCooldownTimer -= delta;
-          const livingCount = this.zombies.filter((z) => z.isAlive()).length;
+          const livingCount = this.zombies.filter((z) => z instanceof Zombie ? z.isThreat() : z.isAlive()).length;
+          this.tierDiagnostics?.updateActiveThreats(livingCount);
           if (this.spawnQueue > 0 && livingCount < this.maxSimultaneousZombies && this.spawnCooldownTimer <= 0) {
             if (this.trySpawnZombie()) {
               this.spawnQueue--;
-              this.spawnCooldownTimer = 1.2;
+              const config = this.encounterConfigs[this.currentTier - 1];
+              const spawnedSoFar = config ? (config.totalZombies - this.spawnQueue) : 0;
+              const openingTarget = config?.openingSpawns ?? 1;
+              if (spawnedSoFar < openingTarget) {
+                this.spawnCooldownTimer = 0.4;
+              } else {
+                this.spawnCooldownTimer = 0.8;
+              }
               this.updateObjectiveDisplay();
             } else {
-              this.spawnCooldownTimer = 0.5;
+              this.spawnCooldownTimer = 0.3;
             }
           }
 
           for (const zombie of this.zombies) {
             if (!this.player.isAlive()) break;
-            zombie.update(delta, this.player.camera.position, this.zombies, (damage) => {
+            if (zombie instanceof SpitterZombie) {
+              zombie.update(delta, this.player.camera.position, this.zombies, (origin, target) => {
+                this.spitProjectiles.push(new SpitProjectile(this.scene, origin, target));
+              });
+              continue;
+            }
+            zombie.update(delta, this.player.camera.position, this.zombies.filter((z): z is Zombie => z instanceof Zombie), (damage) => {
               const previousHealth = this.player.getHealth();
               this.player.takeDamage(damage);
+              this.tierDiagnostics?.recordDamageTaken(damage);
               if (this.player.getHealth() < previousHealth) {
                 this.damageEffectRemaining = this.damageEffectDuration;
                 if (this.damageOverlay) this.damageOverlay.style.opacity = '1';
@@ -522,6 +616,7 @@ export class Game {
       for (const medkit of this.medkits) {
         medkit.update(delta, this.player.camera.position);
         if (this.isSimulationActive() && medkit.tryPickup(this.player)) {
+          this.tierDiagnostics?.recordMedkit();
           this.updateHealthDisplay();
         }
       }
@@ -530,6 +625,7 @@ export class Game {
       for (const box of this.ammoBoxes) {
         box.update(delta, this.player.camera.position);
         if (this.isSimulationActive() && box.tryPickup(this.player.camera.position, this.weapon)) {
+          this.tierDiagnostics?.recordAmmoBox();
           this.updateAmmoDisplay();
         }
       }
@@ -603,6 +699,10 @@ export class Game {
     return this.getPerformanceReport() as unknown as DetailedPerfReport;
   }
 
+  public getTierDiagnostics(): TierDiagnosticRecord[] {
+    return this.tierDiagnostics?.getRecords() ?? [];
+  }
+
   private logPerformanceMetrics(delta: number): void {
     this.perfTimer += delta;
     if (this.perfTimer >= 3.0) {
@@ -623,7 +723,12 @@ export class Game {
       || ((this.state === 'playing' || this.state === 'exploration' || this.state === 'terminal')
         && document.pointerLockElement === this.renderer.domElement);
     if (!animate) return;
-    for (const zombie of this.zombies) zombie.updateDeath(delta, this.player.camera.position);
+    for (const zombie of this.zombies) {
+      zombie.updateDeath(delta, this.player.camera.position);
+      if (zombie instanceof Zombie && zombie.consumeJustRevived()) {
+        this.tierDiagnostics?.recordRevival(zombie.getKind());
+      }
+    }
   }
 
   private updateResolution(): void {
@@ -635,14 +740,20 @@ export class Game {
 
   private checkTierCompletion(): void {
     if (this.state !== 'playing') return;
-    const remaining = this.zombies.filter((zombie) => zombie.isAlive()).length;
+    const remaining = this.zombies.filter((zombie) => zombie instanceof Zombie ? zombie.isThreat() : zombie.isAlive()).length;
     if (remaining === 0 && this.spawnQueue === 0) {
       this.enterRespite();
     }
   }
 
+  public respawnPickups(): void {
+    for (const medkit of this.medkits) medkit.respawn();
+    for (const box of this.ammoBoxes) box.respawn();
+  }
+
   private enterRespite(): void {
     if (this.state !== 'playing') return;
+    this.tierDiagnostics?.endTier();
 
     // 1. Déverrouiller la nouvelle aile accessible selon la rencontre validée
     const configs = this.encounterConfigs ?? (this as unknown as { tierCandidateSpawns?: EncounterSpec[] }).tierCandidateSpawns;
@@ -656,9 +767,8 @@ export class Game {
       }
     }
 
-    // 2. Réarmement des ressources du décor (soins et munitions)
-    for (const medkit of this.medkits) medkit.respawn();
-    for (const box of this.ammoBoxes) box.respawn();
+    // 2. Réarmement unique des ressources du décor (soins et munitions) pour l'exploration
+    this.respawnPickups();
 
     // 3. Déclic métallique sonore d'ouverture
     const unlockSound = new Audio('/assets/sounds/empty-soft.wav');
@@ -741,7 +851,10 @@ export class Game {
     this.horrorDirector?.resetRespite();
     const t0 = performance.now();
     this.tierAgileSpawned = 0;
+    this.tierSpitterSpawned = 0;
+    this.tierStandardSpawned = 0;
     this.lastSpawnQuadrant = -1;
+    this.tierDiagnostics?.startTier(tierNumber);
     this.encounterBell?.setActive(false);
     for (const p of (this.upgradePedestals ?? [])) {
       p.close();
@@ -752,6 +865,8 @@ export class Game {
       zombie.dispose(this.scene);
     }
     this.zombies = [];
+    for (const projectile of (this.spitProjectiles ?? [])) projectile.dispose(this.scene);
+    this.spitProjectiles = [];
     this.weapon?.setTargets([]);
 
     // 2. Gestion et verrouillage des portes du manoir selon la progression
@@ -768,29 +883,22 @@ export class Game {
       }
     }
 
-    // 3. Réarmement de tous les bonus du manoir (santé et munitions)
-    for (const medkit of this.medkits) {
-      medkit.respawn();
-    }
-    for (const box of this.ammoBoxes) {
-      box.respawn();
+    // 3. Réarmement des ressources du décor (santé et munitions)
+    // Règle du réarmement unique (Tâche 5) : si l'on arrive d'une accalmie normale ('exploration'),
+    // les pickups ont déjà été réarmés dans enterRespite(). Tout objet ramassé pendant l'accalmie
+    // pour se préparer au combat ne doit pas réapparaître immédiatement au gong.
+    // On ne réarme ici que lors d'un démarrage direct hors accalmie (P1 initial ou test direct).
+    if (this.state !== 'exploration') {
+      this.respawnPickups();
     }
 
     // 4. Initialisation de la file d'apparition échelonnée
     const config = configs?.[tierNumber - 1];
     if (config) {
       this.spawnQueue = config.totalZombies;
-      // Au démarrage du Palier 1, accorder un délai d'observation initial de 2 secondes au joueur
-      this.spawnCooldownTimer = tierNumber === 1 ? 2.0 : (config.activationType === 'arena_signal' ? 1.0 : 0.8);
-
-      // Au Palier 1 et lors des activations par signal, aucun zombie n'apparaît à la frame 0
-      // Pour les paliers 2 et 3 (porte ouverte), 1 zombie initial émerge dans la nouvelle aile
-      const initialSpawns = (tierNumber === 1 || config.activationType === 'arena_signal') ? 0 : Math.min(1, this.spawnQueue);
-      for (let i = 0; i < initialSpawns; i++) {
-        if (this.trySpawnZombie()) {
-          this.spawnQueue--;
-        }
-      }
+      // Au démarrage du Palier 1, accorder un délai d'observation initial de 2 secondes au joueur.
+      // Aux autres paliers, premier spawn différé à 0.8 s (salve d'ouverture espacée).
+      this.spawnCooldownTimer = tierNumber === 1 ? 2.0 : 0.8;
     }
 
     // 5. Basculer en phase de combat actif
@@ -829,6 +937,44 @@ export class Game {
       livingQuadrantCounts[lq]++;
     }
 
+    // Détermination de la composition garantie selon les quotas de la rencontre
+    this.tierStandardSpawned = this.tierStandardSpawned ?? 0;
+    const totalZombies = config.totalZombies;
+    const maxAgileThisTier = config.maxAgile;
+    const maxSpitterThisTier = config.maxSpitter;
+    const maxStandardThisTier = Math.max(0, totalZombies - maxAgileThisTier - maxSpitterThisTier);
+
+    const remainingAgile = Math.max(0, maxAgileThisTier - this.tierAgileSpawned);
+    const remainingSpitter = Math.max(0, maxSpitterThisTier - this.tierSpitterSpawned);
+    const remainingStandard = Math.max(0, maxStandardThisTier - this.tierStandardSpawned);
+
+    const livingAgile = livingZombies.filter((z) => z.getKind() === 'agile').length;
+    const livingSpitter = livingZombies.filter((z) => z.getKind() === 'spitter').length;
+
+    const canSpawnSpitter = remainingSpitter > 0 && livingSpitter < config.maxSimultaneousSpitter;
+    const canSpawnAgile = remainingAgile > 0 && livingAgile < config.maxSimultaneousAgile;
+    const canSpawnStandard = remainingStandard > 0;
+
+    if (!canSpawnSpitter && !canSpawnAgile && !canSpawnStandard) {
+      this.perfTracker?.recordSpawn(performance.now() - t0);
+      return false;
+    }
+
+    let chosenKind: ZombieKind;
+    if (this.currentTier === 3 && this.tierSpitterSpawned === 0 && canSpawnSpitter) {
+      chosenKind = 'spitter';
+    } else if (canSpawnSpitter && livingSpitter === 0) {
+      chosenKind = 'spitter';
+    } else if (canSpawnAgile && canSpawnStandard) {
+      chosenKind = this.tierAgileSpawned <= this.tierStandardSpawned ? 'agile' : 'standard';
+    } else if (canSpawnAgile) {
+      chosenKind = 'agile';
+    } else if (canSpawnStandard) {
+      chosenKind = 'standard';
+    } else {
+      chosenKind = 'spitter';
+    }
+
     for (const c of pool) {
       // 1. Collision solide avec le décor
       if (this.level.isColliding(c.x, c.z, 0.45)) continue;
@@ -858,6 +1004,7 @@ export class Game {
 
       // 5. Évaluation du champ de vision (FOV) et de la visibilité réelle (rejet rapide)
       const spawnFloorY = this.level.getFloorHeightAt(c.x, c.z);
+      if (chosenKind === 'spitter' && this.currentTier === 3 && spawnFloorY < 2.0) continue;
       const spawnPos3D = new THREE.Vector3(c.x, spawnFloorY + 1.0, c.z);
       const dirX = dx / dist;
       const dirZ = dz / dist;
@@ -910,24 +1057,24 @@ export class Game {
     const chosen = eligible[Math.floor(Math.random() * selectionPoolSize)];
     this.lastSpawnQuadrant = chosen.quadrant;
 
-    // Détermination de la variante selon la configuration de la rencontre
-    const maxAgileThisTier = config.maxAgile;
-    const maxSimultaneousAgile = config.maxSimultaneousAgile;
-    const livingAgile = livingZombies.filter((z) => z.getKind() === 'agile').length;
-
-    let chosenKind: ZombieKind = 'standard';
-    if (this.tierAgileSpawned < maxAgileThisTier && livingAgile < maxSimultaneousAgile) {
-      chosenKind = 'agile';
+    if (chosenKind === 'spitter') {
+      this.tierSpitterSpawned++;
+    } else if (chosenKind === 'agile') {
       this.tierAgileSpawned++;
+    } else {
+      this.tierStandardSpawned++;
     }
 
     // Créer le zombie et l'alerter vers le joueur
-    const zombie = new Zombie(this.scene, this.level, chosen.x, chosen.z, chosenKind);
+    const zombie = chosenKind === 'spitter'
+      ? new SpitterZombie(this.scene, this.level, chosen.x, chosen.z)
+      : new Zombie(this.scene, this.level, chosen.x, chosen.z, chosenKind);
     zombie.alert(playerPos);
     if (this.zombieGroanBuffer) {
       zombie.setupAudio(this.player.audioListener, this.zombieGroanBuffer);
     }
     this.zombies.push(zombie);
+    this.tierDiagnostics?.recordSpawn(chosenKind, livingZombies.length + 1);
 
     if (this.weapon) {
       this.weapon.setTargets(this.zombies.map((z) => z.getMesh()));
@@ -940,7 +1087,7 @@ export class Game {
 
   private updateObjectiveDisplay(): void {
     if (!this.objectiveDisplay) return;
-    const livingZombies = this.zombies.filter((z) => z.isAlive()).length;
+    const livingZombies = this.zombies.filter((z) => z instanceof Zombie ? z.isThreat() : z.isAlive()).length;
     const totalRemaining = livingZombies + this.spawnQueue;
     if (this.state === 'won') {
       const total = this.encounterConfigs.length;
@@ -995,7 +1142,10 @@ export class Game {
 
   private endGame(result: 'won' | 'lost'): void {
     if (this.state !== 'playing' && this.state !== 'respite' && this.state !== 'exploration') return;
+    this.tierDiagnostics?.endTier();
     this.state = result;
+    for (const projectile of (this.spitProjectiles ?? [])) projectile.dispose(this.scene);
+    this.spitProjectiles = [];
     this.weapon.cancelReload();
     this.syncAmbientAudio();
     this.updateObjectiveDisplay();
@@ -1031,12 +1181,15 @@ export class Game {
     } else {
       if (this.ambianceAudio?.isPlaying) this.ambianceAudio.pause();
       this.horrorDirector?.suspend();
+      this.stormController?.suspend();
       for (const zombie of this.zombies) zombie.stopAudio();
     }
   }
 
   public dispose(): void {
     this.disposed = true;
+    for (const projectile of (this.spitProjectiles ?? [])) projectile.dispose(this.scene);
+    this.spitProjectiles = [];
     for (const zombie of this.zombies) {
       zombie.dispose(this.scene);
     }
@@ -1044,6 +1197,7 @@ export class Game {
     this.encounterBell?.dispose(this.scene);
     for (const p of (this.upgradePedestals ?? [])) p.dispose(this.scene);
     this.horrorDirector?.dispose();
+    this.stormController?.dispose();
     disposeAllZombieResources();
   }
 }

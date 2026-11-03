@@ -58,6 +58,6 @@ assert.equal(fixtures.length, 6);
 assert.ok(fixtures.every(mesh => !mesh.castShadow && !level.getSolidMeshes().includes(mesh)));
 let lights = 0, shadows = 0;
 scene.traverse(obj => { if (obj.isLight) { lights++; if (obj.castShadow) shadows++; } });
-assert.equal(lights, 9);
+assert.equal(lights, 10); // Neuf lumières existantes + une lumière d'orage sans ombre.
 assert.equal(shadows, 2);
-console.log('PASS : 8 surfaces utilisées, façades séparées, tapis raccordés, ressources partagées et budget lumineux conservé.');
+console.log('PASS : 8 surfaces utilisées, façades séparées, tapis raccordés, ressources partagées et une lumière d’orage sans ombre.');

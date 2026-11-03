@@ -138,13 +138,13 @@ console.log('   -> PASS : Grand Hall hermétiquement clos au Palier 1, accès pr
 console.log('2. Test de la boucle de combat interne du Secteur 1 (Vestibule <-> Grand Salon <-> Galerie Ouest)...');
 
 // Circuit fermé à tester dans le Secteur 1 :
-// Vestibule Sud (8, 16.5) -> Arche Sud (-3, 16.5) -> Salon Sud (-12, 16.5)
+// Vestibule Sud (8, 16.5) -> Arche Sud (-3, 16.5) -> détour autour des piédestaux (-8, 13)
 // -> Salon Nord (-12, 9.5) -> Passage Galerie (-12, 6.0) -> Galerie Ouest (-12, 3.0)
 // -> Retour Salon (-12, 9.5) -> Arche Nord (-3, 9.5) -> Vestibule Nord (8, 9.5) -> Retour (8, 16.5)
 const loopWaypoints = [
   new THREE.Vector3(8, 1, 16.5),
   new THREE.Vector3(-3, 1, 16.5),
-  new THREE.Vector3(-12, 1, 16.5),
+  new THREE.Vector3(-8, 1, 13),
   new THREE.Vector3(-12, 1, 9.5),
   new THREE.Vector3(-12, 1, 6.0),
   new THREE.Vector3(-12, 1, 3.0),

@@ -1,0 +1,9 @@
+{
+  "asset": "public/assets/textures/mansion/storm-exterior-v1.png",
+  "tool": "image_gen.imagegen",
+  "reference": "Image d'exemple fournie par l'utilisateur le 3 novembre 2026 : fenêtres gothiques hautes, rideaux, éclairs et lumière projetée au sol. Référence de composition et d'ambiance, sans copie de la pièce.",
+  "prompt": "Create a single reusable game texture for the exterior view seen through a tall Gothic mansion window at night. Use the attached reference image only for mood and palette: stormy deep navy blue sky, heavy layered clouds, fine diagonal rain, very distant silhouettes of bare trees and ruined rooftops along the bottom 20 percent, pale moonlit haze. Composition must be a clean front-facing flat view through glass, designed to be cropped into a tall rectangular pane: no window frame, no mullions, no curtains, no room interior, no floor, no text, no border, no visible lightning bolt (the game will add flashes dynamically). Keep the upper two thirds visually rich but dark, with irregular cloud structure and faint rain; bottom horizon moody but not busy. Retro horror game art direction, painterly realistic with slightly coarse texture and strong readability when downsampled to 300px screen height. Portrait-oriented 2:3 composition. Opaque background.",
+  "base": "Ciel et pluie fixes, texture partagée ; les baies impaires retournent les UV horizontalement.",
+  "mobile": "Trait de foudre visible seulement pendant le flash ; lumière froide et motif des montants projeté au sol.",
+  "validation": "Vues fixes du vrai Level au rendu rétro 427 × 300 : Vestibule, Salon, paires de la Galerie et de la Bibliothèque ; base et flash comparés. Écoute et parcours complet à effectuer par l'utilisateur."
+}

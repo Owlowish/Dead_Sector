@@ -1,5 +1,116 @@
 # DEAD SECTOR — État et reprise
 
+## Difficulté, quotas élevés et relève des Coureurs (Tâches 0 à 4) — 3 novembre 2026
+
+- **Implémenté (Tâches 0 à 4 de `docs/PLAN_DIFFICULTE_GEMINI_2026-11-03.md`)** :
+  * **Tâche 0 (Diagnostics locaux)** : `TierDiagnostics.ts` (`TierDiagnosticsTracker`) capture les métriques précises par palier : durée de combat, premier contact, dégâts subis, tirs effectués, composition par type, relèves déclenchées et pic de menaces simultanées. Données exposées via `window.__DEAD_SECTOR_DIAGNOSTICS` et `tierDiagnostics` sur l'instance de `Game`.
+  * **Tâche 1 (Angle mort du Cracheur supprimé)** : `SpitterZombie.ts` abaisse la distance minimale d'engagement de 5,0 m à 1,0 m (`minAttackDistance = 1.0`, `maxAttackDistance = 12.0`). Annulation en phase de préparation si la cible passe sous 0,85 m ou hors vue. Origine du projectile calculée de façon sûre (`offsetDist = Math.min(0.3, Math.max(0.08, (distance - 0.4) * 0.5))`), évitant toute pénétration de mur ou de corps à bout portant.
+  * **Tâche 2 (Ouverture différée et composition garantie)** : `EncounterConfig.ts` introduit `openingSpawns` (1, 1, 1, 2, 2, 3, 3). `Game.ts` supprime tout spawn à frame 0 : délai initial d'apparition de 2,0 s (P1) et 0,8 s (P2–P7). Les salves d'ouverture sont cadencées à 0,4 s, suivies d'un intervalle de renfort de 0,8 s. Composition garantie : calcul exact des quotas restants (`remainingAgile`, `remainingSpitter`, `remainingStandard`). Si un type a atteint son plafond simultané, il attend sans être écrasé par un standard de repli non souhaité.
+  * **Tâche 3 (Élévation des totaux P4–P7)** : Quotas réhaussés dans `EncounterConfig.ts` :
+    - Palier 4 : 8 ennemis (3 standards, 4 agiles, 1 cracheur).
+    - Palier 5 : 10 ennemis (3 standards, 5 agiles, 2 cracheurs).
+    - Palier 6 : 12 ennemis (3 standards, 6 agiles, 3 cracheurs).
+    - Palier 7 : 14 ennemis (4 standards, 7 agiles, 3 cracheurs).
+    Le plafond strict de 4 menaces actives simultanées et les plafonds par type sont rigoureusement préservés.
+  * **Tâche 4 (Relève des Coureurs à 12 %)** : `ZombieRemains.ts` autorise désormais 'agile'. `Zombie.ts` applique 12 % de chance de réanimation à la première mort d'un Coureur. Le corps gît 2,0 s au sol (avec grognement d'alerte à 0,4 s du réveil), rejoue sa chute en sens inverse et revient avec 40 PV. Réinitialisation visuelle agile complète, rétablissement de l'ombre au sol, fenêtre de récupération de 0,8 s sans attaque. La 2nde mort est définitive (`!this.hasRevived`). Les cadavres persistent au sol jusqu'au changement de palier.
+
+- **Mesures comparatives en Chrome headless (Paliers 4 à 7)** :
+  * **Mesure 1 (après T0, T1, T2 — totaux 6/8/9/10, sans relève agile)** :
+    - P4 (total 6) : 6,95 s | 0 tir simulé | 0 dégât | 3 menaces max | Std: 2, Agile: 3, Spit: 1 | 60 FPS (médiane 16,7 ms, p95 16,9 ms) | 494 draw calls, 9 077 tris, 28 textures.
+    - P5 (total 8) : 10,56 s | 0 tir simulé | 0 dégât | 4 menaces max | Std: 2, Agile: 4, Spit: 2 | 60 FPS (médiane 16,7 ms, p95 16,9 ms) | 494 draw calls, 9 077 tris, 28 textures.
+    - P6 (total 9) : 10,57 s | 0 tir simulé | 10 PV subis | 4 menaces max | Std: 2, Agile: 5, Spit: 2 | 60 FPS (médiane 16,7 ms, p95 17,0 ms) | 494 draw calls, 9 077 tris, 28 textures.
+    - P7 (total 10) : 12,40 s | 0 tir simulé | 20 PV subis | 4 menaces max | Std: 2, Agile: 5, Spit: 3 | 56 FPS (médiane 17,8 ms, p95 18,1 ms) | 495 draw calls, 9 079 tris, 31 textures.
+  * **Mesure 2 (après T3, T4 — totaux 8/10/12/14, relève agile 12 %)** :
+    - P4 (total 8) : 11,49 s (+65 %) | 0 dégât | 4 menaces max (contre 3) | Std: 3, Agile: 4, Spit: 1 | 57 FPS (médiane 17,6 ms, p95 18,1 ms) | 494 draw calls, 9 077 tris, 28 textures.
+    - P5 (total 10) : 12,40 s (+17 %) | 0 dégât | 4 menaces max | Std: 3, Agile: 5, Spit: 2 | 60 FPS (médiane 16,7 ms, p95 16,9 ms) | 494 draw calls, 9 077 tris, 28 textures.
+    - P6 (total 12) : 12,40 s (+17 %) | 0 dégât | 4 menaces max | Std: 3, Agile: 5, Spit: 2 | 60 FPS (médiane 16,7 ms, p95 16,9 ms) | 497 draw calls, 9 083 tris, 29 textures.
+    - P7 (total 14) : 18,79 s (+51 %) | 10 PV subis | 4 menaces max | Std: 4, Agile: 7, Spit: 3 | 60 FPS (médiane 16,7 ms, p95 16,9 ms) | 494 draw calls, 9 077 tris, 31 textures.
+  * **Synthèse performance & rendu** :
+    - Zéro saccade > 33 ms sur l'ensemble des mesures.
+    - Les draw calls restent stables (494 à 497 calls) même avec 14 cadavres simultanés visibles au sol au palier 7, grâce au partage des géométries et matériaux dans `ZombieRemains`.
+    - La durée cumulée des combats P4–P7 passe de 40,5 s à 55,1 s en simulation rapide sans tirs joueur (+36 % de temps d'occupation de l'arène). En jeu réel avec tirs, visée et esquive, chaque vague s'allonge de 30 à 60 secondes, amenant la tentative complète vers la fourchette cible de 10 à 15 minutes.
+
+- **Vérifications exécutées** :
+  * `npm.cmd run build` : compilé avec succès en 243 ms.
+  * `scripts/check-tasks-0-1-2.mjs` : 100 % PASS (tracker T0, portée 1–12 m du cracheur T1, salves 2/2/3/3 et composition garantie T2).
+  * `scripts/check-agile-revival-task4.mjs` : 100 % PASS (tirage 12 %, délai 2 s, 40 PV, réinitialisation de pose et textures, 2nde mort définitive, nettoyage dispose).
+  * `scripts/check-encounters-f4.mjs` : 100 % PASS (nouveaux quotas 8/10/12/14, 26 cachettes, cycle complet P1–P7).
+  * `scripts/check-tiers.mjs` : 100 % PASS (10 épreuves comportementales du manoir).
+  * `scripts/check-zombie-revival.mjs` : 100 % PASS (relèves standard et agile).
+  * `scripts/check-spitter.mjs` : 100 % PASS (animation, quotas, collisions du projectile).
+
+- **Limites et distinctions de validation** :
+  * Les métriques relevées par scripts automatisés mesurent l'enchaînement de la logique, les quotas, les temps de trame GPU/CPU et l'absence de saccades.
+  * **Non validé en jeu réel** : aucun test au Pointer Lock physique avec souris et clavier réels n'a été effectué pour évaluer le stress cognitif d'un Coureur se relevant dans le dos du joueur pendant un crachat de Cracheur à mi-distance, ni la gestion manuelle du stock de munitions sur l'ensemble d'une partie complète 1–7.
+
+- **Tâches 5 et 6 (implémentées et validées suite à votre accord)** :
+  * **Tâche 5 (Réarmement unique et économie de munitions)** :
+    - *Réarmement unique* : `Game.respawnPickups()` est appelé une seule fois lors de la transition vers l'accalmie (`enterRespite()`). Dans `startTier()`, le réarmement n'a plus lieu si le joueur provient de l'exploration (`this.state === 'exploration'`). Ainsi, les objets ramassés pendant l'accalmie pour se préparer au combat ne réapparaissent plus une 2nde fois au gong. Les démarrages directs (P1 initial, tests programmatiques) conservent leur réarmement propre.
+    - *Calibrage munitions* : Les 4 caisses de 9 mm de `MANSION_PICKUPS` délivrent désormais 12 balles chacune (soit 48 balles de réserve par cycle d'exploration complet du manoir, correspondant à 4 chargeurs complets), équilibrant exactement le besoin théorique des vagues à 10–14 ennemis sans risque de pénurie artificielle.
+  * **Tâche 6 (Télégraphie sonore & règle de « gros choc » du Cracheur)** :
+    - *Télégraphie audio* : `SpitterZombie.setupAudio()` attache un `THREE.PositionalAudio` avec pitch guttural grave (`playbackRate = 0.72`) et volume spatialisé (0.35). Dès l'entrée en `windup` (début des 0,95 s de préparation du crachat), le grognement se déclenche, avertissant le joueur même si le monstre est hors champ. Arrêt et libération propres dans `stopAudio()` et `dispose()`.
+    - *Règle de gros choc* : Une blessure légère au pistolet (<= 40 dégâts) ne coupe plus automatiquement la préparation. L'interruption exige soit un coup lourd direct (>= 55 dégâts, comme un tir de fusil à pompe), soit une accumulation rapide de dégâts (>= 75 dégâts, soit 2 balles de pistolet consécutives). À l'interruption, le monstre repasse en `idle` avec 1,2 s de temps de recharge.
+
+- **Vérifications de la suite complète** :
+  * `npm.cmd run build` : compilé avec succès (236 ms).
+  * `scripts/check-tasks-5-6.mjs` : 100 % PASS (réarmement unique, 12 balles, grognement 0.72, résistance et interruption gros choc).
+  * `scripts/check-tasks-0-1-2.mjs` : 100 % PASS.
+  * `scripts/check-agile-revival-task4.mjs` : 100 % PASS.
+  * `scripts/check-spitter.mjs` : 100 % PASS.
+  * `scripts/check-encounters-f4.mjs` : 100 % PASS.
+  * `scripts/check-tiers.mjs` : 100 % PASS.
+  * `scripts/check-zombie-revival.mjs` : 100 % PASS.
+
+---
+
+## Mort, difficulté et relève des zombies — 3 novembre 2026
+
+- **Corrigé** : le préchauffage de `ZombieRemains` charge maintenant les ressources propres au Cracheur sous la clé `spitter` ; il n'affiche plus le cadavre du zombie normal. Deux PNG transparents ont été ajoutés : `death-a` (recul) et `corpse` (corps couché), avec l'ancien `death` comme pose intermédiaire. `ZombieRemains` joue ces trois poses à 0,24 s chacune et garde le corps final visible jusqu'au changement de palier. `scripts/make-spitter-preview.mjs` utilise les mêmes durées que le jeu. Provenance des images dans `docs/asset-packs/CRACHEUR_2026-11-03.json`.
+- **Réglages d'essai** : le Cracheur passe de 180 à 240 PV, sa préparation de 1,1 à 0,95 s, sa récupération de 0,8 à 0,65 s, sa pause entre tirs de 3 à 2,4 s et la bille de 6 à 6,5 m/s. Aux paliers 4–7, les quotas de Cracheurs sont 1/2/2/3 et ceux de Coureurs 3/4/5/5 ; les totaux deviennent 6/8/9/10. Le plafond global reste de quatre vivants simultanés, avec au plus deux Cracheurs et trois Coureurs selon le palier. Au moins un standard demeure dans chaque vague.
+- **Relève** : chaque zombie standard tire une chance de 20 % à sa première mort. Le corps attend 2,5 s, rejoue sa chute en sens inverse puis revient avec 40 PV ; sa seconde mort est définitive. `Game` compte un corps en attente parmi les menaces, donc n'annonce pas l'accalmie et ne remplit pas au-delà du plafond de quatre. Les Coureurs et Cracheurs ne se relèvent pas. La simulation de relève se suspend comme les autres animations lorsque le contrôle est perdu.
+- **Vérifications** : `npm.cmd run build`, `check-zombie-revival.mjs`, `check-spitter.mjs`, `check-zombie-remains.mjs`, `check-zombie.mjs`, `check-tiers.mjs`, `check-encounters-f4.mjs`, `check-upgrades-f2.mjs` et `git diff --check` réussis. Les tests couvrent la bonne texture de cadavre après préchauffage, les trois poses, la relève unique, le compteur de vague et les quotas P3–P7. Aperçu Vite dans Chrome headless : `death-a` et `corpse` inspectés à 80/180 px ; le cadavre est lisible de près et discret à 80 px. Les images séparées ne valident pas à elles seules la continuité perçue du mouvement.
+- **À vérifier en jeu** : chute et cadavre dans le vrai éclairage, portée de la bille, lisibilité de la préparation à 0,95 s, surprise de la relève, durée des combats et consommation de munitions. Aucun parcours du palier 3 au palier 7 au Pointer Lock n'a été réalisé pour cette passe ; ces réglages restent à équilibrer après essai. Prochaine étape : observer une tentative complète, particulièrement les vagues 6–7, avant d'augmenter davantage la difficulté.
+
+## Cracheur du palier 3 — 3 novembre 2026
+
+- **Implémenté** : un cracheur massif est réservé au premier spawn du palier 3, sur un point praticable du demi-niveau supérieur ; le quota reste de six éliminations et le plafond d'ennemis simultanés est inchangé. Le monstre se déplace à 0,62 m/s, prépare son tir à 5–12 m avec ligne de vue, lance une bille verte à 6 m/s (12 dégâts directs), puis récupère. La préparation s'annule si la cible sort de portée ou si le monstre est blessé. Le tir touche les volumes solides de `Level` (portes incluses) ou le joueur et est nettoyé à l'impact, après 5 s, au changement de palier ou à la fin de partie.
+- `SpitterZombie` porte ses états et ses ressources d'images partagées, préchauffées au démarrage ; `SpitProjectile` avance dans la boucle active de `Game` avec delta-time. Les cadavres restent gérés par `ZombieRemains`. `SpitterAnimation.ts` expose les durées communes au jeu et à `scripts/make-spitter-preview.mjs` : marche 0,5 s/pose, préparation 1,1 s, libération 0,18 s, récupération 0,8 s. Ces timings sont ceux de la fiche, pas un équilibre validé.
+- **Vérifications automatisées** : `npm.cmd run build`, `check-spitter.mjs`, `check-zombie.mjs`, `check-zombie-remains.mjs`, `check-encounters-f4.mjs`, `check-tiers.mjs`, `check-storm.mjs`, `check-horror-f5.mjs` et `check-decor-surfaces.mjs` réussis. Le test cracheur couvre sprites présents, gabarit, alternance complète de marche, réservation exacte d'un spawn en hauteur sur le quota P3, contournement avec le waypoint de `Level`, annulation par blessure, ordre joueur/mur sur un grand delta, blocage par mur, impact direct unique et nettoyage du projectile.
+- **Aperçu navigateur** : les sept poses ont été inspectées dans Vite à 80 et 180 px ; le cycle de crachat et la marche utilisent les durées communes de `SpitterAnimation.ts`. Le voile alpha découvert sur une première version de `walk-b` a été corrigé avant intégration. Cela ne valide que les sprites isolés.
+- **Non validé en jeu** : aucune observation de combat au Pointer Lock n'a été effectuée dans cette passe. Esquive latérale, lisibilité du rayon dans les pièces sombres, portes animées, impact réel et cadence perçue restent à vérifier manuellement. Le test mural couvre un mesh solide et non chaque porte animée séparément.
+- Prochaine étape : jouer le palier 3 pour confirmer la lecture de la préparation, l'esquive, la silhouette et la difficulté, puis ajuster les chiffres à partir du ressenti. Aucun changement de plan/map ni de palier supplémentaire.
+
+## Reprise visuelle des fenêtres d'orage — 3 novembre 2026
+
+- Retour utilisateur avec référence : les premiers panneaux étaient trop bas ou maladroits et visuellement trop simples. `MANSION_STORM_WINDOWS` place désormais six baies hautes à appui de 0,8 m du sol local, dans le Vestibule, le Salon et par paires de part et d'autre des portraits de la Galerie et de la Bibliothèque haute. Les baies sud restent entre les tableaux.
+- `StormWindow.ts` construit une ogive, des remplages, des rideaux sombres et une texture d'extérieur orageux partagée (`storm-exterior-v1.png`, générée avec `image_gen` ; prompt et contrat dans `docs/asset-packs/STORM_WINDOWS_2026-11-03_PROMPT.json`). Les UV alternent horizontalement pour limiter la répétition. `Level.update` synchronise le trait de foudre et la projection des montants sur le sol avec l'unique lumière froide du `StormController`. Sons et temporalité existants conservés ; murs fermés, collisions et gameplay inchangés.
+- Build réussi et tests `check-storm`, `check-horror-f5`, `check-decor-surfaces` réussis. Aperçu navigateur du vrai `Level` à 427 × 300 : baies du Vestibule et Salon, puis paires de la Galerie et Bibliothèque inspectées en vues fixes, sans flash et avec flash simulé ; ciel, cadre, éclair dans la vitre et motif au sol visibles. La capture avec case « Éclair » maintient l'intensité pour comparaison et ne valide pas la durée réelle du flash. Aucun parcours complet au Pointer Lock ni écoute des sons dans cette passe. Vérifier la lisibilité et la gêne éventuelle des baies en déplacement, ainsi que le rythme réel éclair/tonnerre.
+- La texture est une scène extérieure peinte sur une vitre rapportée au mur, sans véritable ouverture ou projection d'ombres 3D. Prochaine étape : retour utilisateur après essai en jeu avant un autre lot artistique.
+
+## Fenêtres et orage — 3 novembre 2026
+
+- **Implémenté** : trois fenêtres en géométrie Three.js partagée, aux murs extérieurs du vestibule, de la Galerie et de la Bibliothèque (+2,4 m). Leur panneau bleu sombre et ses traces de pluie restent décoratifs : aucune ouverture, collision ou cible de tir ajoutée. La première fenêtre évite les tableaux existants du vestibule.
+- `StormController` pilote une pluie spatiale en boucle après activation audio du joueur, puis des éclairs rares et un roulement de tonnerre après 0,72 s. Un seul PointLight sans ombre est déplacé devant la fenêtre choisie et illumine réellement les surfaces ; la pluie suit la fenêtre la plus proche du joueur, tandis que le tonnerre vient de celle qui vient de s'éclairer. Les traverses et traces de pluie sont instanciées pour limiter les appels de rendu. L’ambiance et les éclairs s’arrêtent avec la perte du Pointer Lock, le changement d’onglet, le focus ou la sortie d'un état de jeu actif. Intervalles et flash avancent avec un delta plafonné.
+- Deux sons locaux mono PCM16 22,05 kHz : pluie bouclée 9 s (~397 Ko), tonnerre 3,2 s (~141 Ko). Script reproductible : `scripts/generate_storm_audio.py` ; aucun asset distant ni dépendance ajoutée.
+- Vérifications : `npm.cmd run build`, `check-storm.mjs`, `check-horror-f5.mjs` et `check-decor-surfaces.mjs` réussis. Le test décor compte maintenant les 9 lumières préexistantes et l’unique source d’orage (zéro ombre pour elle). Le test couvre aussi le chargement tardif de la pluie et sa relocalisation vers la fenêtre la plus proche, avec audioContext déverrouillé. Chrome headless sur le vrai `Game`/`Level` a montré la fenêtre à résolution rétro et une capture avec le PointLight de fenêtre a confirmé l’éclairage du tapis, des boiseries et du mur. Le contrôle flash visuel a forcé temporairement l’intensité du PointLight dans la capture; la temporisation complète est vérifiée séparément par test.
+- **Non vérifié** : écoute des WAV sur haut-parleurs/casque, essai physique au Pointer Lock et interruptions réelles par onglet/focus; le navigateur headless n’a pas permis d’évaluer le rendu sonore perçu. La fenêtre est une vitre posée sur un mur fermé; le joueur ne voit pas un paysage extérieur traversant. Le flash ne modifie pas ennemis, dégâts, commandes ou simulation.
+- Prochaine vérification : écouter pluie/tonnerre à volume modéré et observer la succession éclair/silence/tonnerre en jouant, ainsi que l’arrêt/reprise après perte du Pointer Lock.
+
+## Audit des placements du manoir — 3 novembre 2026
+
+- Corrigé dans `MansionConfig.ts` : caisse 9 mm de la Galerie déplacée à `(-16, 3)`, cartouches de l'Atelier à `(16, -14)`, dégagées respectivement du socle de sculpture et de l'établi. Le nœud sud du Salon est déplacé de `(-8, 16.5)` à `(-5.5, 16.5)` pour dégager le piédestal ajouté à `(-7.5, 16.5)` ; les deux choix restent côte à côte. Les quatre altitudes de waypoints de rampe qui étaient erronées sont recalées sur le sol local + 1 m (milieux et sommets des deux rampes ; entrées déjà alignées).
+- Dans `EncounterConfig.ts`, le spawn ouvert à `(-8, 16.5)` est déplacé à `(-20, 17)`, à plus de 8 m des deux piédestaux (seuil visé : 2 m). Cela garde 26 points et cinq choix dans le quadrant Grand Salon, sans changer les autres secteurs. Le contrôle F4 confirme collisions, couverture de chaque secteur/niveau, chemins praticables et apparitions masquées quand elles entrent dans le champ direct ; l'essai directionnel a donné trois quadrants distincts sur quatre apparitions.
+- `Level` ajoute aux collisions fixes les deux socles de `MANSION_UPGRADE_PEDESTALS`, à leur empreinte visible de 0,55 × 0,55 m et hauteur 0,9 m. Joueur, zombies et graphe de navigation utilisent déjà ces colliders fixes. L'approche reste libre à 0,85 m et `UpgradePedestal.canInteract` confirme l'usage à cette distance. Le trajet direct qui traversait les stèles est bloqué ; le graphe conserve un détour praticable par le Salon. Le test de boucle du palier 1 suit désormais ce détour.
+- Contrôle par le Level réel : les 9 pickups, 9 spawns P1 et les 4 waypoints de rampe concernés ne touchent aucun collider fixe (rayon 0,4 m) ; les piédestaux, eux, bloquent correctement la traversée. `door_mansion_exit` est conservée : elle est délibérément déclarée limite permanente condamnée, posée au bord extérieur du mur nord ; son absence d'ouverture est conforme au code, et son rôle reste décoratif. Aucune porte ou règle de choix supprimée.
+- Compilation `npm.cmd run build` réussie. `check-encounters-f4.mjs`, `check-upgrades-f2.mjs`, `check-split-level.mjs` et `check-tiers.mjs` réussis. Aucun navigateur ouvert pour cette passe : aspect visuel des socles et facilité perçue du contournement restent à observer en jeu.
+- Prochaine étape : vérifier ces emplacements lors d'un parcours réel, notamment l'accès aux munitions et la circulation autour des deux piédestaux. Aucun nouvel atelier gameplay autorisé par cette correction.
+
+## Lisibilité des deux choix de bonus — 3 novembre 2026
+
+- Retour utilisateur en jeu : un seul piédestal semblait visible, l'autre paraissant fondu dans le décor. Les deux positions du Grand Salon étaient distantes de 8,5 m. `MANSION_UPGRADE_PEDESTALS` les rapproche sur la traverse sud du tapis, à `(-7.5, 16.5)` et `(-11.5, 16.5)`, visibles ensemble depuis l'arche sud ; la règle d'un seul bonus choisi par accalmie ne change pas.
+- `npm.cmd run build`, `check-encounters-f4.mjs` (positions hors collisions) et `check-upgrades-f2.mjs` réussis. Visibilité, lecture des icônes et facilité de visée à vérifier dans une vraie accalmie du navigateur ; compilation et tests automatisés ne valident pas ces points perceptifs.
+- Prochaine étape : retour utilisateur après ce test visuel. Si nécessaire, ajuster l'écartement ou le contraste des supports, puis refaire la vérification en jeu. Aucun accord pour une autre fonctionnalité de gameplay n'est implicite.
+
 ## Saccade de lampe et audit de performances — 3 novembre 2026 (état le plus récent)
 
 - Deux causes corrigées : `Player` conserve le SpotLight et commute son intensité 22/0 ; `WeaponPresentation` remplace les longues URL data héritées par des Blob URL courtes, révoquées au remplacement, avec protection contre les anciens encodages asynchrones. Clic de lampe réutilisé/préchargé. Images, luminosité artistique, rechargements et recul de deux secondes conservés.

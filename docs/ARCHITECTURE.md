@@ -30,9 +30,11 @@ Ces couches ne sont pas encore séparées en modules stricts. Zombie et Weapon a
 | `src/UpgradePedestal.ts` | Offre choisissable, icône éclairée orientée vers le joueur, veilleuse et consommation unique | `UpgradeSpec` attribué par Game ; `PickupSprite` partage les textures ; Game applique le bonus après le choix |
 | `src/Player.ts` | Caméra, entrées, déplacement, collision, santé | Level, fonction canPlay fournie par Game |
 | `src/Level.ts` | Géométrie fixe, habillage, éclairage et lanternes, boîtes de collision et meshes solides | Player et Zombie pour collisions ; Weapon pour tirs ; MansionConfig et MansionMaterials pour les surfaces |
+| `src/StormWindow.ts` | Forme des baies gothiques, texture d'extérieur partagée et projection visuelle du flash au sol | Positions de MansionConfig ; Level règle leur visibilité avec la lumière d'orage |
 | `src/MansionMaterials.ts` | Catalogue des huit textures de décor, matériaux partagés et UV des boîtes | Level et Door ; les données artistiques `MansionConfig.surface` restent distinctes des dimensions physiques |
-| `src/Zombie.ts` | Une instance ennemie : santé, poursuite, attaque, sprite et animation | Level, position joueur et callback d'attaque |
-| `src/ZombieRemains.ts` | Représentation de mort : chute et corps au sol, ressources GPU communes et libération | Zombie, données ZombieAnimation ; mises à jour coordonnées par Game |
+| `src/Zombie.ts` | Standard ou Coureur : santé, poursuite, attaque et animation ; le standard peut se relever une fois après sa première mort | Level, ZombieRemains, position joueur et callback d'attaque |
+| `src/SpitterZombie.ts`, `src/SpitProjectile.ts` | Cracheur lent : préparation, tir et déplacement ; bille verte simulée avec le delta et collisions décor/joueur | Level, SpitterAnimation, Game |
+| `src/ZombieRemains.ts` | Représentation de mort : chute et corps persistant, puis animation inverse pour la relève d'un standard | Zombie, SpitterZombie et ressources GPU communes ; mises à jour coordonnées par Game |
 | `src/Weapon.ts` | Entrée de tir, cadence, rayon, sélection de cible, effets et sons | Caméra, meshes, callback onHit et canPlay |
 | `src/WeaponPresentation.ts` | Prépare les images à résolution réduite, coupe les faibles alpha, gère les Blob URL de rendu et atténue l'éclairage des armes | Initialisé par main et les aperçus ; références CSS choisies par Weapon ; anciennes URL libérées après resize ; sources et chronologies inchangées |
 | `src/Medkit.ts` | Ressource de soin : billboard pixel art éclairé, flottement, détection de contact et consommation | PickupSprite, Player (pour soigner), Game |

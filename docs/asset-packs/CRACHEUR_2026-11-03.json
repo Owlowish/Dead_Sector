@@ -1,0 +1,21 @@
+{
+  "generator": "image_gen",
+  "date": "2026-11-03",
+  "format": "PNG RGBA transparent, 1024 × 1536",
+  "contract": "Même zombie massif en manteau victorien gris bleu, boutons de laiton, chaîne au bras gauche, gorge vert acide, corps entier et ligne des pieds constante. Le projectile est un objet séparé du personnage.",
+  "reference": "La pose idle sert de référence aux poses debout ; la pose death existante sert de base au cadavre final.",
+  "poses": [
+    { "name": "idle", "purpose": "base au repos et invariants visuels", "source": "exec-ebdefb86-41f8-410b-a29d-2b6860f39b7d.png" },
+    { "name": "walk-a", "purpose": "premier pas lourd", "source": "exec-1cdff929-c5c0-4d67-aad4-b9c05c3bf902.png" },
+    { "name": "walk-b", "purpose": "second pas lourd ; alpha des bords nettoyé après inspection", "source": "exec-5c866674-1be0-4f83-8e21-761126c24d2e.png" },
+    { "name": "windup", "purpose": "gorge gonflée et lumineuse, annonce du tir", "source": "exec-28218982-636f-4799-9ecf-1d905827c737.png" },
+    { "name": "release", "purpose": "mâchoire ouverte, aucun projectile intégré", "source": "exec-bec78df8-2cff-47d1-a3f0-e9079449fcbf.png" },
+    { "name": "recovery", "purpose": "corps affaissé après le tir", "source": "exec-1c257732-3bda-4e40-87e0-21c2096a1ee2.png" },
+    { "name": "death-a", "purpose": "première pose de mort, recul et gorge qui s'éteint", "source": "exec-9970160a-91d6-43e6-95b3-ed47dc43b7ea.png" },
+    { "name": "death", "purpose": "affaissement à genoux, gorge éteinte", "source": "exec-fc8acafa-b66c-4695-8be0-1e0f8facd134.png" },
+    { "name": "corpse", "purpose": "cadavre final couché sur le côté", "source": "exec-84e41dee-8cb7-4f7c-a488-63fd103f9bec.png" }
+  ],
+  "assetDirectory": "public/assets/zombies/spitter",
+  "preview": "node scripts/make-spitter-preview.mjs, puis /tmp/spitter-preview/index.html via Vite",
+  "validation": "Inspection visuelle des neuf poses, dont le cadavre à 80 et 180 px dans l'aperçu. Alpha nul aux quatre coins des deux nouveaux PNG ; continuité du cycle et lisibilité en combat à confirmer."
+}

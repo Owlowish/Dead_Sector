@@ -46,8 +46,8 @@ globalThis.document = Object.assign(new EventTarget(), {
 globalThis.Audio = class { play() { return Promise.resolve(); } };
 
 const scene = new THREE.Scene();
-const a = new Zombie(scene, level, 0, 0);
-const b = new Zombie(scene, level, 2, 0);
+const a = new Zombie(scene, level, 0, 0, 'standard', () => 1);
+const b = new Zombie(scene, level, 2, 0, 'standard', () => 1);
 const corpseA = remains(a), corpseB = remains(b);
 assert.equal(corpseA.visible, false);
 const loadedDeathTextures = textures.filter(texture => /zombie_(death|corpse)\.png/.test(texture.userData.url));
@@ -154,7 +154,7 @@ assert(!disposedTextures.includes(corpseTexture), 'Ressource commune conservée 
 
 // Plusieurs cycles sans accumulation et mort pendant une chute encore inachevée.
 for (let tier = 0; tier < 3; tier++) {
-  const actors = Array.from({ length: 4 }, (_, i) => new Zombie(scene, level, i, 0));
+  const actors = Array.from({ length: 4 }, (_, i) => new Zombie(scene, level, i, 0, 'standard', () => 1));
   const f = makeSession(scene, actors);
   actors.forEach(actor => actor.takeDamage(100));
   f.game.state = 'won';

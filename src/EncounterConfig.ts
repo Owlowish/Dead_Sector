@@ -20,6 +20,11 @@ export interface EncounterSpec {
   maxAgile: number;
   /** Plafond d'agiles simultanément vivants dans l'arène */
   maxSimultaneousAgile: number;
+  /** Cracheurs prévus dans la rencontre et plafond présents simultanément */
+  maxSpitter: number;
+  maxSimultaneousSpitter: number;
+  /** Nombre d'ennemis envoyés lors de la salve d'ouverture initiale */
+  openingSpawns?: number;
   /** Secteur déverrouillé à l'issue de cette rencontre (null si le manoir est déjà complètement ouvert) */
   unlockSectorTier: number | null;
   /** Type de transition pour déclencher la rencontre après l'accalmie */
@@ -52,7 +57,7 @@ export const MANSION_OPEN_SPAWN_POOL: Point2D[] = [
   { x: -20, z: 13 },
   { x: -14, z: 9 },
   { x: -14, z: 17 },
-  { x: -8, z: 16.5 },
+  { x: -20, z: 17 },
   { x: -8, z: 13 },
 
   // 2. Vestibule d'Entrée (Sud-Est, Y = 0m)
@@ -99,6 +104,9 @@ export const ENCOUNTER_CONFIGS: EncounterSpec[] = [
     totalZombies: 4,
     maxAgile: 0,
     maxSimultaneousAgile: 0,
+    maxSpitter: 0,
+    maxSimultaneousSpitter: 0,
+    openingSpawns: 1,
     unlockSectorTier: 1, // Déverrouille la porte du Grand Hall Nord
     activationType: 'auto_start',
     explorationPrompt: 'PALIER 1 PURGÉ · OUVREZ LA PORTE DU GRAND HALL',
@@ -113,6 +121,9 @@ export const ENCOUNTER_CONFIGS: EncounterSpec[] = [
     totalZombies: 5,
     maxAgile: 2,
     maxSimultaneousAgile: 1,
+    maxSpitter: 0,
+    maxSimultaneousSpitter: 0,
+    openingSpawns: 1,
     unlockSectorTier: 2, // Déverrouille les escaliers de la Bibliothèque et de l'Atelier
     activationType: 'wing_gate',
     explorationPrompt: 'PALIER 2 PURGÉ · OUVREZ LA PORTE DE LA BIBLIOTHÈQUE',
@@ -127,6 +138,9 @@ export const ENCOUNTER_CONFIGS: EncounterSpec[] = [
     totalZombies: 6,
     maxAgile: 3,
     maxSimultaneousAgile: 2,
+    maxSpitter: 1,
+    maxSimultaneousSpitter: 1,
+    openingSpawns: 1,
     unlockSectorTier: null, // Manoir entièrement accessible
     activationType: 'wing_gate',
     explorationPrompt: 'MANOIR TOTALEMENT SÉCURISÉ · ACTIVEZ LE CARILLON DU GRAND HALL',
@@ -138,9 +152,12 @@ export const ENCOUNTER_CONFIGS: EncounterSpec[] = [
     tierNumber: 4,
     name: 'Patrouille Combinée',
     sectorName: 'MANOIR OUVERT (TOUS SECTEURS)',
-    totalZombies: 4,
-    maxAgile: 2,
+    totalZombies: 8,
+    maxAgile: 4,
     maxSimultaneousAgile: 2,
+    maxSpitter: 1,
+    maxSimultaneousSpitter: 1,
+    openingSpawns: 2,
     unlockSectorTier: null, // Pas de nouveau secteur, l'enceinte entière est libre
     activationType: 'arena_signal',
     explorationPrompt: 'PALIER 4 PURGÉ · ACCALMIE · ACTIVEZ LE CARILLON POUR LE PALIER 5',
@@ -152,9 +169,12 @@ export const ENCOUNTER_CONFIGS: EncounterSpec[] = [
     tierNumber: 5,
     name: 'Pression & Mobilité',
     sectorName: 'MANOIR OUVERT (TOUS SECTEURS)',
-    totalZombies: 6,
-    maxAgile: 3,
+    totalZombies: 10,
+    maxAgile: 5,
     maxSimultaneousAgile: 2,
+    maxSpitter: 2,
+    maxSimultaneousSpitter: 1,
+    openingSpawns: 2,
     unlockSectorTier: null,
     activationType: 'arena_signal',
     explorationPrompt: 'PALIER 5 PURGÉ · ACCALMIE · ACTIVEZ LE CARILLON POUR LE PALIER 6',
@@ -166,9 +186,12 @@ export const ENCOUNTER_CONFIGS: EncounterSpec[] = [
     tierNumber: 6,
     name: 'Embuscade Échelonnée',
     sectorName: 'MANOIR OUVERT (TOUS SECTEURS)',
-    totalZombies: 7,
-    maxAgile: 3,
-    maxSimultaneousAgile: 2,
+    totalZombies: 12,
+    maxAgile: 6,
+    maxSimultaneousAgile: 3,
+    maxSpitter: 3,
+    maxSimultaneousSpitter: 2,
+    openingSpawns: 3,
     unlockSectorTier: null,
     activationType: 'arena_signal',
     explorationPrompt: 'PALIER 6 PURGÉ · ACCALMIE · ACTIVEZ LE CARILLON POUR LE PALIER 7',
@@ -180,9 +203,12 @@ export const ENCOUNTER_CONFIGS: EncounterSpec[] = [
     tierNumber: 7,
     name: "L'Épreuve d'Avant-Garde",
     sectorName: 'MANOIR OUVERT (TOUS SECTEURS)',
-    totalZombies: 8,
-    maxAgile: 4,
-    maxSimultaneousAgile: 2,
+    totalZombies: 14,
+    maxAgile: 7,
+    maxSimultaneousAgile: 3,
+    maxSpitter: 3,
+    maxSimultaneousSpitter: 2,
+    openingSpawns: 3,
     unlockSectorTier: null,
     activationType: 'arena_signal',
     explorationPrompt: 'TENTATIVE COMPLÉTÉE · 7 PALIERS PURGÉS · MANOIR MAÎTRISÉ',

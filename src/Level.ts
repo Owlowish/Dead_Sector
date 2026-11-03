@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { Door } from './Door.ts';
+import { createStormWindowVisuals, type StormWindowVisuals } from './StormWindow.ts';
 import { visualColors } from './VisualStyle.ts';
 import { mansionMaterial, mansionBoxGeometry } from './MansionMaterials.ts';
 import {
@@ -9,6 +10,8 @@ import {
   MANSION_WAYPOINTS,
   MANSION_RAMPS,
   MANSION_HORROR_POINTS,
+  MANSION_UPGRADE_PEDESTALS,
+  MANSION_STORM_WINDOWS,
   getMansionFloorHeight,
 } from './MansionConfig.ts';
 
@@ -22,6 +25,11 @@ export class Level {
   private solidMeshes: THREE.Mesh[] = [];
   private doors: Door[] = [];
   private candles: { light: THREE.PointLight; baseIntensity: number; phase: number }[] = [];
+  private readonly stormLights: THREE.PointLight[] = [];
+  private stormWindowVisuals: StormWindowVisuals | null = null;
+  private readonly stormWindowPositions = MANSION_STORM_WINDOWS.map(({ x, y, z, rotationY }) =>
+    new THREE.Vector3(x, y, z).add(new THREE.Vector3(0, 0, -0.8).applyAxisAngle(new THREE.Vector3(0, 1, 0), rotationY)),
+  );
   private candleTimer = 0;
   private lastPathfindingDurationMs = 0;
 
@@ -31,7 +39,19 @@ export class Level {
   constructor(scene: THREE.Scene) {
     this.scene = scene;
     this.createEnvironment();
+    this.createUpgradePedestalColliders();
     this.initNavigationGraph();
+  }
+
+  private createUpgradePedestalColliders(): void {
+    const footprint = 0.55;
+    const height = 0.9;
+    for (const point of MANSION_UPGRADE_PEDESTALS) {
+      const floorY = getMansionFloorHeight(point.x, point.z);
+      const center = new THREE.Vector3(point.x, floorY + height / 2, point.z);
+      const size = new THREE.Vector3(footprint, height, footprint);
+      this.colliders.push(new THREE.Box3().setFromCenterAndSize(center, size));
+    }
   }
 
   private createEnvironment(): void {
@@ -217,6 +237,8 @@ export class Level {
       this.createSolidBox(wall.x, wall.y, wall.z, wall.width, wall.height, wall.depth, mat, geometry);
     }
 
+    this.createStormWindows();
+
     // 3B. Repères de circulation et encadrements du Grand Salon (Salle témoin F3)
     this.createSalonCarpetAndFrames();
 
@@ -335,6 +357,16 @@ export class Level {
 
     // Brume atmosphérique victorienne
     this.scene.fog = new THREE.FogExp2(0x1a1e24, 0.022);
+  }
+
+  private createStormWindows(): void {
+    this.stormWindowVisuals = createStormWindowVisuals(this.scene, MANSION_STORM_WINDOWS);
+
+    // Une seule lumière froide est déplacée d'une fenêtre à l'autre pendant l'éclair.
+    const light = new THREE.PointLight(0xa9c9e8, 0, 13, 2);
+    light.position.copy(this.getStormWindowPositions()[0]!);
+    this.scene.add(light);
+    this.stormLights.push(light);
   }
 
   private createSolidBox(
@@ -563,6 +595,17 @@ export class Level {
         Math.cos(this.candleTimer * 37 + candle.phase) * 0.03;
       candle.light.intensity = candle.baseIntensity * (1 + flicker);
     }
+    const flash = this.stormLights[0];
+    if (flash && this.stormWindowVisuals) {
+      const strength = Math.min(1, flash.intensity / 18);
+      this.stormWindowVisuals.glass.color.setRGB(0.60 + strength * 0.40, 0.66 + strength * 0.34, 0.74 + strength * 0.26);
+      for (const projection of this.stormWindowVisuals.projections) {
+        projection.material.opacity = flash.position.distanceToSquared(projection.position) < 0.05 ? strength * 0.42 : 0;
+      }
+      for (const bolt of this.stormWindowVisuals.bolts) {
+        bolt.mesh.visible = strength > 0.15 && flash.position.distanceToSquared(bolt.position) < 0.05;
+      }
+    }
   }
 
   public getLightingAt(position: THREE.Vector3): { brightness: number; warmth: number } {
@@ -605,6 +648,14 @@ export class Level {
       y: this.getFloorHeightAt(point.x, point.z) + 1.3,
       z: point.z,
     }));
+  }
+
+  public getStormLights(): readonly THREE.PointLight[] {
+    return this.stormLights;
+  }
+
+  public getStormWindowPositions(): readonly THREE.Vector3[] {
+    return this.stormWindowPositions;
   }
 
   public isInExitZone(position: THREE.Vector3): boolean {
