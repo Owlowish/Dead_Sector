@@ -1,22 +1,23 @@
 # DEAD SECTOR — État et reprise
 
-## Embuscade au plafond de la Rampeuse (The Ceiling Drop) — 4 novembre 2026
+## Embuscade au plafond de la Rampeuse (The Ceiling Drop & Stalk) — 4 novembre 2026
 
-- **Demande réalisée** : implémentation de l'embuscade au plafond (Option 1). La Rampeuse peut désormais naître suspendue sous les poutres du manoir la tête en bas, guetter le joueur dans l'obscurité et se laisser tomber brutalement pour fondre sur lui.
-- **Rendu et suspension inversée** :
-  * Calcul de la hauteur de plafond via `Level.getCeilingHeightAt(x, z)` (4,0 m au sud, 6,4 m au nord).
-  * La Rampeuse se positionne au ras du plafond et inverse son échelle verticale (`scale.y = -1`). Le sprite apparaît suspendu la tête en bas, mains et genoux cramponnés au plafond.
-- **Déclencheurs de décrochage cinématique** :
-  * Proximité : le joueur passe sous elle (distance horizontale $< 3{,}2\text{ m}$).
-  * Torche : le joueur balaye le plafond avec sa lampe torche dans sa direction (`dot > 0{,}82`).
-  * Dégâts : si le joueur la repère au plafond et lui tire dessus (`takeDamage`), elle lâche prise aussitôt.
-- **Chute et impact au sol** :
-  * Décrochage avec cri strident et accélération gravitationnelle ($g = 28\text{ m/s}^2$).
-  * À l'atterrissage, le sprite est remis à l'endroit (`scale.y = 1`), une pose d'impact accroupie est jouée, et si le joueur est à moins de 1,6 m, une tentative d'agrippement immédiate aux chevilles est déclenchée. Elle reprend ensuite son comportement normal au sol.
-- **Intégration en jeu & Debug** :
-  * 35 % des Rampeuses générées dans les vagues du manoir (notamment au Palier 8) apparaissent au plafond.
-  * Bouton d'invocation immédiate `🕷️ Rampeuse (Plafond)` ajouté dans le menu Debug (`[K]`).
-- **Vérifications** : `npm.cmd run build` (succès), `node scripts/check-crawler.mjs` (test 2.5 validé : suspension, inversion d'axe, déclenchement par approche, chute verticale, remise à l'endroit et transition sol), `node scripts/check-encounters-f4.mjs`, `node scripts/check-debug-menu.mjs`, `node scripts/check-spitter.mjs`, `node scripts/check-tiers.mjs` tous passés à 100 %.
+- **Demande réalisée** : implémentation de l'embuscade au plafond (Option 1) et correction de la réactivité / immobilité ("les rampeuses du plafond ne font rien").
+- **Comportement actif au plafond** :
+  * La Rampeuse ne reste plus figée : si elle n'a pas encore décroché, elle traque activement le joueur en rampant tête en bas le long du plafond (`scale.y = -1`, $Y$ calé sur `ceilingY - 0.775`).
+  * Sa rotation et son orientation s'ajustent pour faire face au joueur depuis le plafond.
+- **Déclencheurs de décrochage cinématique enrichis** :
+  * Distance horizontale : dès que la Rampeuse arrive à moins de $5{,}0\text{ m}$ du joueur en rampant au plafond.
+  * Ligne de visée : si le joueur lève les yeux vers elle (`cameraDirection.dot > 0{,}70`), même si la lampe torche est éteinte.
+  * Temporisateur de traque : décrochage automatique après $2{,}5\text{ s}$ de reptation aérienne pour dynamiser l'action et éviter toute attente passive.
+  * Dégâts : si le joueur lui tire dessus au plafond (`takeDamage`), lâcher prise instantané.
+- **Chute, impact et transition sol** :
+  * Décrochage avec sifflement aigu et accélération gravitationnelle ($g = 28\text{ m/s}^2$).
+  * À l'impact au sol : redressement vertical (`scale.y = 1`), choc au sol (pose `hurt` brève 0,16 s) et morsure surprise immédiate si le joueur se trouve à moins de $1{,}8\text{ m}$. Elle enchaîne ensuite la traque normale au sol.
+- **Intégration & Debug** :
+  * 35 % des Rampeuses en jeu (notamment au Palier 8) apparaissent au plafond.
+  * Bouton `🕷️ Rampeuse (Plafond)` dans le menu Debug (`[K]`).
+- **Vérifications** : `npm.cmd run build` (succès), `node scripts/check-crawler.mjs` (test 2.5 complet validé : suspension, reptation en l'air, décrochage, chute, rétablissement sol), `node scripts/check-encounters-f4.mjs` (100% de succès).
 
 
 ## Palier 8 rééquilibré et réglage contextuel de l'esquive — 4 novembre 2026
