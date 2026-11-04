@@ -62,10 +62,19 @@
     <div id="flashlight-status" class="flashlight-status" aria-live="polite">[F] LAMPE : ALLUMÉE</div>
     <div id="ammo" class="ammo" aria-live="polite">CHARGEUR : 10 / 15 · RÉSERVE : 30</div>
     <div id="prompt" class="prompt" hidden>[E] OUVRIR LA PORTE</div>
-    <div id="pause-message" class="message">Cliquez pour jouer · Clic droit : viser · [F] Lampe · [E] Ouvrir · Échap : pause
+    <div id="pause-message" class="message">Cliquez pour jouer · Clic droit : viser · [F] Lampe · [E] Ouvrir · Échap : pause · [K] Debug
       <label class="horror-volume">Craquement lointain <input id="horror-volume" type="range" min="0" max="1" step="0.01" value="0.18" aria-label="Volume des craquements lointains"><output id="horror-volume-value">18 %</output></label>
       <label class="horror-volume">Musique <input id="music-volume" type="range" min="0" max="1" step="0.01" value="0.4" aria-label="Volume de la musique"><output id="music-volume-value">40 %</output></label>
     </div>
+    <section id="debug-menu" class="debug-menu" role="dialog" aria-modal="true" aria-labelledby="debug-title" aria-describedby="debug-description" hidden>
+      <div class="debug-panel">
+        <h2 id="debug-title">DEBUG · CHOIX DU PALIER</h2>
+        <p id="debug-description">Le jeu est en pause. Choisir un palier relance son combat au point de départ avec la vie restaurée. Votre équipement et vos munitions sont conservés.</p>
+        <div class="debug-tiers" data-debug-tiers></div>
+        <button type="button" data-debug-close>Fermer · K / Échap</button>
+        <small>Après fermeture, cliquez dans le jeu pour reprendre le contrôle.</small>
+      </div>
+    </section>
     <div id="game-over" class="message game-over" role="alert" hidden>VOUS ÊTES MORT<br><button class="restart-button" type="button">Recommencer une tentative</button></div>
     <div id="victory" class="message game-over victory" role="status" hidden>TENTATIVE SURVÉCUE<br><small>Tentative réussie · Les 7 rencontres ont été surmontées</small><button class="restart-button" type="button">Recommencer une tentative</button></div>
     <script type="module" src="/src/main.ts"></script>

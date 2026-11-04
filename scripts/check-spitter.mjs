@@ -166,6 +166,7 @@ for (const tier of [4, 5, 6, 7]) {
   game.currentTier = tier;
   game.tierSpitterSpawned = 0;
   game.tierAgileSpawned = 0;
+  game.tierCrawlerSpawned = 0;
   game.tierStandardSpawned = 0;
   game.zombies = [];
   const config = ENCOUNTER_CONFIGS[tier - 1];

@@ -13,6 +13,7 @@ export interface TierDiagnosticRecord {
     standard: number;
     agile: number;
     spitter: number;
+    crawler: number;
   };
   damageTaken: number;
   medkitsCollected: number;
@@ -60,6 +61,7 @@ export class TierDiagnosticsTracker {
         standard: 0,
         agile: 0,
         spitter: 0,
+        crawler: 0,
       },
       damageTaken: 0,
       medkitsCollected: 0,
@@ -75,7 +77,7 @@ export class TierDiagnosticsTracker {
     };
   }
 
-  public recordSpawn(kind: 'standard' | 'agile' | 'spitter', activeThreats: number): void {
+  public recordSpawn(kind: 'standard' | 'agile' | 'spitter' | 'crawler', activeThreats: number): void {
     if (!this.enabled || !this.currentRecord) return;
     this.currentRecord.spawnedByType[kind]++;
     if (activeThreats > this.currentRecord.maxSimultaneousThreats) {

@@ -24,6 +24,7 @@ import { drawTierUpgrades, type UpgradeId, type UpgradeSpec } from './UpgradeCon
 import { HorrorDirector } from './HorrorDirector.ts';
 import { StormController } from './StormController.ts';
 import { SpitterZombie } from './SpitterZombie.ts';
+import { CrawlerZombie } from './CrawlerZombie.ts';
 import { SpitProjectile } from './SpitProjectile.ts';
 import { TierDiagnosticsTracker, type TierDiagnosticRecord } from './TierDiagnostics.ts';
 
@@ -35,7 +36,7 @@ export class Game {
 
   private level: Level;
   private player: Player;
-  private zombies: Array<Zombie | SpitterZombie> = [];
+  private zombies: Array<Zombie | SpitterZombie | CrawlerZombie> = [];
   private spitProjectiles: SpitProjectile[] = [];
   private medkits: Medkit[] = [];
   private ammoBoxes: AmmoBox[] = [];
@@ -54,11 +55,42 @@ export class Game {
   private weapon: Weapon;
   private state: GameState = 'playing';
   private currentTier = 1;
+  private debugMenuOpen = false;
+  private readonly debugDisplay = document.querySelector<HTMLElement>('#debug-menu');
+  private debugPreviousFocus: HTMLElement | null = null;
+  private readonly onDebugKeyDown = (event: KeyboardEvent): void => {
+    const target = event.target;
+    if (event.code === 'KeyK' && !event.repeat && !event.ctrlKey && !event.altKey && !event.metaKey
+      && !(target instanceof HTMLElement && (target.isContentEditable || target.matches('input, textarea, select')))) {
+      event.preventDefault();
+      this.setDebugMenuOpen(!this.debugMenuOpen);
+    } else if (this.debugMenuOpen && event.code === 'Escape') {
+      event.preventDefault();
+      this.setDebugMenuOpen(false);
+    } else if (this.debugMenuOpen && event.code === 'Tab') {
+      const buttons = Array.from(this.debugDisplay?.querySelectorAll<HTMLButtonElement>('button') ?? []);
+      const first = buttons[0], last = buttons.at(-1);
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
+      }
+    }
+  };
+  private readonly onDebugClick = (event: MouseEvent): void => {
+    const button = (event.target as HTMLElement).closest<HTMLButtonElement>('button');
+    if (!button || !this.debugDisplay?.contains(button)) return;
+    if (button.hasAttribute('data-debug-close')) this.setDebugMenuOpen(false);
+    else if (button.dataset.tier) this.jumpToDebugTier(Number(button.dataset.tier));
+  };
   private pendingTierStart = 0;
   private spawnQueue = 0;
   private spawnCooldownTimer = 0;
   private tierAgileSpawned = 0;
   private tierSpitterSpawned = 0;
+  private tierCrawlerSpawned = 0;
   private tierStandardSpawned = 0;
   private tierDiagnostics = new TierDiagnosticsTracker();
   private lastSpawnQuadrant = -1;
@@ -243,7 +275,7 @@ export class Game {
     document.addEventListener('pointerlockchange', () => {
       const isLocked = document.pointerLockElement === this.renderer.domElement;
       if (this.pauseDisplay) {
-        this.pauseDisplay.hidden = isLocked || (this.state !== 'playing' && this.state !== 'exploration' && this.state !== 'terminal');
+        this.pauseDisplay.hidden = isLocked || !this.isSimulationActive();
       }
       this.syncAmbientAudio();
     });
@@ -382,6 +414,7 @@ export class Game {
 
     // Initialisation du premier palier
     this.startTier(1);
+    this.setupDebugMenu();
 
     // Source unique de vérité pour les munitions : notification directe du HUD
     this.weapon.setOnAmmoChange(() => this.updateAmmoDisplay());
@@ -438,11 +471,67 @@ export class Game {
   }
 
   private isSimulationActive(): boolean {
-    return this.state === 'playing' || this.state === 'respite' || this.state === 'exploration' || this.state === 'terminal';
+    return !this.debugMenuOpen && (this.state === 'playing' || this.state === 'respite' || this.state === 'exploration' || this.state === 'terminal');
+  }
+
+  private setupDebugMenu(): void {
+    const list = this.debugDisplay?.querySelector<HTMLElement>('[data-debug-tiers]');
+    if (!list) return;
+    for (const encounter of this.encounterConfigs) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.dataset.tier = String(encounter.tierNumber);
+      button.textContent = `Palier ${encounter.tierNumber} · ${encounter.name}`;
+      list.appendChild(button);
+    }
+    window.addEventListener('keydown', this.onDebugKeyDown);
+    this.debugDisplay?.addEventListener('click', this.onDebugClick);
+  }
+
+  private setDebugMenuOpen(open: boolean): void {
+    if (!this.debugDisplay || this.disposed || this.debugMenuOpen === open) return;
+    this.debugMenuOpen = open;
+    this.debugDisplay.hidden = !open;
+    if (open) {
+      this.debugPreviousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      this.weapon.cancelReload();
+      if (this.pauseDisplay) this.pauseDisplay.hidden = true;
+      if (this.promptDisplay) this.promptDisplay.hidden = true;
+      if (document.pointerLockElement === this.renderer.domElement) document.exitPointerLock();
+      for (const button of this.debugDisplay.querySelectorAll<HTMLButtonElement>('[data-tier]')) {
+        button.setAttribute('aria-current', String(Number(button.dataset.tier) === this.currentTier));
+      }
+      this.debugDisplay.querySelector<HTMLButtonElement>('[aria-current="true"]')?.focus();
+    } else {
+      if (this.pauseDisplay) this.pauseDisplay.hidden = !this.isSimulationActive() || document.pointerLockElement === this.renderer.domElement;
+      this.debugPreviousFocus?.focus();
+    }
+    this.syncAmbientAudio();
+  }
+
+  private jumpToDebugTier(tierNumber: number): void {
+    if (!Number.isInteger(tierNumber) || !this.encounterConfigs[tierNumber - 1] || this.disposed) return;
+    this.weapon.cancelReload();
+    this.player.resetForDebug();
+    for (const drop of this.ammoDrops) drop.dispose();
+    this.ammoDrops = [];
+    for (const shell of this.shellCasings) shell.dispose();
+    this.shellCasings = [];
+    this.hitEffects.clear();
+    this.damageEffectRemaining = 0;
+    if (this.damageOverlay) this.damageOverlay.style.opacity = '0';
+    if (this.gameOverDisplay) this.gameOverDisplay.hidden = true;
+    if (this.victoryDisplay) this.victoryDisplay.hidden = true;
+    // Forcer un démarrage direct, même si le menu a été ouvert pendant une accalmie.
+    this.state = 'playing';
+    this.startTier(tierNumber);
+    this.updateHealthDisplay();
+    this.updateAmmoDisplay();
+    this.setDebugMenuOpen(false);
   }
 
   private updateHorrorAudio(delta: number): void {
-    const eligible = this.state === 'exploration'
+    const eligible = !this.debugMenuOpen && this.state === 'exploration'
       && this.pendingTierStart > 0
       && this.spawnQueue === 0
       && this.zombies.every((zombie) => !zombie.isAlive())
@@ -470,7 +559,7 @@ export class Game {
       this.tabBecameVisible = false;
 
       // Conserver le plafonnement de simulation existant pour le gameplay (déplacements, physique)
-      const delta = Math.min(rawDeltaSec, 0.05);
+      const delta = this.debugMenuOpen ? 0 : Math.min(rawDeltaSec, 0.05);
 
       const isCombat = this.state === 'playing' && (typeof document !== 'undefined' && document.pointerLockElement === this.renderer.domElement);
       this.perfTracker?.recordFrame(rawDeltaMs, isCombat, isTabSwitch);
@@ -535,6 +624,22 @@ export class Game {
               });
               continue;
             }
+            if (zombie instanceof CrawlerZombie) {
+              zombie.update(delta, this.player.camera.position, this.zombies, (damage) => {
+                const previousHealth = this.player.getHealth();
+                this.player.takeDamage(damage);
+                this.tierDiagnostics?.recordDamageTaken(damage);
+                if (this.player.getHealth() < previousHealth) {
+                  this.damageEffectRemaining = this.damageEffectDuration;
+                  if (this.damageOverlay) this.damageOverlay.style.opacity = '1';
+                }
+                this.updateHealthDisplay();
+                if (!this.player.isAlive()) {
+                  this.endGame('lost');
+                }
+              });
+              continue;
+            }
             zombie.update(delta, this.player.camera.position, this.zombies.filter((z): z is Zombie => z instanceof Zombie), (damage) => {
               const previousHealth = this.player.getHealth();
               this.player.takeDamage(damage);
@@ -552,7 +657,7 @@ export class Game {
         }
       }
 
-      if (this.state === 'exploration' && this.pendingTierStart > 0 && document.pointerLockElement === this.renderer.domElement && !document.hidden && (document.hasFocus?.() ?? true)) {
+      if (this.isSimulationActive() && this.state === 'exploration' && this.pendingTierStart > 0 && document.pointerLockElement === this.renderer.domElement && !document.hidden && (document.hasFocus?.() ?? true)) {
         this.advanceRespite(delta);
       }
 
@@ -742,6 +847,7 @@ export class Game {
   }
 
   private updateZombieRemains(delta: number): void {
+    if (this.debugMenuOpen) return;
     // Le dernier coup ouvre le menu et libère la souris : sa chute reste visuelle.
     // Échap en combat/exploration suspend en revanche les animations de mort.
     const animate = this.state === 'respite' || this.state === 'won'
@@ -781,7 +887,7 @@ export class Game {
     if (this.respiteTimer === 0) this.launchPendingTier();
   }
 
-  private onZombieKilled(zombie: Zombie | SpitterZombie): void {
+  private onZombieKilled(zombie: Zombie | SpitterZombie | CrawlerZombie): void {
     this.killsThisTier++;
     const remaining = this.encounterConfigs[this.currentTier - 1].totalZombies - this.killsThisTier;
     const due = this.dropBudget > 0 && (this.killsThisTier <= 2 || remaining <= this.dropBudget);
@@ -889,10 +995,13 @@ export class Game {
     const configs = this.encounterConfigs ?? (this as unknown as { tierCandidateSpawns?: EncounterSpec[] }).tierCandidateSpawns;
     if (!Number.isInteger(tierNumber) || tierNumber < 1 || tierNumber > (configs?.length ?? 0)) return;
     this.currentTier = tierNumber;
+    this.pendingTierStart = 0;
+    this.respiteTimer = 0;
     this.horrorDirector?.resetRespite();
     const t0 = performance.now();
     this.tierAgileSpawned = 0;
     this.tierSpitterSpawned = 0;
+    this.tierCrawlerSpawned = 0;
     this.tierStandardSpawned = 0;
     this.dropBudget = Math.max(2, Math.ceil((configs?.[tierNumber - 1]?.totalZombies ?? 4) / 3));
     this.dropsMade = 0;
@@ -988,21 +1097,25 @@ export class Game {
     const totalZombies = config.totalZombies;
     const maxAgileThisTier = config.maxAgile;
     const maxSpitterThisTier = config.maxSpitter;
-    const maxStandardThisTier = Math.max(0, totalZombies - maxAgileThisTier - maxSpitterThisTier);
+    const maxCrawlerThisTier = config.maxCrawler ?? 0;
+    const maxStandardThisTier = Math.max(0, totalZombies - maxAgileThisTier - maxSpitterThisTier - maxCrawlerThisTier);
 
     const remainingAgile = Math.max(0, maxAgileThisTier - this.tierAgileSpawned);
     const remainingSpitter = Math.max(0, maxSpitterThisTier - this.tierSpitterSpawned);
+    const remainingCrawler = Math.max(0, maxCrawlerThisTier - this.tierCrawlerSpawned);
     const remainingStandard = Math.max(0, maxStandardThisTier - this.tierStandardSpawned);
 
     const livingAgile = this.zombies.filter((z) => z instanceof Zombie && z.getKind() === 'agile' && z.isThreat()).length;
     const livingSpitter = livingZombies.filter((z) => z.getKind() === 'spitter').length;
+    const livingCrawler = livingZombies.filter((z) => z.getKind() === 'crawler').length;
 
     const canSpawnSpitter = remainingSpitter > 0 && livingSpitter < config.maxSimultaneousSpitter;
+    const canSpawnCrawler = remainingCrawler > 0 && livingCrawler < (config.maxSimultaneousCrawler ?? 2);
     const canSpawnAgile = remainingAgile > 0 && livingAgile < config.maxSimultaneousAgile;
     const canSpawnSoloAgile = canSpawnAgile && remainingAgile > remainingSpitter;
     const canSpawnStandard = remainingStandard > 0;
 
-    if (!canSpawnSpitter && !canSpawnAgile && !canSpawnStandard) {
+    if (!canSpawnSpitter && !canSpawnCrawler && !canSpawnAgile && !canSpawnStandard) {
       this.perfTracker?.recordSpawn(performance.now() - t0);
       return false;
     }
@@ -1012,12 +1125,16 @@ export class Game {
       chosenKind = 'spitter';
     } else if (canSpawnSpitter) {
       chosenKind = 'spitter';
+    } else if (canSpawnCrawler && (this.tierCrawlerSpawned <= this.tierAgileSpawned || !canSpawnAgile)) {
+      chosenKind = 'crawler';
     } else if (canSpawnSoloAgile && canSpawnStandard) {
       chosenKind = this.tierAgileSpawned <= this.tierStandardSpawned ? 'agile' : 'standard';
     } else if (canSpawnSoloAgile) {
       chosenKind = 'agile';
     } else if (canSpawnStandard) {
       chosenKind = 'standard';
+    } else if (canSpawnCrawler) {
+      chosenKind = 'crawler';
     } else {
       return false;
     }
@@ -1124,6 +1241,8 @@ export class Game {
 
     if (chosenKind === 'spitter') {
       this.tierSpitterSpawned++;
+    } else if (chosenKind === 'crawler') {
+      this.tierCrawlerSpawned++;
     } else if (chosenKind === 'agile') {
       this.tierAgileSpawned++;
     } else {
@@ -1133,6 +1252,8 @@ export class Game {
     // Créer le zombie et l'alerter vers le joueur
     const zombie = chosenKind === 'spitter'
       ? new SpitterZombie(this.scene, this.level, chosen.x, chosen.z)
+      : chosenKind === 'crawler'
+      ? new CrawlerZombie(this.scene, this.level, chosen.x, chosen.z)
       : new Zombie(this.scene, this.level, chosen.x, chosen.z, chosenKind);
     zombie.alert(playerPos);
     if (this.zombieGroanBuffer) {
@@ -1269,6 +1390,9 @@ export class Game {
 
   public dispose(): void {
     this.disposed = true;
+    window.removeEventListener('keydown', this.onDebugKeyDown);
+    this.debugDisplay?.removeEventListener('click', this.onDebugClick);
+    if (this.debugDisplay) this.debugDisplay.hidden = true;
     if (this.ambianceAudio?.isPlaying) this.ambianceAudio.stop();
     if (this.musicAudio?.isPlaying) this.musicAudio.stop();
     for (const drop of (this.ammoDrops ?? [])) drop.dispose();

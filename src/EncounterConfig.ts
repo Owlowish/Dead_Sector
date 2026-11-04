@@ -25,6 +25,9 @@ export interface EncounterSpec {
   /** Cracheurs prévus dans la rencontre et plafond présents simultanément */
   maxSpitter: number;
   maxSimultaneousSpitter: number;
+  /** Rampeurs (Crawlers) prévus dans la rencontre et plafond simultané */
+  maxCrawler?: number;
+  maxSimultaneousCrawler?: number;
   /** Nombre d'ennemis envoyés lors de la salve d'ouverture initiale */
   openingSpawns?: number;
   /** Secteur déverrouillé à l'issue de cette rencontre (null si le manoir est déjà complètement ouvert) */
@@ -152,7 +155,7 @@ export const ENCOUNTER_CONFIGS: EncounterSpec[] = [
     sectorBounds: MANSION_SPAWNS[2].sectorBounds,
     spawnPool: MANSION_SPAWNS[2].pool,
   },
-  // RENCONTRE 4 : Réutilisation du manoir ouvert et attaques multi-ailes
+  // RENCONTRE 4 : Réutilisation du manoir ouvert et attaques multi-ailes (Apparition du Rampeur)
   {
     tierNumber: 4,
     name: 'Patrouille Combinée',
@@ -163,6 +166,8 @@ export const ENCOUNTER_CONFIGS: EncounterSpec[] = [
     maxSimultaneousAgile: 2,
     maxSpitter: 1,
     maxSimultaneousSpitter: 1,
+    maxCrawler: 2,
+    maxSimultaneousCrawler: 2,
     openingSpawns: 3,
     unlockSectorTier: null, // Pas de nouveau secteur, l'enceinte entière est libre
     activationType: 'arena_signal',
@@ -170,7 +175,7 @@ export const ENCOUNTER_CONFIGS: EncounterSpec[] = [
     sectorBounds: { minX: -23.5, maxX: 23.5, minZ: -19.5, maxZ: 19.5 },
     spawnPool: MANSION_OPEN_SPAWN_POOL,
   },
-  // RENCONTRE 5 : Alterner précision et mobilité face aux mélanges lents/agiles
+  // RENCONTRE 5 : Alterner précision et mobilité face aux mélanges lents/agiles/rampeurs
   {
     tierNumber: 5,
     name: 'Pression & Mobilité',
@@ -181,6 +186,8 @@ export const ENCOUNTER_CONFIGS: EncounterSpec[] = [
     maxSimultaneousAgile: 2,
     maxSpitter: 2,
     maxSimultaneousSpitter: 1,
+    maxCrawler: 2,
+    maxSimultaneousCrawler: 2,
     openingSpawns: 4,
     unlockSectorTier: null,
     activationType: 'arena_signal',
@@ -199,6 +206,8 @@ export const ENCOUNTER_CONFIGS: EncounterSpec[] = [
     maxSimultaneousAgile: 4,
     maxSpitter: 3,
     maxSimultaneousSpitter: 3,
+    maxCrawler: 2,
+    maxSimultaneousCrawler: 2,
     openingSpawns: 5,
     unlockSectorTier: null,
     activationType: 'arena_signal',
@@ -217,6 +226,8 @@ export const ENCOUNTER_CONFIGS: EncounterSpec[] = [
     maxSimultaneousAgile: 4,
     maxSpitter: 3,
     maxSimultaneousSpitter: 3,
+    maxCrawler: 2,
+    maxSimultaneousCrawler: 2,
     openingSpawns: 6,
     unlockSectorTier: null,
     activationType: 'arena_signal',

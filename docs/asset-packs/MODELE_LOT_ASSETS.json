@@ -1,0 +1,101 @@
+{
+  "documentType": "asset-pack-template",
+  "templateVersion": 1,
+  "updatedAt": "2026-11-04",
+  "instructions": "Fiche documentaire, non chargée automatiquement par le jeu. Copier vers <identifiant>.json. Remplacer les champs null après mesure ou décision ; ne pas inventer les valeurs. Dupliquer les entrées pour chaque besoin, y compris réutilisé ou non applicable. Aucun fichier de ce modèle n'est déjà produit.",
+  "id": null,
+  "request": null,
+  "scope": {
+    "prepare": true,
+    "generate": false,
+    "integrate": false,
+    "authorizedDecisions": [],
+    "assumptions": [],
+    "pendingDecisions": []
+  },
+  "style": {
+    "workflow": "docs/PIPELINE_ASSETS.md",
+    "references": [
+      {
+        "path": null,
+        "role": "style",
+        "inspected": false,
+        "attachedToGenerator": false,
+        "observations": null
+      }
+    ],
+    "sharedPromptBlock": null,
+    "lockedIdentity": [],
+    "acceptedBaseFile": null,
+    "humanApproval": "not_requested"
+  },
+  "technicalContract": {
+    "usage": null,
+    "displaySize": null,
+    "sourceDimensions": null,
+    "exportDimensions": null,
+    "format": null,
+    "background": null,
+    "coordinateSpace": null,
+    "coordinateConversion": null,
+    "margins": null,
+    "anchors": [],
+    "fixedParts": [],
+    "movingParts": [],
+    "phases": [],
+    "uniqueEvents": [],
+    "interruptions": null,
+    "tileAxes": [],
+    "budget": null
+  },
+  "statusVocabulary": {
+    "production": ["to_produce", "generated", "reused", "rejected", "missing", "not_applicable"],
+    "validation": ["not_checked", "pass", "needs_work"],
+    "humanApproval": ["not_requested", "pending", "approved", "rejected"]
+  },
+  "assets": [
+    {
+      "id": null,
+      "purpose": null,
+      "required": true,
+      "productionStatus": "to_produce",
+      "reason": null,
+      "dependencies": [],
+      "plannedFile": null,
+      "sourceFile": null,
+      "exportFile": null,
+      "runtimeUrl": null,
+      "measuredDimensions": null,
+      "cellsAndOrder": [],
+      "anchors": [],
+      "durationSeconds": null,
+      "events": [],
+      "referencesActuallyAttached": [],
+      "promptExact": null,
+      "toolAndModelActuallyUsed": null,
+      "transformations": [],
+      "acceptanceCriteria": [],
+      "validation": {
+        "file": "not_checked",
+        "art": "not_checked",
+        "continuity": "not_checked",
+        "integration": "not_checked",
+        "gameplay": "not_checked"
+      },
+      "evidence": [],
+      "knownDefects": [],
+      "humanApproval": "not_requested"
+    }
+  ],
+  "handoff": {
+    "sharedAnimationModule": null,
+    "previewCommand": null,
+    "previewLocation": null,
+    "checksActuallyRun": [],
+    "buildActuallyRun": false,
+    "browserActuallyObserved": false,
+    "missingRequiredAssets": [],
+    "remainingWork": [],
+    "lastSpecificDefect": null
+  }
+}

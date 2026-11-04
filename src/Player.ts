@@ -99,6 +99,10 @@ export class Player {
       this.keys.clear();
     });
 
+    document.addEventListener('pointerlockchange', () => {
+      if (document.pointerLockElement !== this.canvas) this.keys.clear();
+    });
+
     this.canvas.addEventListener('click', () => {
       if (this.canPlay()) this.canvas.requestPointerLock();
     });
@@ -158,6 +162,20 @@ export class Player {
 
   public getHealth(): number {
     return this.health;
+  }
+
+  public resetForDebug(): void {
+    this.keys.clear();
+    this.health = this.maxHealth;
+    this.yaw = 0;
+    this.pitch = 0;
+    this.recoilPitch = 0;
+    this.recoilYaw = 0;
+    this.recoilRoll = 0;
+    this.setAimAmount(0);
+    const { x, z } = PLAYER_START_POSITION;
+    this.camera.position.set(x, this.level.getFloorHeightAt(x, z) + this.eyeHeight, z);
+    this.camera.rotation.set(0, 0, 0);
   }
 
   public takeDamage(amount: number): void {

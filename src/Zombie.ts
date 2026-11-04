@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import type { Level } from './Level';
 import { visualColors } from './VisualStyle.ts';
 import { zombieAnimation, attackFrame, createAtlasFrameGeometry } from './ZombieAnimation.ts';
-import { ZombieRemains, type ZombieKind } from './ZombieRemains.ts';
+import { ZombieRemains } from './ZombieRemains.ts';
 import { SpitterZombie } from './SpitterZombie.ts';
 import { prepareSpriteHitMask } from './SpriteHitMask.ts';
 import {
@@ -151,7 +151,7 @@ export class Zombie {
   private level: Level;
   private remains: ZombieRemains;
   private disposed = false;
-  private readonly kind: Exclude<ZombieKind, 'spitter'>;
+  private readonly kind: 'standard' | 'agile';
 
   // Ressources zombie standard (partagées en cache)
   private standardResources: StandardSharedResources | null = null;
@@ -208,7 +208,7 @@ export class Zombie {
     level: Level,
     x: number,
     z: number,
-    kind: Exclude<ZombieKind, 'spitter'> = 'standard',
+    kind: 'standard' | 'agile' = 'standard',
     random: () => number = Math.random
   ) {
     this.level = level;
@@ -266,7 +266,7 @@ export class Zombie {
     this.remains = new ZombieRemains(scene, this.kind);
   }
 
-  public getKind(): Exclude<ZombieKind, 'spitter'> {
+  public getKind(): 'standard' | 'agile' {
     return this.kind;
   }
 

@@ -9,7 +9,7 @@ import {
 } from './AgileZombieAnimation.ts';
 import { spitterAnimation, spitterDeathFrame } from './SpitterAnimation.ts';
 
-export type ZombieKind = 'standard' | 'agile' | 'spitter';
+export type ZombieKind = 'standard' | 'agile' | 'spitter' | 'crawler';
 
 function loadPixelTexture(url: string): THREE.Texture {
   const texture = new THREE.TextureLoader().load(url);
