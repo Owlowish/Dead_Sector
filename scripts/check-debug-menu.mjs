@@ -42,7 +42,7 @@ Object.assign(game, {
   respawnPickups(){respawns++;},updateObjectiveDisplay(){},updateHealthDisplay(){},updateAmmoDisplay(){},
   setDebugMenuOpen(open){this.debugMenuOpen=open;},
 });
-for(const tier of [4,7,1,4]){
+for(const tier of [4,8,1,4]){
   game.pendingTierStart=7;game.respiteTimer=9;game.tierCrawlerSpawned=2;
   game.jumpToDebugTier(tier);
   assert.equal(game.currentTier,tier);
@@ -58,7 +58,7 @@ for(const tier of [4,7,1,4]){
 assert.equal(disposedEnemies,1);assert.equal(disposedProjectiles,1);
 assert.equal(disposedDrops,1);assert.equal(disposedShells,1);
 assert.equal(clearedEffects,4);assert.equal(respawns,4);
-for(const tier of [0,8,1.5,NaN]){game.jumpToDebugTier(tier);assert.equal(game.currentTier,4);}
+for(const tier of [0,ENCOUNTER_CONFIGS.length+1,1.5,NaN]){game.jumpToDebugTier(tier);assert.equal(game.currentTier,4);}
 assert.equal(respawns,4,'une entrée invalide ne doit rien réinitialiser');
 game.debugMenuOpen=true;assert.equal(game.isSimulationActive(),false);
 game.debugMenuOpen=false;assert.equal(game.isSimulationActive(),true);

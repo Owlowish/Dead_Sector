@@ -979,7 +979,7 @@ export class Game {
     unlockSound.volume = 0.5;
     void unlockSound.play().catch(() => {});
 
-    // 4. Après P7, garder le prototype explorable jusqu'à la conception de la finale F6.
+    // Après la dernière rencontre configurée, conserver l'exploration libre.
     const maxTiers = configs?.length ?? 4;
     if (this.currentTier >= maxTiers) {
       this.pendingTierStart = 0;
@@ -1346,7 +1346,7 @@ export class Game {
       this.objectiveDisplay.textContent = 'MISSION ÉCHOUÉE';
       this.objectiveDisplay.style.color = 'var(--blood)';
     } else if (this.state === 'terminal') {
-      this.objectiveDisplay.textContent = '7 RENCONTRES PURGÉES · FINALE F6 À VENIR';
+      this.objectiveDisplay.textContent = `${this.encounterConfigs.length} RENCONTRES PURGÉES · FINALE F6 À VENIR`;
       this.objectiveDisplay.style.color = 'var(--gold, #dfba73)';
     } else if (this.state === 'respite') {
       this.objectiveDisplay.textContent = `PALIER ${this.currentTier} PURGÉ · ACCALMIE EN COURS`;

@@ -1,5 +1,19 @@
 # DEAD SECTOR — État et reprise
 
+## Palier 8 intensifié (submersion 16 Rampeuses) et esquive de visée — 4 novembre 2026
+
+- **Demande réalisée** : intensification du palier 8 « La Reptation » pour procurer une sensation de submersion, et ajout d'un comportement d'esquive de la ligne de visée pour rendre la Rampeuse insaisissable.
+- **Rééquilibrage Palier 8** :
+  * Total doublé : passage de 8 à **16 Rampeuses** au total.
+  * Pression simultanée : plafond d'ennemis actifs doublé à **8 Rampeuses simultanées** (maximum du budget arène `MANSION_BUDGET`).
+  * Salve d'ouverture agressive : **5 Rampeuses** jaillissent immédiatement dès le déclenchement du palier.
+- **Esquive de la ligne de visée (Aim Evasion / Side-Scuttle)** :
+  * Détection géométrique : projection vectorielle 3D de la droite de visée de la caméra du joueur (`playerPosition` + `cameraDirection`). Si la créature se trouve dans le cône avant à moins de 1,60 m de l'axe central du réticule, elle détecte qu'elle est ciblée.
+  * Décrochage latéral : elle injecte instantanément une composante perpendiculaire horizontale $(\pm D_z, 0, \mp D_x)$ à sa vitesse de reptation.
+  * Zigzag dynamique : elle alterne son sens d'esquive toutes les 0,45 s ou immédiatement en cas d'obstruction par un mur, esquivant les tirs à la tête et forçant le joueur à anticiper sa trajectoire.
+- **Vérifications** : `npm.cmd run build` (succès), `node scripts/check-crawler.mjs` (100% de réussite incluant le test d'esquive active et d'arrêt quand le joueur ne vise plus), `node scripts/check-encounters-f4.mjs` (cycle complet 1 à 8 avec 16 Rampeuses et plafond 8), `node scripts/check-debug-menu.mjs`, `node scripts/check-spitter.mjs`, `node scripts/check-tiers.mjs` tous passés à 100 %.
+
+
 ## Rampeuse : comportements d'horreur et invocation debug — 4 novembre 2026
 
 - **Demande réalisée** : implémentation des comportements 2 (stutter saccadé), 3 (réaction lampe torche / frénésie) et 4 (agrippement chevilles / tirage caméra) sur la Rampeuse, ainsi que 4 boutons d'invocation immédiate dans le menu debug (`[K] Debug`) à 3-4 mètres devant le joueur.

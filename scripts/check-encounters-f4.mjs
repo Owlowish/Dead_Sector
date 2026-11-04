@@ -66,11 +66,11 @@ const { Game } = await import('../src/Game.ts');
 console.log('=== SUITE DE TESTS COMPORTEMENTAUX : PROGRESSION COMPLÈTE & IMPRÉVISIBILITÉ F4 ===\n');
 
 // ============================================================================
-// ÉPREUVE 1 : TABLE DES 7 RENCONTRES & ÉCHELONNEMENT DE MENACE
+// ÉPREUVE 1 : TABLE DES RENCONTRES & COMPOSITION
 // ============================================================================
-console.log('1. Test de la structure et des quotas de la table des 7 rencontres...');
+console.log('1. Test de la structure et des quotas des huit rencontres...');
 
-assert.equal(ENCOUNTER_CONFIGS.length, 7, 'La progression F4 doit comporter exactement 7 rencontres complètes');
+assert.equal(ENCOUNTER_CONFIGS.length, 8, 'Sept rencontres mixtes/apprentissage puis une rencontre Rampeuses');
 
 for (let i = 0; i < ENCOUNTER_CONFIGS.length; i++) {
   const enc = ENCOUNTER_CONFIGS[i];
@@ -78,13 +78,13 @@ for (let i = 0; i < ENCOUNTER_CONFIGS.length; i++) {
   assert.ok(enc.totalZombies >= 4, `La rencontre ${i + 1} doit proposer au moins 4 menaces`);
   assert.ok(enc.maxAgile <= enc.totalZombies, `Le quota d'agiles ne peut dépasser le total d'ennemis`);
   assert.ok(enc.maxSimultaneousAgile <= 4, `Plafond d'agiles simultanés borné à 4`);
-  assert.ok(enc.maxSpitter + enc.maxAgile < enc.totalZombies, `Au moins un zombie standard au palier ${enc.tierNumber}`);
+  assert.ok(enc.maxSpitter + enc.maxAgile + (enc.maxCrawler ?? 0) <= enc.totalZombies, `Les quotas tiennent dans le total au palier ${enc.tierNumber}`);
   assert.ok(enc.maxSimultaneousSpitter <= 3, `Pas plus de trois cracheurs simultanés`);
   assert.ok(enc.maxActiveZombies <= 8, `Plafond global par rencontre borné à huit`);
 }
 
 // Vérifications spécifiques des intentions tactiques
-const [e1, e2, e3, e4, e5, e6, e7] = ENCOUNTER_CONFIGS;
+const [e1, e2, e3, e4, e5, e6, e7, e8] = ENCOUNTER_CONFIGS;
 
 // P1 : Apprentissage standard
 assert.equal(e1.unlockSectorTier, 1);
@@ -112,7 +112,14 @@ assert.deepEqual([e4, e5, e6, e7].map((e) => e.totalZombies), [8, 10, 12, 14]);
 assert.deepEqual([e4, e5, e6, e7].map((e) => e.maxSpitter), [1, 2, 3, 3]);
 assert.deepEqual([e4, e5, e6, e7].map((e) => e.maxAgile), [4, 5, 6, 7]);
 
-console.log('   -> PASS : Structure des 7 rencontres et intentions tactiques conformes.\n');
+assert.equal(e8.totalZombies, 16);
+assert.equal(e8.maxCrawler, e8.totalZombies);
+assert.equal(e8.maxAgile + e8.maxSpitter, 0);
+assert.equal(e8.maxSimultaneousCrawler, 8);
+assert.equal(e8.maxActiveZombies, 8);
+assert.equal(e8.openingSpawns, 5);
+assert.equal(e8.spawnPool, MANSION_OPEN_SPAWN_POOL);
+console.log('   -> PASS : Huit rencontres, dont P8 exclusivement Rampeuses.\n');
 
 // ============================================================================
 // ÉPREUVE 2 : POOL OUVERT MULTIDIRECTIONNEL ET COUVERTURE DES 4 POINTS CARDINAUX
@@ -151,7 +158,7 @@ console.log('   -> PASS : 26 points validés couvrant tous les angles et étages
 // ============================================================================
 // ÉPREUVE 3 : CYCLE DE PROGRESSION INTÉGRAL 1 -> 7 ET DÉCLENCHEMENT PAR CARILLON
 // ============================================================================
-console.log('3. Test du cycle complet (Paliers 1 à 7 -> exploration terminale)...');
+console.log('3. Test du cycle complet (Paliers 1 à 8 -> exploration terminale)...');
 
 const gameScene = new THREE.Scene();
 const gameLevel = new Level(gameScene);
@@ -210,13 +217,13 @@ game.startTier(1);
 assert.equal(game['currentTier'], 1);
 assert.equal(game['spawnQueue'], 4);
 assert.equal(horrorDirectorProbe.resetCount, 1, 'Le départ valide d’un combat réarme le directeur pour la prochaine accalmie');
-game.startTier(8);
+game.startTier(ENCOUNTER_CONFIGS.length + 1);
 assert.equal(game['currentTier'], 1, 'Un numéro invalide ne modifie pas le palier courant');
 assert.equal(game['spawnQueue'], 4, 'Un numéro invalide ne détruit pas la file active');
 assert.equal(horrorDirectorProbe.resetCount, 1, 'Un palier invalide ne réarme pas le directeur');
 
-// Parcourir les 7 paliers
-for (let tier = 1; tier <= 7; tier++) {
+// Parcourir tous les paliers, y compris la transition P7 → P8.
+for (let tier = 1; tier <= ENCOUNTER_CONFIGS.length; tier++) {
   assert.equal(game['currentTier'], tier, `Actuellement au Palier ${tier}`);
   assert.equal(game['state'], 'playing', `En combat actif au Palier ${tier}`);
 
@@ -224,14 +231,14 @@ for (let tier = 1; tier <= 7; tier++) {
   for (const z of game['zombies']) z.dispose(game['scene']);
   game['zombies'] = [];
   game['spawnQueue'] = 0;
-  if (tier === 7) {
+  if (tier === ENCOUNTER_CONFIGS.length) {
     terminalPedestals[0].setOffer(UPGRADE_CATALOG.agility);
     terminalPedestals[1].setOffer(UPGRADE_CATALOG.vitality);
     game['encounterBell'].setActive(true);
   }
   game['checkTierCompletion']();
 
-  if (tier < 7) {
+  if (tier < ENCOUNTER_CONFIGS.length) {
     // Doit passer en accalmie / exploration
     assert.equal(game['state'], 'exploration', `Après le Palier ${tier}, transition vers exploration`);
     assert.equal(game['pendingTierStart'], tier + 1, `Palier ${tier + 1} en attente`);
@@ -242,25 +249,25 @@ for (let tier = 1; tier <= 7; tier++) {
     // Lancer le palier suivant
     game['launchPendingTier']();
   } else {
-    // Après P7 : exploration terminale du prototype, sans menu ni capture de contrôle.
-    assert.equal(game['state'], 'terminal', 'Le prototype reste explorable après P7');
+    // Après le dernier palier : exploration sans menu ni capture de contrôle.
+    assert.equal(game['state'], 'terminal', 'Le prototype reste explorable après P8');
     assert.equal(game['pendingTierStart'], 0, 'Aucun palier suivant ne doit être en attente');
     assert.equal(game['isSimulationActive'](), true, 'Les contrôles restent actifs');
     assert.equal(globalThis.document.pointerLockElement, game.renderer.domElement, 'La souris reste capturée');
     assert.equal(globalThis.document.exitPointerLockCalls, 0, 'Aucune libération de souris demandée');
     assert.equal(game['victoryDisplay'].hidden, true, 'Aucun overlay de victoire ne doit apparaître');
     assert.equal(game['gameOverDisplay'].hidden, true, 'Aucun overlay de défaite ne doit apparaître');
-    assert.match(game['objectiveDisplay'].textContent, /7 RENCONTRES PURGÉES/i);
+    assert.match(game['objectiveDisplay'].textContent, /8 RENCONTRES PURGÉES/i);
     assert.match(game['objectiveDisplay'].textContent, /FINALE F6 À VENIR/i);
     game['checkTierCompletion']();
     assert.equal(game['state'], 'terminal', 'La transition terminale ne se répète pas');
-    assert.equal(game['spawnQueue'], 0, 'Aucune huitième apparition');
-    assert.ok(terminalPedestals.every((p) => !p.isActive()), 'Aucune offre ne reste active après P7');
-    assert.equal(game['encounterBell'].isActive(), false, 'Le carillon est fermé après P7');
+    assert.equal(game['spawnQueue'], 0, 'Aucune apparition après le dernier palier');
+    assert.ok(terminalPedestals.every((p) => !p.isActive()), 'Aucune offre ne reste active après P8');
+    assert.equal(game['encounterBell'].isActive(), false, 'Le carillon est fermé après P8');
   }
 }
 
-console.log('   -> PASS : Cycle complet 1->2->3->4->5->6->7 validé avec décompte.\n');
+console.log('   -> PASS : Cycle complet P1 à P8 avec décompte et exploration finale.\n');
 
 // L'appel public direct utilisé par l'instrumentation doit synchroniser son palier.
 game.startTier(7);
@@ -361,6 +368,34 @@ const secondSpawn = game['zombies'][0].getPosition();
 assert.equal(game['level'].isColliding(secondSpawn.x, secondSpawn.z, 0.45), false, 'La position représentative respecte aussi le filtre de collision');
 assert.ok(Math.hypot(secondSpawn.x + 19, secondSpawn.z - 14) >= 6, 'La position représentative respecte la distance de sécurité');
 Math.random = originalRandom;
+
+// Exercer le vrai sélecteur avec uniquement des Rampeuses, dans le vrai niveau.
+game.startTier(8);
+game.player.camera.position.set(0, 1.7, 0);
+for (const door of game.level.getDoors()) door.update(5);
+for (let i = 0; i < e8.maxActiveZombies; i++) {
+  assert.equal(game.trySpawnZombie(), true, 'Apparition initiale de Rampeuse');
+  game.spawnQueue--;
+}
+assert.equal(game.trySpawnZombie(), false, 'La neuvième Rampeuse attend une place libre');
+while (game.spawnQueue > 0) {
+  game.zombies.find((z) => z.isAlive()).takeDamage(10000);
+  game.checkTierCompletion();
+  assert.equal(game.state, 'playing', 'La file restante empêche une fin prématurée');
+  assert.equal(game.trySpawnZombie(), true, 'Un renfort remplace une Rampeuse éliminée');
+  game.spawnQueue--;
+  assert.equal(game.zombies.filter((z) => z.isAlive()).length, 8);
+}
+assert.equal(game.zombies.length, 16);
+assert.ok(game.zombies.every((z) => z.getKind() === 'crawler'), 'Aucun standard, Coureur ou Cracheur au P8');
+game.checkTierCompletion();
+assert.equal(game.state, 'playing', 'Les huit dernières menaces doivent aussi être éliminées');
+for (const crawler of game.zombies) crawler.takeDamage(10000);
+assert.equal(game.trySpawnZombie(), false, 'Le quota de 16 Rampeuses est épuisé');
+game.checkTierCompletion();
+assert.equal(game.state, 'terminal');
+assert.match(game.objectiveDisplay.textContent, /8 RENCONTRES PURGÉES/);
+console.log('   -> PASS : P8, 16 vraies Rampeuses, plafond huit, renforts et fin après la dernière mort.');
 
 // Nettoyage final
 game.dispose();

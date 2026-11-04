@@ -131,13 +131,36 @@ try {
   assert.equal(grabbed, true, 'L’attaque transmet l’agrippement aux chevilles (isAnkleGrab = true)');
 
   attackCrawler.dispose(scene);
-  console.log('   -> PASS : proportions, Stutter paranormal, réaction lampe torche et agrippement chevilles validés.\n');
+  // Test 2.4 : Esquive latérale de la ligne de visée (Aim Evasion)
+  const evadeCrawler = new CrawlerZombie(scene, level, 0, 5);
+  evadeCrawler.update(
+    0.15,
+    new THREE.Vector3(0, 1.7, 10),
+    [evadeCrawler],
+    undefined,
+    { isFlashlightOn: false, cameraDirection: new THREE.Vector3(0, 0, -1) }
+  );
+  assert.equal(evadeCrawler.isEvadingAimState(), true, 'La Rampeuse détecte qu’elle est ciblée par le réticule');
+  assert.ok(Math.abs(evadeCrawler.getPosition().x) > 0.01, 'La Rampeuse effectue un décrochage latéral');
+
+  // Si le joueur vise ailleurs, l'esquive s'arrête
+  evadeCrawler.update(
+    0.1,
+    new THREE.Vector3(0, 1.7, 10),
+    [evadeCrawler],
+    undefined,
+    { isFlashlightOn: false, cameraDirection: new THREE.Vector3(1, 0, 0) }
+  );
+  assert.equal(evadeCrawler.isEvadingAimState(), false, 'L’esquive cesse quand le joueur ne vise plus');
+  evadeCrawler.dispose(scene);
+
+  console.log('   -> PASS : proportions, Stutter paranormal, réaction lampe, grab et esquive visée validés.\n');
 } finally {
   THREE.TextureLoader.prototype.load = originalLoad;
 }
 
-// 3. Contrôle des quotas de rencontres P1-P7
-console.log('3. Vérification des quotas de rencontres (Apparition exclusive P4-P7)...');
+// 3. Contrôle des quotas de rencontres P1-P8
+console.log('3. Vérification des quotas de rencontres (Rampeuses à partir de P4)...');
 for (let t = 0; t < 3; t++) {
   const cfg = ENCOUNTER_CONFIGS[t];
   assert.ok(!cfg.maxCrawler || cfg.maxCrawler === 0, `Palier ${t + 1} ne doit pas avoir de Rampeur.`);
@@ -152,6 +175,15 @@ for (let t = 3; t < 7; t++) {
   assert.ok((cfg.maxSimultaneousCrawler ?? 0) >= 2, `Palier ${t + 1} doit autoriser au moins 2 Rampeurs simultanés.`);
 }
 console.log('   -> Paliers 4 à 7 : quotas de Rampeurs [2, 2, 2, 2] rigoureusement respectés.\n');
+
+const crawlerTier = ENCOUNTER_CONFIGS[7];
+assert.equal(crawlerTier.totalZombies, 16);
+assert.equal(crawlerTier.maxCrawler, 16);
+assert.equal(crawlerTier.maxAgile + crawlerTier.maxSpitter, 0);
+assert.equal(crawlerTier.maxSimultaneousCrawler, 8);
+assert.equal(crawlerTier.maxActiveZombies, 8);
+assert.equal(crawlerTier.openingSpawns, 5);
+console.log('   -> Palier 8 : exclusivement 16 Rampeuses, huit simultanées, 5 en ouverture.');
 
 console.log('========================================================');
 console.log('CONTRÔLES COMPLETS DU RAMPEUR 100% SUCCÈS !');

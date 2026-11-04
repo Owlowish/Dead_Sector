@@ -1,7 +1,7 @@
 /**
  * DEAD SECTOR — Configuration centralisée des rencontres (Paliers de combat).
  * Découple la progression des rencontres de l'ouverture des secteurs du manoir.
- * Version F4 : Progression complète de 7 rencontres (Paliers 1 à 3 d'ouverture + Paliers 4 à 7 en manoir ouvert multidirectionnel).
+ * Paliers 1 à 3 d'ouverture, 4 à 7 mixtes et palier 8 exclusivement Rampeuses.
  */
 
 import type { Point2D } from './MansionConfig.ts';
@@ -48,7 +48,7 @@ export interface EncounterSpec {
 }
 
 /**
- * Pool étendu de points d'apparition candidats dans l'ensemble du manoir ouvert (Paliers 4 à 7).
+ * Pool étendu de points d'apparition candidats dans l'ensemble du manoir ouvert (à partir du palier 4).
  * Couvre équitablement les 4 points cardinaux et les deux niveaux (+0m et +2.4m) :
  * - Sud / Sud-Ouest : Grand Salon (masqué par le refend et la cheminée)
  * - Sud-Est : Vestibule d'entrée
@@ -231,7 +231,26 @@ export const ENCOUNTER_CONFIGS: EncounterSpec[] = [
     openingSpawns: 6,
     unlockSectorTier: null,
     activationType: 'arena_signal',
-    explorationPrompt: 'TENTATIVE COMPLÉTÉE · 7 PALIERS PURGÉS · MANOIR MAÎTRISÉ',
+    explorationPrompt: 'PALIER 7 PURGÉ · ACCALMIE AVANT LES RAMPEUSES',
+    sectorBounds: { minX: -23.5, maxX: 23.5, minZ: -19.5, maxZ: 19.5 },
+    spawnPool: MANSION_OPEN_SPAWN_POOL,
+  },
+  {
+    tierNumber: 8,
+    name: 'La Reptation',
+    sectorName: 'MANOIR OUVERT · RAMPEUSES',
+    totalZombies: 16,
+    maxActiveZombies: 8,
+    maxAgile: 0,
+    maxSimultaneousAgile: 0,
+    maxSpitter: 0,
+    maxSimultaneousSpitter: 0,
+    maxCrawler: 16,
+    maxSimultaneousCrawler: 8,
+    openingSpawns: 5,
+    unlockSectorTier: null,
+    activationType: 'arena_signal',
+    explorationPrompt: 'PALIER 8 PURGÉ · MANOIR SÉCURISÉ',
     sectorBounds: { minX: -23.5, maxX: 23.5, minZ: -19.5, maxZ: 19.5 },
     spawnPool: MANSION_OPEN_SPAWN_POOL,
   },

@@ -72,6 +72,11 @@ export class CrawlerZombie {
   private lightCooldown = 0;
   private readonly sightRay = new THREE.Raycaster();
 
+  // 3. Esquive de la ligne de visée (Aim Evasion)
+  private isEvadingAim = false;
+  private evasionSign: 1 | -1 = 1;
+  private evasionZigzagTimer = 0;
+
   private routeWaypoint: THREE.Vector3 | null = null;
   private routeReplanTimer = 0;
   private readonly baseSpeed = crawlerConfig.speed;
@@ -123,6 +128,10 @@ export class CrawlerZombie {
 
   public isFrenzyState(): boolean {
     return this.isFrenzy;
+  }
+
+  public isEvadingAimState(): boolean {
+    return this.isEvadingAim;
   }
 
   public getCollisionRadius(): number {
@@ -320,6 +329,41 @@ export class CrawlerZombie {
     }
 
     // =========================================================================
+    // 4. DÉTECTION DU CIBLAGE ET ESQUIVE LATÉRALE (Aim Evasion)
+    // =========================================================================
+    if (playerContext?.cameraDirection) {
+      const camDir = playerContext.cameraDirection;
+      const toCrawlerX = this.mesh.position.x - playerPosition.x;
+      const toCrawlerY = this.mesh.position.y - playerPosition.y;
+      const toCrawlerZ = this.mesh.position.z - playerPosition.z;
+
+      const forwardProj = toCrawlerX * camDir.x + toCrawlerY * camDir.y + toCrawlerZ * camDir.z;
+      // Si la créature se trouve devant le joueur à portée de tir (1.2m à 16m)
+      if (forwardProj > 1.2 && forwardProj < 16) {
+        const perpX = toCrawlerX - forwardProj * camDir.x;
+        const perpY = toCrawlerY - forwardProj * camDir.y;
+        const perpZ = toCrawlerZ - forwardProj * camDir.z;
+        const perpDist = Math.hypot(perpX, perpY, perpZ);
+
+        // Si le réticule est braqué sur elle ou très proche (< 1.60m)
+        if (perpDist < 1.60) {
+          this.isEvadingAim = true;
+          this.evasionZigzagTimer += delta;
+          if (this.evasionZigzagTimer >= 0.45) {
+            this.evasionZigzagTimer = 0;
+            this.evasionSign = (this.evasionSign === 1 ? -1 : 1);
+          }
+        } else {
+          this.isEvadingAim = false;
+        }
+      } else {
+        this.isEvadingAim = false;
+      }
+    } else {
+      this.isEvadingAim = false;
+    }
+
+    // =========================================================================
     // 1. DÉPLACEMENT SACCADÉ PARANORMAL (Ghostly Stutter) OU FUITE
     // =========================================================================
     let tdx: number;
@@ -376,6 +420,19 @@ export class CrawlerZombie {
       let vx = (tdx / moveDist) * currentSpeed * delta;
       let vz = (tdz / moveDist) * currentSpeed * delta;
 
+      // Décrochage latéral d'esquive si visée active
+      if (this.isEvadingAim && playerContext?.cameraDirection) {
+        const camDir = playerContext.cameraDirection;
+        const hLen = Math.hypot(camDir.x, camDir.z);
+        if (hLen > 0.01) {
+          const latX = -(camDir.z / hLen) * this.evasionSign;
+          const latZ = (camDir.x / hLen) * this.evasionSign;
+          const evadeSpeed = currentSpeed * 1.35 * delta;
+          vx += latX * evadeSpeed;
+          vz += latZ * evadeSpeed;
+        }
+      }
+
       // Évitement des autres ennemis
       for (const other of allZombies) {
         if (other === this || !other.isAlive()) continue;
@@ -395,11 +452,18 @@ export class CrawlerZombie {
       const prevX = this.mesh.position.x;
       const prevZ = this.mesh.position.z;
 
-      if (!this.level.isColliding(nextX, this.mesh.position.z, this.radius)) {
+      const collX = this.level.isColliding(nextX, this.mesh.position.z, this.radius);
+      if (!collX) {
         this.mesh.position.x = nextX;
       }
-      if (!this.level.isColliding(this.mesh.position.x, nextZ, this.radius)) {
+      const collZ = this.level.isColliding(this.mesh.position.x, nextZ, this.radius);
+      if (!collZ) {
         this.mesh.position.z = nextZ;
+      }
+
+      // Si heurt d'un mur pendant l'esquive de visée, inverser le côté de zigzag
+      if (this.isEvadingAim && (collX || collZ)) {
+        this.evasionSign = (this.evasionSign === 1 ? -1 : 1);
       }
 
       // Détection de coin bloquant pendant la fuite : si acculée contre un mur, bascule en furie

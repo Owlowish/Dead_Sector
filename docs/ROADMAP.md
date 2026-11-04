@@ -2,6 +2,8 @@
 
 Mise à jour du 2 novembre 2026. Direction validée : tentative de 10 à 15 minutes avec rencontre finale, progression au-delà du palier 3, améliorations sans menu automatique et horreur psychologique. Ce plan ne décrit pas des fonctionnalités déjà livrées et n'autorise pas tous les ateliers en une seule intervention.
 
+Évolution demandée le 4 novembre : le palier 8 est désormais une rencontre exclusivement Rampeuses (huit au total, quatre actives maximum), implémentée après les sept rencontres existantes. Elle remplace l'hypothèse de finale à cet emplacement ; la finale F6 reste à concevoir et son placement reste ouvert. Voir ETAT_PROJET pour les validations réelles.
+
 ## Destination et décisions
 
 Même manoir victorien ouvert progressivement, circuits de fuite et demi-niveau existants conservés. Après ouverture complète, la variété vient des rencontres et des décisions, sans nouvelle aile à chaque palier. Deux armes et deux variantes suffisent au premier équilibrage.
@@ -39,7 +41,7 @@ Activer des supports préplacés près de la progression, plutôt que forcer un 
 | 5 | Alterner précision et mobilité | Mélanges lents/agiles |
 | 6 | Anticiper les renforts | Arrivées annoncées et accalmies locales |
 | 7 | Maîtriser les itinéraires | Pression multidirectionnelle avec voie de fuite |
-| 8 | Conclure | Finale lisible avec récupération entre attaques |
+| 8 | Rencontre thématique | Rampeuses uniquement, implémenté le 4 novembre ; équilibre à tester |
 
 Budgets indicatifs : environ 6–9 minutes de combats ordinaires, 2–4 minutes de préparation/exploration et 1–2 minutes de finale. Ajuster par des tentatives complètes pour atteindre réellement 10–15 minutes ; le nombre définitif de paliers reste négociable.
 
@@ -103,7 +105,7 @@ Conserver d'abord le quota actuel de quatre ennemis actifs. Varier composition, 
 
 - Résultat : finale avec anticipation, attaque et récupération, puis bilan et nouvelle tentative propre. Prototyper une élite avec les moyens actuels avant de produire un nouveau boss animé.
 - Concepts : états de combat et télégraphie.
-- Identité, attaques et renforts à valider séparément. Le placement au palier 8 est une hypothèse, pas la spécification du boss ; éviter une simple hausse massive de PV.
+- Identité, attaques, renforts et placement à valider séparément. P8 accueille désormais la rencontre Rampeuses ; aucun autre emplacement de finale n'est autorisé implicitement. Éviter une simple hausse massive de PV.
 - Validation : dégâts évitables, voie de fuite, ressources suffisantes, renforts comptabilisés, victoire unique, bilan durée/choix/paliers et réinitialisation complète.
 
 ### F7 — Variantes, confort et démo
