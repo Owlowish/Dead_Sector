@@ -112,12 +112,12 @@ assert.deepEqual([e4, e5, e6, e7].map((e) => e.totalZombies), [8, 10, 12, 14]);
 assert.deepEqual([e4, e5, e6, e7].map((e) => e.maxSpitter), [1, 2, 3, 3]);
 assert.deepEqual([e4, e5, e6, e7].map((e) => e.maxAgile), [4, 5, 6, 7]);
 
-assert.equal(e8.totalZombies, 16);
+assert.equal(e8.totalZombies, 14);
 assert.equal(e8.maxCrawler, e8.totalZombies);
 assert.equal(e8.maxAgile + e8.maxSpitter, 0);
-assert.equal(e8.maxSimultaneousCrawler, 8);
-assert.equal(e8.maxActiveZombies, 8);
-assert.equal(e8.openingSpawns, 5);
+assert.equal(e8.maxSimultaneousCrawler, 5);
+assert.equal(e8.maxActiveZombies, 5);
+assert.equal(e8.openingSpawns, 3);
 assert.equal(e8.spawnPool, MANSION_OPEN_SPAWN_POOL);
 console.log('   -> PASS : Huit rencontres, dont P8 exclusivement Rampeuses.\n');
 
@@ -377,25 +377,25 @@ for (let i = 0; i < e8.maxActiveZombies; i++) {
   assert.equal(game.trySpawnZombie(), true, 'Apparition initiale de Rampeuse');
   game.spawnQueue--;
 }
-assert.equal(game.trySpawnZombie(), false, 'La neuvième Rampeuse attend une place libre');
+assert.equal(game.trySpawnZombie(), false, 'La sixième Rampeuse attend une place libre');
 while (game.spawnQueue > 0) {
   game.zombies.find((z) => z.isAlive()).takeDamage(10000);
   game.checkTierCompletion();
   assert.equal(game.state, 'playing', 'La file restante empêche une fin prématurée');
   assert.equal(game.trySpawnZombie(), true, 'Un renfort remplace une Rampeuse éliminée');
   game.spawnQueue--;
-  assert.equal(game.zombies.filter((z) => z.isAlive()).length, 8);
+  assert.equal(game.zombies.filter((z) => z.isAlive()).length, 5);
 }
-assert.equal(game.zombies.length, 16);
+assert.equal(game.zombies.length, 14);
 assert.ok(game.zombies.every((z) => z.getKind() === 'crawler'), 'Aucun standard, Coureur ou Cracheur au P8');
 game.checkTierCompletion();
-assert.equal(game.state, 'playing', 'Les huit dernières menaces doivent aussi être éliminées');
+assert.equal(game.state, 'playing', 'Les cinq dernières menaces doivent aussi être éliminées');
 for (const crawler of game.zombies) crawler.takeDamage(10000);
-assert.equal(game.trySpawnZombie(), false, 'Le quota de 16 Rampeuses est épuisé');
+assert.equal(game.trySpawnZombie(), false, 'Le quota de 14 Rampeuses est épuisé');
 game.checkTierCompletion();
 assert.equal(game.state, 'terminal');
 assert.match(game.objectiveDisplay.textContent, /8 RENCONTRES PURGÉES/);
-console.log('   -> PASS : P8, 16 vraies Rampeuses, plafond huit, renforts et fin après la dernière mort.');
+console.log('   -> PASS : P8, 14 vraies Rampeuses, plafond cinq, renforts et fin après la dernière mort.');
 
 // Nettoyage final
 game.dispose();

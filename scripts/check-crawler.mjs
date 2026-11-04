@@ -152,6 +152,25 @@ try {
     { isFlashlightOn: false, cameraDirection: new THREE.Vector3(1, 0, 0) }
   );
   assert.equal(evadeCrawler.isEvadingAimState(), false, 'L’esquive cesse quand le joueur ne vise plus');
+
+  // En mode Rage/Furie : AUCUNE esquive (charge tête baissée en ligne droite)
+  Math.random = () => 0.1; // active la Furie
+  evadeCrawler.update(
+    0.05,
+    new THREE.Vector3(0, 1.7, 10),
+    [evadeCrawler],
+    undefined,
+    { isFlashlightOn: true, cameraDirection: new THREE.Vector3(0, 0, -1) }
+  );
+  evadeCrawler.update(
+    0.25,
+    new THREE.Vector3(0, 1.7, 10),
+    [evadeCrawler],
+    undefined,
+    { isFlashlightOn: false, cameraDirection: new THREE.Vector3(0, 0, -1) }
+  );
+  assert.equal(evadeCrawler.isFrenzyState(), true, 'En mode furie');
+  assert.equal(evadeCrawler.isEvadingAimState(), false, 'Aucune esquive de visée en mode rage (charge directe)');
   evadeCrawler.dispose(scene);
 
   console.log('   -> PASS : proportions, Stutter paranormal, réaction lampe, grab et esquive visée validés.\n');
@@ -177,13 +196,13 @@ for (let t = 3; t < 7; t++) {
 console.log('   -> Paliers 4 à 7 : quotas de Rampeurs [2, 2, 2, 2] rigoureusement respectés.\n');
 
 const crawlerTier = ENCOUNTER_CONFIGS[7];
-assert.equal(crawlerTier.totalZombies, 16);
-assert.equal(crawlerTier.maxCrawler, 16);
+assert.equal(crawlerTier.totalZombies, 14);
+assert.equal(crawlerTier.maxCrawler, 14);
 assert.equal(crawlerTier.maxAgile + crawlerTier.maxSpitter, 0);
-assert.equal(crawlerTier.maxSimultaneousCrawler, 8);
-assert.equal(crawlerTier.maxActiveZombies, 8);
-assert.equal(crawlerTier.openingSpawns, 5);
-console.log('   -> Palier 8 : exclusivement 16 Rampeuses, huit simultanées, 5 en ouverture.');
+assert.equal(crawlerTier.maxSimultaneousCrawler, 5);
+assert.equal(crawlerTier.maxActiveZombies, 5);
+assert.equal(crawlerTier.openingSpawns, 3);
+console.log('   -> Palier 8 : exclusivement 14 Rampeuses, cinq simultanées, 3 en ouverture.');
 
 console.log('========================================================');
 console.log('CONTRÔLES COMPLETS DU RAMPEUR 100% SUCCÈS !');

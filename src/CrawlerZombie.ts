@@ -76,6 +76,8 @@ export class CrawlerZombie {
   private isEvadingAim = false;
   private evasionSign: 1 | -1 = 1;
   private evasionZigzagTimer = 0;
+  private fleeDodgeTimer = 0;
+  private fleeDodgeCooldown = 0;
 
   private routeWaypoint: THREE.Vector3 | null = null;
   private routeReplanTimer = 0;
@@ -331,7 +333,12 @@ export class CrawlerZombie {
     // =========================================================================
     // 4. DÉTECTION DU CIBLAGE ET ESQUIVE LATÉRALE (Aim Evasion)
     // =========================================================================
-    if (playerContext?.cameraDirection) {
+    // En mode Furie / Rage : aveuglée par la rage, aucune esquive (charge tête baissée en ligne droite)
+    if (this.isFrenzy) {
+      this.isEvadingAim = false;
+      this.fleeDodgeTimer = 0;
+      this.fleeDodgeCooldown = 0;
+    } else if (playerContext?.cameraDirection) {
       const camDir = playerContext.cameraDirection;
       const toCrawlerX = this.mesh.position.x - playerPosition.x;
       const toCrawlerY = this.mesh.position.y - playerPosition.y;
@@ -347,17 +354,36 @@ export class CrawlerZombie {
 
         // Si le réticule est braqué sur elle ou très proche (< 1.60m)
         if (perpDist < 1.60) {
-          this.isEvadingAim = true;
-          this.evasionZigzagTimer += delta;
-          if (this.evasionZigzagTimer >= 0.45) {
-            this.evasionZigzagTimer = 0;
-            this.evasionSign = (this.evasionSign === 1 ? -1 : 1);
+          // Pendant la fuite : esquive ponctuelle et non permanente (bref sursaut puis sprint rectiligne)
+          if (this.isFleeing) {
+            if (this.fleeDodgeCooldown > 0) {
+              this.fleeDodgeCooldown -= delta;
+              this.isEvadingAim = false;
+            } else {
+              this.isEvadingAim = true;
+              this.fleeDodgeTimer += delta;
+              if (this.fleeDodgeTimer >= 0.35) {
+                this.isEvadingAim = false;
+                this.fleeDodgeTimer = 0;
+                this.fleeDodgeCooldown = 1.4; // 1,4s de sprint rectiligne sans dodge
+              }
+            }
+          } else {
+            // Traque standard : esquive active en zigzag
+            this.isEvadingAim = true;
+            this.evasionZigzagTimer += delta;
+            if (this.evasionZigzagTimer >= 0.45) {
+              this.evasionZigzagTimer = 0;
+              this.evasionSign = (this.evasionSign === 1 ? -1 : 1);
+            }
           }
         } else {
           this.isEvadingAim = false;
+          if (this.fleeDodgeCooldown > 0) this.fleeDodgeCooldown -= delta;
         }
       } else {
         this.isEvadingAim = false;
+        if (this.fleeDodgeCooldown > 0) this.fleeDodgeCooldown -= delta;
       }
     } else {
       this.isEvadingAim = false;
