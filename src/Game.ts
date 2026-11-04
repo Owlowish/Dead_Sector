@@ -84,6 +84,7 @@ export class Game {
     if (!button || !this.debugDisplay?.contains(button)) return;
     if (button.hasAttribute('data-debug-close')) this.setDebugMenuOpen(false);
     else if (button.dataset.tier) this.jumpToDebugTier(Number(button.dataset.tier));
+    else if (button.dataset.debugSpawn) this.spawnDebugZombie(button.dataset.debugSpawn as ZombieKind);
   };
   private pendingTierStart = 0;
   private spawnQueue = 0;
@@ -509,6 +510,44 @@ export class Game {
     this.syncAmbientAudio();
   }
 
+  private spawnDebugZombie(kind: ZombieKind): void {
+    if (this.disposed) return;
+    const forward = new THREE.Vector3();
+    this.player.camera.getWorldDirection(forward);
+    forward.y = 0;
+    if (forward.lengthSq() < 0.001) forward.set(0, 0, 1);
+    else forward.normalize();
+
+    const dist = kind === 'spitter' ? 5.0 : 3.2;
+    let targetX = this.player.camera.position.x + forward.x * dist;
+    let targetZ = this.player.camera.position.z + forward.z * dist;
+
+    if (this.level.isColliding(targetX, targetZ, 0.45)) {
+      targetX = this.player.camera.position.x + forward.x * 1.5;
+      targetZ = this.player.camera.position.z + forward.z * 1.5;
+    }
+
+    let zombie: Zombie | SpitterZombie | CrawlerZombie;
+    if (kind === 'crawler') {
+      zombie = new CrawlerZombie(this.scene, this.level, targetX, targetZ);
+    } else if (kind === 'spitter') {
+      zombie = new SpitterZombie(this.scene, this.level, targetX, targetZ);
+    } else {
+      zombie = new Zombie(this.scene, this.level, targetX, targetZ, kind);
+    }
+
+    zombie.alert(this.player.camera.position);
+    if (this.zombieGroanBuffer) {
+      zombie.setupAudio(this.player.audioListener, this.zombieGroanBuffer);
+    }
+    this.zombies.push(zombie);
+    if (this.weapon) {
+      this.weapon.setTargets(this.zombies.map((z) => z.getMesh()));
+    }
+    this.updateObjectiveDisplay();
+    this.setDebugMenuOpen(false);
+  }
+
   private jumpToDebugTier(tierNumber: number): void {
     if (!Number.isInteger(tierNumber) || !this.encounterConfigs[tierNumber - 1] || this.disposed) return;
     this.weapon.cancelReload();
@@ -625,19 +664,33 @@ export class Game {
               continue;
             }
             if (zombie instanceof CrawlerZombie) {
-              zombie.update(delta, this.player.camera.position, this.zombies, (damage) => {
-                const previousHealth = this.player.getHealth();
-                this.player.takeDamage(damage);
-                this.tierDiagnostics?.recordDamageTaken(damage);
-                if (this.player.getHealth() < previousHealth) {
-                  this.damageEffectRemaining = this.damageEffectDuration;
-                  if (this.damageOverlay) this.damageOverlay.style.opacity = '1';
+              const forward = new THREE.Vector3();
+              this.player.camera.getWorldDirection(forward);
+              zombie.update(
+                delta,
+                this.player.camera.position,
+                this.zombies,
+                (damage, isAnkleGrab) => {
+                  const previousHealth = this.player.getHealth();
+                  this.player.takeDamage(damage);
+                  if (isAnkleGrab) {
+                    this.player.applyAnkleGrab(0.75, 0.4, 0.28);
+                  }
+                  this.tierDiagnostics?.recordDamageTaken(damage);
+                  if (this.player.getHealth() < previousHealth) {
+                    this.damageEffectRemaining = this.damageEffectDuration;
+                    if (this.damageOverlay) this.damageOverlay.style.opacity = '1';
+                  }
+                  this.updateHealthDisplay();
+                  if (!this.player.isAlive()) {
+                    this.endGame('lost');
+                  }
+                },
+                {
+                  isFlashlightOn: this.player.isFlashlightOn(),
+                  cameraDirection: forward,
                 }
-                this.updateHealthDisplay();
-                if (!this.player.isAlive()) {
-                  this.endGame('lost');
-                }
-              });
+              );
               continue;
             }
             zombie.update(delta, this.player.camera.position, this.zombies.filter((z): z is Zombie => z instanceof Zombie), (damage) => {

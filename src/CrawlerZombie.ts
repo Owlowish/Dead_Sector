@@ -47,7 +47,6 @@ export class CrawlerZombie {
   private alive = true;
   private disposed = false;
   private pose: CrawlerPose = 'idle';
-  private poseTime = 0;
   private walkStep = 0;
   private attackCooldownTimer = 0;
   private isAttacking = false;
@@ -58,9 +57,21 @@ export class CrawlerZombie {
   private deathTimer = 0;
   private hissAudio: THREE.PositionalAudio | null = null;
 
+  // 1. Ghostly Stutter : Mouvement paranormal saccadé
+  private stutterPhaseTimer = 0;
+  private isStutterLunge = true;
+
+  // 2. Phobie de la lampe & Frénésie
+  private isFrenzy = false;
+  private frenzyTimer = 0;
+  private isFlinching = false;
+  private flinchTimer = 0;
+  private lightCooldown = 0;
+  private readonly sightRay = new THREE.Raycaster();
+
   private routeWaypoint: THREE.Vector3 | null = null;
   private routeReplanTimer = 0;
-  private readonly speed = crawlerConfig.speed;
+  private readonly baseSpeed = crawlerConfig.speed;
   private readonly radius = crawlerConfig.collisionRadius;
   private healthLeft = crawlerConfig.health;
 
@@ -120,9 +131,8 @@ export class CrawlerZombie {
       this.hissAudio.setBuffer(buffer);
       this.hissAudio.setRefDistance(3);
       this.hissAudio.setMaxDistance(18);
-      // Pitch plus aigu et rapide pour le rampeur
       this.hissAudio.setPlaybackRate(1.45);
-      this.hissAudio.setVolume(0.3);
+      this.hissAudio.setVolume(0.35);
       this.mesh.add(this.hissAudio);
     } catch {
       // Audio facultatif si contexte verrouillé
@@ -164,7 +174,6 @@ export class CrawlerZombie {
 
   public updateDeath(_delta: number, viewer: THREE.Vector3): void {
     if (this.disposed) return;
-    // Maintenir l'orientation face au joueur même au sol
     const dx = viewer.x - this.mesh.position.x;
     const dz = viewer.z - this.mesh.position.z;
     this.mesh.rotation.y = Math.atan2(dx, dz);
@@ -180,44 +189,93 @@ export class CrawlerZombie {
     delta: number,
     playerPosition: THREE.Vector3,
     allZombies: Array<{ getPosition(): THREE.Vector3; isAlive(): boolean }>,
-    onAttackPlayer?: (damage: number) => void
+    onAttackPlayer?: (damage: number, isAnkleGrab?: boolean) => void,
+    playerContext?: { isFlashlightOn: boolean; cameraDirection: THREE.Vector3 }
   ): void {
     if (this.disposed) return;
 
-    // Ajustement de l'orientation face caméra (billboard Y-axis)
+    // Orientation face au joueur (billboard Y-axis)
     const dx = playerPosition.x - this.mesh.position.x;
     const dz = playerPosition.z - this.mesh.position.z;
     this.mesh.rotation.y = Math.atan2(dx, dz);
 
-    // Si mort, attendre la fin de la pose de mort
     if (this.isDying) {
       this.deathTimer -= delta;
       return;
     }
 
-    // Gestion du recul de blessure
+    // Gestion du recul de blessure classique
     if (this.isHurt) {
       this.hurtTimer -= delta;
       if (this.hurtTimer <= 0) {
         this.isHurt = false;
       } else {
-        return; // Étourdi pendant le hurt
+        return;
       }
     }
 
     const distToPlayer = Math.hypot(dx, dz);
 
-    // Cooldown d'attaque
+    // =========================================================================
+    // 2. RÉACTION À LA LAMPE TORCHE : Spasme initial puis Frénésie
+    // =========================================================================
+    if (this.lightCooldown > 0) this.lightCooldown -= delta;
+    if (this.isFrenzy) {
+      this.frenzyTimer -= delta;
+      if (this.frenzyTimer <= 0) this.isFrenzy = false;
+    }
+
+    if (this.isFlinching) {
+      this.flinchTimer -= delta;
+      if (this.flinchTimer <= 0) {
+        this.isFlinching = false;
+      } else {
+        this.setPose('hurt');
+        return; // Stoppée brièvement par l'éblouissement
+      }
+    }
+
+    if (playerContext?.isFlashlightOn && !this.isFrenzy && this.lightCooldown <= 0 && distToPlayer < 14) {
+      // Vecteur du Joueur vers le Crawler
+      const dirToCrawler = new THREE.Vector3(this.mesh.position.x - playerPosition.x, 0, this.mesh.position.z - playerPosition.z).normalize();
+      const dot = playerContext.cameraDirection.x * dirToCrawler.x + playerContext.cameraDirection.z * dirToCrawler.z;
+      // Si la créature se trouve dans le cône lumineux frontal (~26 degrés)
+      if (dot > 0.88) {
+        const rayStart = playerPosition.clone();
+        const rayDir = dirToCrawler.clone();
+        this.sightRay.set(rayStart, rayDir);
+        this.sightRay.far = distToPlayer;
+        const blockers = this.level.getSolidMeshes();
+        for (const b of blockers) b.updateWorldMatrix(true, false);
+        if (this.sightRay.intersectObjects(blockers, false).length === 0) {
+          // Déclenchement du spasme d'effroi et passage en furie
+          this.isFlinching = true;
+          this.flinchTimer = 0.20;
+          this.isFrenzy = true;
+          this.frenzyTimer = 3.2;
+          this.lightCooldown = 6.0;
+          this.setPose('hurt');
+          if (this.hissAudio && !this.hissAudio.isPlaying) {
+            try { this.hissAudio.play(); } catch { /* ignore */ }
+          }
+          return;
+        }
+      }
+    }
+
+    // =========================================================================
+    // 3. ATTAQUE & AGRIPPEMENT AUX CHEVILLES (The Ankle Grab)
+    // =========================================================================
     if (this.attackCooldownTimer > 0) {
       this.attackCooldownTimer -= delta;
     }
 
-    // Gestion de l'attaque
     if (this.isAttacking) {
       this.attackTimer += delta;
       if (this.attackTimer >= crawlerConfig.attackWindup && this.attackTimer - delta < crawlerConfig.attackWindup) {
-        if (distToPlayer <= crawlerConfig.attackRange + 0.3) {
-          onAttackPlayer?.(crawlerConfig.attackDamage);
+        if (distToPlayer <= crawlerConfig.attackRange + 0.35) {
+          // Attaque avec agrippement (isAnkleGrab = true)
+          onAttackPlayer?.(crawlerConfig.attackDamage, true);
           if (this.hissAudio && !this.hissAudio.isPlaying) {
             try { this.hissAudio.play(); } catch { /* ignore */ }
           }
@@ -230,7 +288,6 @@ export class CrawlerZombie {
       return;
     }
 
-    // Déclenchement d'attaque au contact
     if (distToPlayer <= crawlerConfig.attackRange && this.attackCooldownTimer <= 0) {
       this.isAttacking = true;
       this.attackTimer = 0;
@@ -238,10 +295,12 @@ export class CrawlerZombie {
       return;
     }
 
-    // Navigation & poursuite
+    // =========================================================================
+    // 1. DÉPLACEMENT SACCADÉ PARANORMAL (Ghostly Stutter)
+    // =========================================================================
     this.routeReplanTimer -= delta;
     if (this.routeReplanTimer <= 0 || !this.routeWaypoint) {
-      this.routeReplanTimer = 0.4 + Math.random() * 0.2;
+      this.routeReplanTimer = 0.35 + Math.random() * 0.2;
       this.routeWaypoint = this.level.findNextWaypoint(this.mesh.position, playerPosition, this.radius);
     }
 
@@ -251,8 +310,34 @@ export class CrawlerZombie {
     const moveDist = Math.hypot(tdx, tdz);
 
     if (moveDist > 0.05) {
-      let vx = (tdx / moveDist) * this.speed * delta;
-      let vz = (tdz / moveDist) * this.speed * delta;
+      // Rythme de pulsation : propulsion nerveuse vs micro-arrêt convulsif
+      const lungeDuration = this.isFrenzy ? 0.12 : 0.16;
+      const pauseDuration = this.isFrenzy ? 0.05 : 0.08;
+      this.stutterPhaseTimer += delta;
+
+      if (this.isStutterLunge && this.pose === 'idle') {
+        this.setPose(this.walkStep === 0 ? 'crawl-a' : 'crawl-b');
+      }
+
+      if (this.isStutterLunge && this.stutterPhaseTimer >= lungeDuration) {
+        this.isStutterLunge = false;
+        this.stutterPhaseTimer = 0;
+        this.setPose('idle');
+      } else if (!this.isStutterLunge && this.stutterPhaseTimer >= pauseDuration) {
+        this.isStutterLunge = true;
+        this.stutterPhaseTimer = 0;
+        this.walkStep = (this.walkStep + 1) % 2;
+        this.setPose(this.walkStep === 0 ? 'crawl-a' : 'crawl-b');
+      }
+
+      // Vitesse instantanée selon la phase
+      const currentMultiplier = this.isStutterLunge
+        ? (this.isFrenzy ? 1.85 : 1.50)
+        : 0.12;
+      const currentSpeed = this.baseSpeed * currentMultiplier;
+
+      let vx = (tdx / moveDist) * currentSpeed * delta;
+      let vz = (tdz / moveDist) * currentSpeed * delta;
 
       // Évitement des autres ennemis
       for (const other of allZombies) {
@@ -278,19 +363,10 @@ export class CrawlerZombie {
         this.mesh.position.z = nextZ;
       }
 
-      // Mise à jour de la hauteur selon le sol
       const floorY = typeof this.level.getFloorHeightAt === 'function'
         ? this.level.getFloorHeightAt(this.mesh.position.x, this.mesh.position.z)
         : 0;
       this.mesh.position.y = floorY + crawlerGroundOffsetY;
-
-      // Cycle d'animation de marche / reptation (crawl-a et crawl-b)
-      this.poseTime += delta;
-      if (this.poseTime >= crawlerAnimation.crawlPoseDuration) {
-        this.poseTime = 0;
-        this.walkStep = (this.walkStep + 1) % 2;
-        this.setPose(this.walkStep === 0 ? 'crawl-a' : 'crawl-b');
-      }
     } else {
       this.setPose('idle');
     }

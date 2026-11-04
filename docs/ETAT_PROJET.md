@@ -1,5 +1,15 @@
 # DEAD SECTOR — État et reprise
 
+## Rampeuse : comportements d'horreur et invocation debug — 4 novembre 2026
+
+- **Demande réalisée** : implémentation des comportements 2 (stutter saccadé), 3 (réaction lampe torche / frénésie) et 4 (agrippement chevilles / tirage caméra) sur la Rampeuse, ainsi que 4 boutons d'invocation immédiate dans le menu debug (`[K] Debug`) à 3-4 mètres devant le joueur.
+- **Mouvement par impulsions saccadées (Ghostly Stutter)** : `CrawlerZombie.ts` gère une horloge de spasme interne. La reptation alterne désormais de violentes propulsions rapides (vitesse ×1,50 à ×1,85) avec de courtes micro-pauses convulsives (vitesse ×0,12, pose `idle` forcée), simulant des bonds et spasmes biomécaniques anormaux.
+- **Réaction à la lampe torche (Photo-sensibilité & Frénésie)** : détection géométrique du cône de lumière du joueur (`playerContext.isFlashlightOn`, angle cône < 28°, distance < 14 m, sans obstruction opaque). Lorsque le faisceau l'atteint, la Rampeuse subit un spasme de recul/éblouissement de 0,2 s (pose `hurt`), émet un grognement strident, puis entre dans un état de fureur frénétique pendant 3,2 s (vitesse ×1,70, sprint au ras du sol).
+- **Agrippement aux chevilles (Ankle Grab)** : lors de l'attaque au contact, `onAttackPlayer(damage, true)` active `Player.applyAnkleGrab()`. Le joueur subit un ralentissement drastique de 60 % pendant 0,75 s et le regard de la caméra est brutalement tiré vers le bas (abaissement du pitch d'environ 16° vers les pieds), forçant le joueur à regarder le monstre accroché à ses jambes.
+- **Invocation immédiate dans le menu Debug (K)** : ajout de 4 boutons sous la grille des paliers (`🕷️ Rampeuse`, `⚡ Coureur`, `🧪 Cracheur`, `🧟 Standard`). L'apparition calcule une position 3 à 4 m devant l'orientation de la caméra (avec contournement en cas d'obstacle mural) et intègre immédiatement l'entité aux cibles d'armes, à l'audio 3D et à la boucle de combat sans altérer les quotas de palier.
+- **Vérifications réalisées** : `npm.cmd run build` (succès), `node scripts/check-crawler.mjs` (100% de réussite : assets, bounding boxes, cycles de Stutter, réaction lampe, grab et quotas P4–P7), `node scripts/check-debug-menu.mjs`, `node scripts/check-spitter.mjs`, `node scripts/check-encounters-f4.mjs`, `node scripts/check-tiers.mjs` tous passés à 100 %.
+
+
 ## Rampeuse : correction des proportions et de l'ancrage — 4 novembre 2026
 
 - **Correction demandée après capture en jeu** : le canevas PNG carré était projeté sur 1,6 × 1 m, ce qui étirait horizontalement les visages et les membres. `crawlerConfig` utilise maintenant une taille commune de 1,6 m pour largeur et hauteur. La largeur apparente est conservée ; le corps visible au repos passe d'environ 0,64 m à 1,025 m de haut. Les PNG, caractéristiques de combat, cadence et rayon de collision restent identiques.

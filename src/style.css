@@ -42,6 +42,19 @@
 }
 .debug-panel button:hover, .debug-panel button[aria-current="true"] { background: #454334; }
 .debug-panel button:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+.debug-section-title {
+  margin: 18px 0 8px;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  color: var(--brass);
+  font-weight: bold;
+}
+.debug-spawns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 16px;
+}
 
 /* Supprimer les marges du navigateur */
 body {
