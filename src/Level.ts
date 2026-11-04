@@ -639,6 +639,10 @@ export class Level {
     return getMansionFloorHeight(x, z);
   }
 
+  public getCeilingHeightAt(_x: number, z: number): number {
+    return z > 6 ? 4.0 : 6.4;
+  }
+
   public getAccessibleHorrorPoints(): { x: number; y: number; z: number }[] {
     return MANSION_HORROR_POINTS.filter((point) => {
       if (!point.requiredOpenDoorId) return true;

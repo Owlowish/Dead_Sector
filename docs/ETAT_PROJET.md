@@ -1,5 +1,24 @@
 # DEAD SECTOR — État et reprise
 
+## Embuscade au plafond de la Rampeuse (The Ceiling Drop) — 4 novembre 2026
+
+- **Demande réalisée** : implémentation de l'embuscade au plafond (Option 1). La Rampeuse peut désormais naître suspendue sous les poutres du manoir la tête en bas, guetter le joueur dans l'obscurité et se laisser tomber brutalement pour fondre sur lui.
+- **Rendu et suspension inversée** :
+  * Calcul de la hauteur de plafond via `Level.getCeilingHeightAt(x, z)` (4,0 m au sud, 6,4 m au nord).
+  * La Rampeuse se positionne au ras du plafond et inverse son échelle verticale (`scale.y = -1`). Le sprite apparaît suspendu la tête en bas, mains et genoux cramponnés au plafond.
+- **Déclencheurs de décrochage cinématique** :
+  * Proximité : le joueur passe sous elle (distance horizontale $< 3{,}2\text{ m}$).
+  * Torche : le joueur balaye le plafond avec sa lampe torche dans sa direction (`dot > 0{,}82`).
+  * Dégâts : si le joueur la repère au plafond et lui tire dessus (`takeDamage`), elle lâche prise aussitôt.
+- **Chute et impact au sol** :
+  * Décrochage avec cri strident et accélération gravitationnelle ($g = 28\text{ m/s}^2$).
+  * À l'atterrissage, le sprite est remis à l'endroit (`scale.y = 1`), une pose d'impact accroupie est jouée, et si le joueur est à moins de 1,6 m, une tentative d'agrippement immédiate aux chevilles est déclenchée. Elle reprend ensuite son comportement normal au sol.
+- **Intégration en jeu & Debug** :
+  * 35 % des Rampeuses générées dans les vagues du manoir (notamment au Palier 8) apparaissent au plafond.
+  * Bouton d'invocation immédiate `🕷️ Rampeuse (Plafond)` ajouté dans le menu Debug (`[K]`).
+- **Vérifications** : `npm.cmd run build` (succès), `node scripts/check-crawler.mjs` (test 2.5 validé : suspension, inversion d'axe, déclenchement par approche, chute verticale, remise à l'endroit et transition sol), `node scripts/check-encounters-f4.mjs`, `node scripts/check-debug-menu.mjs`, `node scripts/check-spitter.mjs`, `node scripts/check-tiers.mjs` tous passés à 100 %.
+
+
 ## Palier 8 rééquilibré et réglage contextuel de l'esquive — 4 novembre 2026
 
 - **Demande réalisée** : ajustement de la difficulté suite au ressenti en jeu : réduction de la pression simultanée du Palier 8 (jugée trop agressive à 8 actives) et différenciation fine du décrochage de visée selon l'état émotionnel de la créature.

@@ -84,7 +84,7 @@ export class Game {
     if (!button || !this.debugDisplay?.contains(button)) return;
     if (button.hasAttribute('data-debug-close')) this.setDebugMenuOpen(false);
     else if (button.dataset.tier) this.jumpToDebugTier(Number(button.dataset.tier));
-    else if (button.dataset.debugSpawn) this.spawnDebugZombie(button.dataset.debugSpawn as ZombieKind);
+    else if (button.dataset.debugSpawn) this.spawnDebugZombie(button.dataset.debugSpawn as ZombieKind | 'crawler-ceiling');
   };
   private pendingTierStart = 0;
   private spawnQueue = 0;
@@ -510,7 +510,7 @@ export class Game {
     this.syncAmbientAudio();
   }
 
-  private spawnDebugZombie(kind: ZombieKind): void {
+  private spawnDebugZombie(kind: ZombieKind | 'crawler-ceiling'): void {
     if (this.disposed) return;
     const forward = new THREE.Vector3();
     this.player.camera.getWorldDirection(forward);
@@ -528,7 +528,9 @@ export class Game {
     }
 
     let zombie: Zombie | SpitterZombie | CrawlerZombie;
-    if (kind === 'crawler') {
+    if (kind === 'crawler-ceiling') {
+      zombie = new CrawlerZombie(this.scene, this.level, targetX, targetZ, true);
+    } else if (kind === 'crawler') {
       zombie = new CrawlerZombie(this.scene, this.level, targetX, targetZ);
     } else if (kind === 'spitter') {
       zombie = new SpitterZombie(this.scene, this.level, targetX, targetZ);

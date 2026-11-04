@@ -78,18 +78,35 @@ export class CrawlerZombie {
   private fleeDodgeTimer = 0;
   private fleeDodgeCooldown = 0;
 
+  // 4. Embuscade suspendue au plafond (Ceiling Ambush & Drop)
+  private isCeilingAmbush = false;
+  private isDropping = false;
+  private dropVelocityY = 0;
+
   private routeWaypoint: THREE.Vector3 | null = null;
   private routeReplanTimer = 0;
   private readonly baseSpeed = crawlerConfig.speed;
   private readonly radius = crawlerConfig.collisionRadius;
   private healthLeft = crawlerConfig.health;
 
-  constructor(scene: THREE.Scene, level: Level, x: number, z: number) {
+  constructor(scene: THREE.Scene, level: Level, x: number, z: number, startOnCeiling = false) {
     this.level = level;
     const floorY = typeof level.getFloorHeightAt === 'function' ? level.getFloorHeightAt(x, z) : 0;
+    const ceilingY = typeof (level as unknown as { getCeilingHeightAt?: (x: number, z: number) => number }).getCeilingHeightAt === 'function'
+      ? (level as unknown as { getCeilingHeightAt: (x: number, z: number) => number }).getCeilingHeightAt(x, z)
+      : (z > 6 ? 4.0 : 6.4);
     const resources = getShared();
     this.mesh = new THREE.Mesh(resources.geometry, resources.materials.idle);
-    this.mesh.position.set(x, floorY + crawlerGroundOffsetY, z);
+
+    if (startOnCeiling) {
+      this.isCeilingAmbush = true;
+      // Positionnée au ras du plafond, tête en bas (offset sous le plafond)
+      this.mesh.position.set(x, ceilingY - 0.775, z);
+      this.mesh.scale.y = -1; // Tête en bas !
+    } else {
+      this.mesh.position.set(x, floorY + crawlerGroundOffsetY, z);
+    }
+
     this.mesh.castShadow = true;
     this.mesh.receiveShadow = true;
     scene.add(this.mesh);
@@ -135,6 +152,14 @@ export class CrawlerZombie {
     return this.isEvadingAim;
   }
 
+  public isCeilingAmbushState(): boolean {
+    return this.isCeilingAmbush;
+  }
+
+  public isDroppingState(): boolean {
+    return this.isDropping;
+  }
+
   public getCollisionRadius(): number {
     return this.radius;
   }
@@ -172,6 +197,14 @@ export class CrawlerZombie {
 
   public takeDamage(amount: number, isHeadshot = false, _impactForce = 0): void {
     if (!this.alive || this.isDying) return;
+
+    // Si touchée au plafond, décroche et tombe immédiatement
+    if (this.isCeilingAmbush) {
+      this.isCeilingAmbush = false;
+      this.isDropping = true;
+      this.dropVelocityY = -3.5;
+    }
+
     const effectiveDamage = isHeadshot ? amount * 1.5 : amount;
     this.healthLeft -= effectiveDamage;
 
@@ -188,9 +221,17 @@ export class CrawlerZombie {
     this.alive = false;
     this.isDying = true;
     this.deathTimer = crawlerAnimation.deathDuration;
+    this.mesh.scale.y = 1; // Toujours remettre à l'endroit
     this.setPose('death');
     this.mesh.castShadow = false;
     this.stopAudio();
+    // Si morte en l'air, poser le cadavre au sol
+    const floorY = typeof this.level.getFloorHeightAt === 'function'
+      ? this.level.getFloorHeightAt(this.mesh.position.x, this.mesh.position.z)
+      : 0;
+    this.mesh.position.y = floorY + crawlerGroundOffsetY;
+    this.isCeilingAmbush = false;
+    this.isDropping = false;
   }
 
   public updateDeath(_delta: number, viewer: THREE.Vector3): void {
@@ -222,6 +263,65 @@ export class CrawlerZombie {
 
     if (this.isDying) {
       this.deathTimer -= delta;
+      return;
+    }
+
+    // =========================================================================
+    // 0. EMBUSCADE AU PLAFOND & CHUTE (Ceiling Ambush & Drop)
+    // =========================================================================
+    if (this.isCeilingAmbush) {
+      const distH = Math.hypot(dx, dz);
+
+      // Déclencheurs de décrochage :
+      // 1. Joueur passe en dessous (distance horizontale < 3.2m)
+      // 2. Joueur pointe sa lampe torche vers elle au plafond (dot > 0.82)
+      let shouldDrop = distH < 3.2;
+
+      if (!shouldDrop && playerContext?.isFlashlightOn && distH < 14) {
+        const toCrawler = new THREE.Vector3().subVectors(this.mesh.position, playerPosition).normalize();
+        const dot = playerContext.cameraDirection.dot(toCrawler);
+        if (dot > 0.82) {
+          shouldDrop = true;
+        }
+      }
+
+      if (shouldDrop) {
+        this.isCeilingAmbush = false;
+        this.isDropping = true;
+        this.dropVelocityY = -2.0;
+        if (this.hissAudio && !this.hissAudio.isPlaying) {
+          try { this.hissAudio.play(); } catch { /* ignore */ }
+        }
+      } else {
+        return; // Reste tapie au plafond sans mouvement
+      }
+    }
+
+    if (this.isDropping) {
+      // Chute verticale accélérée
+      const gravity = 28.0;
+      this.dropVelocityY -= gravity * delta;
+      this.mesh.position.y += this.dropVelocityY * delta;
+
+      const floorY = typeof this.level.getFloorHeightAt === 'function'
+        ? this.level.getFloorHeightAt(this.mesh.position.x, this.mesh.position.z)
+        : 0;
+      const targetGroundY = floorY + crawlerGroundOffsetY;
+
+      if (this.mesh.position.y <= targetGroundY) {
+        this.mesh.position.y = targetGroundY;
+        this.mesh.scale.y = 1; // Remise à l'endroit
+        this.isDropping = false;
+        this.setPose('hurt');
+        this.hurtTimer = 0.16;
+        this.isHurt = true;
+
+        // Attaque immédiate surprise si le joueur est tout près à l'impact (< 1.6m)
+        const landDist = Math.hypot(dx, dz);
+        if (landDist < 1.6) {
+          onAttackPlayer?.(crawlerConfig.attackDamage, true);
+        }
+      }
       return;
     }
 

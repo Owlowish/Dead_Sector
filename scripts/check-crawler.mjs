@@ -182,8 +182,31 @@ try {
   assert.equal(fleeDodgeCrawler.isFleeingState(), true, 'En mode fuite');
   assert.equal(fleeDodgeCrawler.isEvadingAimState(), true, 'Mode fuite : esquive latérale active en reculant');
   fleeDodgeCrawler.dispose(scene);
+  // Test 2.5 : Embuscade au plafond et chute (Ceiling Ambush & Drop)
+  const ceilingCrawler = new CrawlerZombie(scene, level, 0, 5, true);
+  assert.equal(ceilingCrawler.isCeilingAmbushState(), true, 'La Rampeuse démarre accrochée au plafond');
+  assert.equal(ceilingCrawler.getMesh().scale.y, -1, 'Sprite inversé la tête en bas sous le plafond');
+  assert.ok(ceilingCrawler.getPosition().y > 3.0, 'Position Y élevée au ras du plafond');
 
-  console.log('   -> PASS : proportions, Stutter paranormal, réaction lampe, grab et esquive visée validés.\n');
+  // Si le joueur est loin (10m), elle reste au plafond
+  ceilingCrawler.update(0.1, new THREE.Vector3(0, 1.7, 15), [ceilingCrawler]);
+  assert.equal(ceilingCrawler.isCeilingAmbushState(), true, 'Reste au plafond tant que le joueur est loin');
+
+  // Si le joueur s'approche en dessous (< 3.2m), elle se décroche et chute
+  ceilingCrawler.update(0.1, new THREE.Vector3(0, 1.7, 6), [ceilingCrawler]);
+  assert.equal(ceilingCrawler.isCeilingAmbushState(), false, 'Décrochage enclenché');
+  assert.equal(ceilingCrawler.isDroppingState(), true, 'Chute verticale active');
+
+  // Elle chute jusqu'à atterrir au sol et se remettre à l'endroit
+  for (let step = 0; step < 10 && ceilingCrawler.isDroppingState(); step++) {
+    ceilingCrawler.update(0.1, new THREE.Vector3(0, 1.7, 6), [ceilingCrawler]);
+  }
+  assert.equal(ceilingCrawler.isDroppingState(), false, 'Atterrissage au sol réussi');
+  assert.equal(ceilingCrawler.getMesh().scale.y, 1, 'Sprite remis à l’endroit au sol');
+  ceilingCrawler.dispose(scene);
+
+
+  console.log('   -> PASS : proportions, Stutter, réaction lampe, grab, esquive visée et embuscade plafond validés.\n');
 } finally {
   THREE.TextureLoader.prototype.load = originalLoad;
 }
