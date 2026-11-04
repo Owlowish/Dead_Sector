@@ -72,10 +72,9 @@ export class CrawlerZombie {
   private lightCooldown = 0;
   private readonly sightRay = new THREE.Raycaster();
 
-  // 3. Esquive de la ligne de visée (Aim Evasion)
+  // 3. Esquive de la ligne de visée (Aim Evasion en fuite uniquement)
   private isEvadingAim = false;
   private evasionSign: 1 | -1 = 1;
-  private evasionZigzagTimer = 0;
   private fleeDodgeTimer = 0;
   private fleeDodgeCooldown = 0;
 
@@ -333,8 +332,9 @@ export class CrawlerZombie {
     // =========================================================================
     // 4. DÉTECTION DU CIBLAGE ET ESQUIVE LATÉRALE (Aim Evasion)
     // =========================================================================
-    // En mode Furie / Rage : aveuglée par la rage, aucune esquive (charge tête baissée en ligne droite)
-    if (this.isFrenzy) {
+    // Règle formelle : pas d'esquive en mode charge (avance vers le joueur, normale ou furie).
+    // Elle ne peut dodger qu'en reculant (mode fuite vers les ombres).
+    if (!this.isFleeing || this.isFrenzy) {
       this.isEvadingAim = false;
       this.fleeDodgeTimer = 0;
       this.fleeDodgeCooldown = 0;
@@ -352,29 +352,18 @@ export class CrawlerZombie {
         const perpZ = toCrawlerZ - forwardProj * camDir.z;
         const perpDist = Math.hypot(perpX, perpY, perpZ);
 
-        // Si le réticule est braqué sur elle ou très proche (< 1.60m)
+        // Si le réticule est braqué sur elle pendant sa retraite (< 1.60m)
         if (perpDist < 1.60) {
-          // Pendant la fuite : esquive ponctuelle et non permanente (bref sursaut puis sprint rectiligne)
-          if (this.isFleeing) {
-            if (this.fleeDodgeCooldown > 0) {
-              this.fleeDodgeCooldown -= delta;
-              this.isEvadingAim = false;
-            } else {
-              this.isEvadingAim = true;
-              this.fleeDodgeTimer += delta;
-              if (this.fleeDodgeTimer >= 0.35) {
-                this.isEvadingAim = false;
-                this.fleeDodgeTimer = 0;
-                this.fleeDodgeCooldown = 1.4; // 1,4s de sprint rectiligne sans dodge
-              }
-            }
+          if (this.fleeDodgeCooldown > 0) {
+            this.fleeDodgeCooldown -= delta;
+            this.isEvadingAim = false;
           } else {
-            // Traque standard : esquive active en zigzag
             this.isEvadingAim = true;
-            this.evasionZigzagTimer += delta;
-            if (this.evasionZigzagTimer >= 0.45) {
-              this.evasionZigzagTimer = 0;
-              this.evasionSign = (this.evasionSign === 1 ? -1 : 1);
+            this.fleeDodgeTimer += delta;
+            if (this.fleeDodgeTimer >= 0.35) {
+              this.isEvadingAim = false;
+              this.fleeDodgeTimer = 0;
+              this.fleeDodgeCooldown = 1.4; // Pause avant un éventuel nouveau sursaut
             }
           }
         } else {

@@ -131,47 +131,57 @@ try {
   assert.equal(grabbed, true, 'L’attaque transmet l’agrippement aux chevilles (isAnkleGrab = true)');
 
   attackCrawler.dispose(scene);
-  // Test 2.4 : Esquive latérale de la ligne de visée (Aim Evasion)
-  const evadeCrawler = new CrawlerZombie(scene, level, 0, 5);
-  evadeCrawler.update(
+  // Test 2.4 : Esquive latérale de visée réservée à la fuite (pas d'esquive en charge)
+  const chargeCrawler = new CrawlerZombie(scene, level, 0, 5);
+  chargeCrawler.update(
     0.15,
     new THREE.Vector3(0, 1.7, 10),
-    [evadeCrawler],
+    [chargeCrawler],
     undefined,
     { isFlashlightOn: false, cameraDirection: new THREE.Vector3(0, 0, -1) }
   );
-  assert.equal(evadeCrawler.isEvadingAimState(), true, 'La Rampeuse détecte qu’elle est ciblée par le réticule');
-  assert.ok(Math.abs(evadeCrawler.getPosition().x) > 0.01, 'La Rampeuse effectue un décrochage latéral');
+  assert.equal(chargeCrawler.isEvadingAimState(), false, 'Mode charge normale : aucune esquive');
 
-  // Si le joueur vise ailleurs, l'esquive s'arrête
-  evadeCrawler.update(
-    0.1,
-    new THREE.Vector3(0, 1.7, 10),
-    [evadeCrawler],
-    undefined,
-    { isFlashlightOn: false, cameraDirection: new THREE.Vector3(1, 0, 0) }
-  );
-  assert.equal(evadeCrawler.isEvadingAimState(), false, 'L’esquive cesse quand le joueur ne vise plus');
-
-  // En mode Rage/Furie : AUCUNE esquive (charge tête baissée en ligne droite)
+  // En mode Rage/Furie : AUCUNE esquive (charge tête baissée)
   Math.random = () => 0.1; // active la Furie
-  evadeCrawler.update(
+  chargeCrawler.update(
     0.05,
     new THREE.Vector3(0, 1.7, 10),
-    [evadeCrawler],
+    [chargeCrawler],
     undefined,
     { isFlashlightOn: true, cameraDirection: new THREE.Vector3(0, 0, -1) }
   );
-  evadeCrawler.update(
+  chargeCrawler.update(
     0.25,
     new THREE.Vector3(0, 1.7, 10),
-    [evadeCrawler],
+    [chargeCrawler],
     undefined,
     { isFlashlightOn: false, cameraDirection: new THREE.Vector3(0, 0, -1) }
   );
-  assert.equal(evadeCrawler.isFrenzyState(), true, 'En mode furie');
-  assert.equal(evadeCrawler.isEvadingAimState(), false, 'Aucune esquive de visée en mode rage (charge directe)');
-  evadeCrawler.dispose(scene);
+  assert.equal(chargeCrawler.isFrenzyState(), true, 'En mode furie');
+  assert.equal(chargeCrawler.isEvadingAimState(), false, 'Mode furie : aucune esquive');
+  chargeCrawler.dispose(scene);
+
+  // En mode Fuite (recul) : esquive active si ciblée
+  Math.random = () => 0.9; // active la Fuite
+  const fleeDodgeCrawler = new CrawlerZombie(scene, level, 0, 5);
+  fleeDodgeCrawler.update(
+    0.05,
+    new THREE.Vector3(0, 1.7, 10),
+    [fleeDodgeCrawler],
+    undefined,
+    { isFlashlightOn: true, cameraDirection: new THREE.Vector3(0, 0, -1) }
+  );
+  fleeDodgeCrawler.update(
+    0.25,
+    new THREE.Vector3(0, 1.7, 10),
+    [fleeDodgeCrawler],
+    undefined,
+    { isFlashlightOn: false, cameraDirection: new THREE.Vector3(0, 0, -1) }
+  );
+  assert.equal(fleeDodgeCrawler.isFleeingState(), true, 'En mode fuite');
+  assert.equal(fleeDodgeCrawler.isEvadingAimState(), true, 'Mode fuite : esquive latérale active en reculant');
+  fleeDodgeCrawler.dispose(scene);
 
   console.log('   -> PASS : proportions, Stutter paranormal, réaction lampe, grab et esquive visée validés.\n');
 } finally {

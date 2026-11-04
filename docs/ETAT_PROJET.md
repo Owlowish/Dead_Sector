@@ -7,11 +7,10 @@
   * Total : **14 Rampeuses** au total (au lieu de 16).
   * Plafond simultané : réduit de 8 à **5 Rampeuses actives en même temps** pour un combat tendu mais lisible.
   * Salve d'ouverture : **3 Rampeuses** (au lieu de 5) pour un engagement progressif.
-- **Esquive de visée contextuelle (Aim Evasion modérée)** :
-  * **Mode Furie / Rage** : AUCUNE esquive (`isEvadingAim = false`). Aveuglée par la rage, la Rampeuse charge tête baissée en ligne droite vers le joueur à pleine vitesse, offrant une opportunité de tir direct / headshot gratifiant si le joueur garde son sang-froid.
-  * **Mode Fuite** : esquive ponctuelle et non permanente. Si ciblée pendant sa fuite, elle effectue un seul décrochage latéral bref (0,35 s) pour sortir de l'axe, suivi d'un temps mort de 1,4 s où elle file en ligne droite vers les ombres sans zigzaguer en continu.
-  * **Traque standard** : esquive active en zigzag (alternance toutes les 0,45 s ou rebond sur mur) pour compliquer les tirs au loin.
-- **Vérifications** : `npm.cmd run build` (succès), `node scripts/check-crawler.mjs` (validation de l'absence d'esquive en furie et des quotas P8), `node scripts/check-encounters-f4.mjs` (P8 avec 14 Rampeuses et 5 simultanées), `node scripts/check-debug-menu.mjs`, `node scripts/check-spitter.mjs`, `node scripts/check-tiers.mjs` tous passés à 100 %.
+- **Esquive de visée contextuelle (Aim Evasion réservée au recul / fuite)** :
+  * **Mode Charge / Traque (normale ou furie)** : AUCUNE esquive (`isEvadingAim = false`). Lorsque la Rampeuse avance vers le joueur, sa trajectoire reste strictement directe / axée sur le joueur, garantissant une visée prévisible et gratifiante pour le tir (headshots sans esquives intempestives de face).
+  * **Mode Fuite (recul vers l'ombre)** : esquive ponctuelle active. Si le joueur la vise pendant sa retraite dans le dos, elle effectue un bref décrochage réflexe de 0,35 s pour casser la ligne de tir, puis sprinte en ligne droite sans esquiver en continu (cooldown de 1,4 s).
+- **Vérifications** : `npm.cmd run build` (succès), `node scripts/check-crawler.mjs` (validation formelle : pas d'esquive en charge, pas d'esquive en furie, esquive ponctuelle en fuite et quotas P8 à 14/5/3), `node scripts/check-encounters-f4.mjs`, `node scripts/check-debug-menu.mjs`, `node scripts/check-spitter.mjs`, `node scripts/check-tiers.mjs` tous passés à 100 %.
 
 
 
