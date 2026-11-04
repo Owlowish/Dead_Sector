@@ -72,15 +72,43 @@ try {
   crawler.update(0.1, new THREE.Vector3(0, 1.7, 5), [crawler]);
   assert.equal(crawler.getPose(), 'idle', 'Phase de convulsion / pause saccadée');
 
-  // Test 2.2 : Réaction à la lampe torche
-  crawler.update(
-    0.05,
-    new THREE.Vector3(0, 1.7, 5),
-    [crawler],
-    undefined,
-    { isFlashlightOn: true, cameraDirection: new THREE.Vector3(0, 0, -1) }
-  );
-  assert.equal(crawler.getPose(), 'hurt', 'La lampe torche provoque un spasme d’éblouissement');
+  // Test 2.2 : Réaction à la lampe torche (50% Furie, 50% Fuite)
+  const origRandom = Math.random;
+  try {
+    // Cas A : Furie (random < 0.5)
+    Math.random = () => 0.2;
+    crawler.update(
+      0.05,
+      new THREE.Vector3(0, 1.7, 5),
+      [crawler],
+      undefined,
+      { isFlashlightOn: true, cameraDirection: new THREE.Vector3(0, 0, -1) }
+    );
+    assert.equal(crawler.getPose(), 'hurt', 'La lampe torche provoque un spasme d’éblouissement');
+    assert.equal(crawler.isFrenzyState(), true, 'Tirage 50% Furie activé');
+    assert.equal(crawler.isFleeingState(), false, 'Pas en fuite si furie');
+
+    // Cas B : Fuite (random >= 0.5)
+    Math.random = () => 0.8;
+    const fleeCrawler = new CrawlerZombie(scene, level, 0, 5);
+    fleeCrawler.update(
+      0.05,
+      new THREE.Vector3(0, 1.7, 10),
+      [fleeCrawler],
+      undefined,
+      { isFlashlightOn: true, cameraDirection: new THREE.Vector3(0, 0, -1) }
+    );
+    assert.equal(fleeCrawler.getPose(), 'hurt', 'Éblouissement initial avant fuite');
+    assert.equal(fleeCrawler.isFleeingState(), true, 'Tirage 50% Fuite activé');
+    assert.equal(fleeCrawler.isFrenzyState(), false, 'Pas en furie si fuite');
+    // Passer le flinch et tester que le mouvement s'éloigne du joueur
+    const startZ = fleeCrawler.getPosition().z;
+    fleeCrawler.update(0.3, new THREE.Vector3(0, 1.7, 10), [fleeCrawler]);
+    assert.ok(fleeCrawler.getPosition().z < startZ, 'La Rampeuse recule en fuyant à l’opposé du joueur');
+    fleeCrawler.dispose(scene);
+  } finally {
+    Math.random = origRandom;
+  }
 
   // Test 2.3 : Attaque au corps-à-corps avec agrippement aux chevilles (Ankle Grab)
   crawler.dispose(scene);

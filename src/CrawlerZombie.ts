@@ -61,9 +61,12 @@ export class CrawlerZombie {
   private stutterPhaseTimer = 0;
   private isStutterLunge = true;
 
-  // 2. Phobie de la lampe & Frénésie
+  // 2. Phobie de la lampe, Fuite & Frénésie
   private isFrenzy = false;
   private frenzyTimer = 0;
+  private isFleeing = false;
+  private fleeTimer = 0;
+  private fleeBlockedTimer = 0;
   private isFlinching = false;
   private flinchTimer = 0;
   private lightCooldown = 0;
@@ -112,6 +115,14 @@ export class CrawlerZombie {
 
   public isThreat(): boolean {
     return this.alive && !this.isDying;
+  }
+
+  public isFleeingState(): boolean {
+    return this.isFleeing;
+  }
+
+  public isFrenzyState(): boolean {
+    return this.isFrenzy;
   }
 
   public getCollisionRadius(): number {
@@ -217,12 +228,16 @@ export class CrawlerZombie {
     const distToPlayer = Math.hypot(dx, dz);
 
     // =========================================================================
-    // 2. RÉACTION À LA LAMPE TORCHE : Spasme initial puis Frénésie
+    // 2. RÉACTION À LA LAMPE TORCHE : Spasme initial puis 50% Furie / 50% Fuite
     // =========================================================================
     if (this.lightCooldown > 0) this.lightCooldown -= delta;
     if (this.isFrenzy) {
       this.frenzyTimer -= delta;
       if (this.frenzyTimer <= 0) this.isFrenzy = false;
+    }
+    if (this.isFleeing) {
+      this.fleeTimer -= delta;
+      if (this.fleeTimer <= 0) this.isFleeing = false;
     }
 
     if (this.isFlinching) {
@@ -235,7 +250,7 @@ export class CrawlerZombie {
       }
     }
 
-    if (playerContext?.isFlashlightOn && !this.isFrenzy && this.lightCooldown <= 0 && distToPlayer < 14) {
+    if (playerContext?.isFlashlightOn && !this.isFrenzy && !this.isFleeing && this.lightCooldown <= 0 && distToPlayer < 14) {
       // Vecteur du Joueur vers le Crawler
       const dirToCrawler = new THREE.Vector3(this.mesh.position.x - playerPosition.x, 0, this.mesh.position.z - playerPosition.z).normalize();
       const dot = playerContext.cameraDirection.x * dirToCrawler.x + playerContext.cameraDirection.z * dirToCrawler.z;
@@ -248,15 +263,24 @@ export class CrawlerZombie {
         const blockers = this.level.getSolidMeshes();
         for (const b of blockers) b.updateWorldMatrix(true, false);
         if (this.sightRay.intersectObjects(blockers, false).length === 0) {
-          // Déclenchement du spasme d'effroi et passage en furie
+          // Déclenchement du spasme d'effroi / éblouissement
           this.isFlinching = true;
           this.flinchTimer = 0.20;
-          this.isFrenzy = true;
-          this.frenzyTimer = 3.2;
-          this.lightCooldown = 6.0;
+          this.lightCooldown = 5.0;
           this.setPose('hurt');
           if (this.hissAudio && !this.hissAudio.isPlaying) {
             try { this.hissAudio.play(); } catch { /* ignore */ }
+          }
+          // Comportement aléatoire : 50% Furie (charge directe) / 50% Fuite (repli vers l'ombre)
+          if (Math.random() < 0.5) {
+            this.isFrenzy = true;
+            this.frenzyTimer = 3.2;
+            this.isFleeing = false;
+          } else {
+            this.isFleeing = true;
+            this.fleeTimer = 2.6;
+            this.isFrenzy = false;
+            this.fleeBlockedTimer = 0;
           }
           return;
         }
@@ -288,7 +312,7 @@ export class CrawlerZombie {
       return;
     }
 
-    if (distToPlayer <= crawlerConfig.attackRange && this.attackCooldownTimer <= 0) {
+    if (!this.isFleeing && distToPlayer <= crawlerConfig.attackRange && this.attackCooldownTimer <= 0) {
       this.isAttacking = true;
       this.attackTimer = 0;
       this.setPose('attack');
@@ -296,23 +320,36 @@ export class CrawlerZombie {
     }
 
     // =========================================================================
-    // 1. DÉPLACEMENT SACCADÉ PARANORMAL (Ghostly Stutter)
+    // 1. DÉPLACEMENT SACCADÉ PARANORMAL (Ghostly Stutter) OU FUITE
     // =========================================================================
-    this.routeReplanTimer -= delta;
-    if (this.routeReplanTimer <= 0 || !this.routeWaypoint) {
-      this.routeReplanTimer = 0.35 + Math.random() * 0.2;
-      this.routeWaypoint = this.level.findNextWaypoint(this.mesh.position, playerPosition, this.radius);
+    let tdx: number;
+    let tdz: number;
+
+    if (this.isFleeing) {
+      // Fuite : s'éloigner directement du joueur
+      tdx = this.mesh.position.x - playerPosition.x;
+      tdz = this.mesh.position.z - playerPosition.z;
+      if (Math.abs(tdx) < 0.01 && Math.abs(tdz) < 0.01) {
+        tdx = 1;
+        tdz = 0;
+      }
+    } else {
+      this.routeReplanTimer -= delta;
+      if (this.routeReplanTimer <= 0 || !this.routeWaypoint) {
+        this.routeReplanTimer = 0.35 + Math.random() * 0.2;
+        this.routeWaypoint = this.level.findNextWaypoint(this.mesh.position, playerPosition, this.radius);
+      }
+      const target = this.routeWaypoint ?? playerPosition;
+      tdx = target.x - this.mesh.position.x;
+      tdz = target.z - this.mesh.position.z;
     }
 
-    const target = this.routeWaypoint ?? playerPosition;
-    const tdx = target.x - this.mesh.position.x;
-    const tdz = target.z - this.mesh.position.z;
     const moveDist = Math.hypot(tdx, tdz);
 
     if (moveDist > 0.05) {
       // Rythme de pulsation : propulsion nerveuse vs micro-arrêt convulsif
-      const lungeDuration = this.isFrenzy ? 0.12 : 0.16;
-      const pauseDuration = this.isFrenzy ? 0.05 : 0.08;
+      const lungeDuration = this.isFrenzy ? 0.12 : (this.isFleeing ? 0.10 : 0.16);
+      const pauseDuration = this.isFrenzy ? 0.05 : (this.isFleeing ? 0.04 : 0.08);
       this.stutterPhaseTimer += delta;
 
       if (this.isStutterLunge && this.pose === 'idle') {
@@ -332,7 +369,7 @@ export class CrawlerZombie {
 
       // Vitesse instantanée selon la phase
       const currentMultiplier = this.isStutterLunge
-        ? (this.isFrenzy ? 1.85 : 1.50)
+        ? (this.isFrenzy ? 1.85 : (this.isFleeing ? 1.70 : 1.50))
         : 0.12;
       const currentSpeed = this.baseSpeed * currentMultiplier;
 
@@ -355,12 +392,33 @@ export class CrawlerZombie {
 
       const nextX = this.mesh.position.x + vx;
       const nextZ = this.mesh.position.z + vz;
+      const prevX = this.mesh.position.x;
+      const prevZ = this.mesh.position.z;
 
       if (!this.level.isColliding(nextX, this.mesh.position.z, this.radius)) {
         this.mesh.position.x = nextX;
       }
       if (!this.level.isColliding(this.mesh.position.x, nextZ, this.radius)) {
         this.mesh.position.z = nextZ;
+      }
+
+      // Détection de coin bloquant pendant la fuite : si acculée contre un mur, bascule en furie
+      if (this.isFleeing) {
+        const actualMoved = Math.hypot(this.mesh.position.x - prevX, this.mesh.position.z - prevZ);
+        if (actualMoved < 0.003) {
+          this.fleeBlockedTimer += delta;
+          if (this.fleeBlockedTimer >= 0.45) {
+            this.isFleeing = false;
+            this.isFrenzy = true;
+            this.frenzyTimer = 2.8;
+            this.fleeBlockedTimer = 0;
+            if (this.hissAudio && !this.hissAudio.isPlaying) {
+              try { this.hissAudio.play(); } catch { /* ignore */ }
+            }
+          }
+        } else {
+          this.fleeBlockedTimer = 0;
+        }
       }
 
       const floorY = typeof this.level.getFloorHeightAt === 'function'
