@@ -18,6 +18,9 @@ export interface TierDiagnosticRecord {
   medkitsCollected: number;
   ammoBoxesCollected: number;
   shotsFired: number;
+  headHits: number;
+  bodyHits: number;
+  ammoDropsCreated: number;
   revivalsCount: {
     standard: number;
     agile: number;
@@ -62,6 +65,9 @@ export class TierDiagnosticsTracker {
       medkitsCollected: 0,
       ammoBoxesCollected: 0,
       shotsFired: 0,
+      headHits: 0,
+      bodyHits: 0,
+      ammoDropsCreated: 0,
       revivalsCount: {
         standard: 0,
         agile: 0,
@@ -80,6 +86,17 @@ export class TierDiagnosticsTracker {
   public recordShot(): void {
     if (!this.enabled || !this.currentRecord) return;
     this.currentRecord.shotsFired++;
+  }
+
+  public recordHit(headHits: number, bodyHits: number): void {
+    if (!this.enabled || !this.currentRecord) return;
+    this.currentRecord.headHits += headHits;
+    this.currentRecord.bodyHits += bodyHits;
+  }
+
+  public recordAmmoDrop(): void {
+    if (!this.enabled || !this.currentRecord) return;
+    this.currentRecord.ammoDropsCreated++;
   }
 
   public recordDamageTaken(amount: number): void {

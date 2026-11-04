@@ -54,6 +54,7 @@ export class EncounterBell {
 
   public setActive(active: boolean): void {
     this.active = active;
+    this.group.visible = active;
     if (!active) {
       this.beaconLight.intensity = 0;
     }

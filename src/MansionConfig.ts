@@ -118,7 +118,7 @@ export const MANSION_BUDGET = {
   },
   maxRooms: 8,
   currentRooms: 6, // 1A. Vestibule, 1B. Grand Salon, 1C. Galerie Ouest, 2. Grand Hall Nord, 3A. Grande Bibliothèque, 3B. Atelier d'Art
-  maxSimultaneousZombies: 4,
+  maxSimultaneousZombies: 8,
   maxShadowCastingLights: 2, // 1 clair de lune directionnel + 1 lustre Grand Hall
   maxPointLights: 6,
 } as const;

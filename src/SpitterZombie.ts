@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type { Level } from './Level.ts';
 import { ZombieRemains } from './ZombieRemains.ts';
 import { spitterAnimation, type SpitterPose } from './SpitterAnimation.ts';
+import { prepareSpriteHitMask } from './SpriteHitMask.ts';
 
 const WIDTH = 1.6;
 const HEIGHT = 2.7;
@@ -10,14 +11,14 @@ let shared: { texture: THREE.Texture; geometry: THREE.PlaneGeometry; materials: 
 function getShared() {
   if (shared) return shared;
   const loader = new THREE.TextureLoader();
-  const texture = loader.load('/assets/zombies/spitter/idle.png');
+  const texture = loader.load('/assets/zombies/spitter/idle.png', prepareSpriteHitMask);
   texture.magFilter = THREE.NearestFilter;
   texture.minFilter = THREE.NearestFilter;
   texture.generateMipmaps = false;
   texture.colorSpace = THREE.SRGBColorSpace;
   const materials = {} as Record<SpitterPose, THREE.MeshStandardMaterial>;
   for (const pose of spitterAnimation.poses) {
-    const map = pose === 'idle' ? texture : loader.load(`/assets/zombies/spitter/${pose}.png`);
+    const map = pose === 'idle' ? texture : loader.load(`/assets/zombies/spitter/${pose}.png`, prepareSpriteHitMask);
     map.magFilter = THREE.NearestFilter;
     map.minFilter = THREE.NearestFilter;
     map.generateMipmaps = false;
@@ -88,7 +89,7 @@ export class SpitterZombie {
 
   alert(_targetPosition: THREE.Vector3): void {}
 
-  takeDamage(amount: number): void {
+  takeDamage(amount: number, _headHit = false, impactForce = amount): void {
     if (!this.alive) return;
     this.healthLeft = Math.max(0, this.healthLeft - amount);
     if (this.healthLeft === 0) {
@@ -98,10 +99,10 @@ export class SpitterZombie {
       this.setPose('death');
       this.remains.start(this.mesh.position, this.mesh.rotation.y);
     } else if (this.pose === 'windup' || this.pose === 'release') {
-      this.windupDamageAccumulated += amount;
+      this.windupDamageAccumulated += impactForce;
       // Règle de gros choc : un coup lourd (fusil >= 55) ou dégâts cumulés (2 balles pistolet >= 75)
       // brise la préparation du crachat. Un tir léger de loin est encaissé sans annulation.
-      if (amount >= 55 || this.windupDamageAccumulated >= 75) {
+      if (impactForce >= 55 || this.windupDamageAccumulated >= 75) {
         this.stopAudio();
         this.poseTime = 0;
         this.setPose('idle');

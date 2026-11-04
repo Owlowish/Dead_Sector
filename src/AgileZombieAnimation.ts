@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { prepareSpriteHitMask } from './SpriteHitMask.ts';
 
 export interface SpriteFrame {
   rect: { x: number; y: number; width: number; height: number };
@@ -207,7 +208,7 @@ export function buildFrameGeometry(
 }
 
 function loadNearestPixelTexture(url: string): THREE.Texture {
-  const texture = new THREE.TextureLoader().load(url);
+  const texture = new THREE.TextureLoader().load(url, prepareSpriteHitMask);
   texture.magFilter = THREE.NearestFilter;
   texture.minFilter = THREE.NearestFilter;
   texture.generateMipmaps = false;

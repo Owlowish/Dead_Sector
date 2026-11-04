@@ -77,9 +77,10 @@ for (let i = 0; i < ENCOUNTER_CONFIGS.length; i++) {
   assert.equal(enc.tierNumber, i + 1, `La rencontre à l'index ${i} doit avoir tierNumber = ${i + 1}`);
   assert.ok(enc.totalZombies >= 4, `La rencontre ${i + 1} doit proposer au moins 4 menaces`);
   assert.ok(enc.maxAgile <= enc.totalZombies, `Le quota d'agiles ne peut dépasser le total d'ennemis`);
-  assert.ok(enc.maxSimultaneousAgile <= 3, `Plafond d'agiles simultanés borné à 3 pour la lisibilité`);
+  assert.ok(enc.maxSimultaneousAgile <= 4, `Plafond d'agiles simultanés borné à 4`);
   assert.ok(enc.maxSpitter + enc.maxAgile < enc.totalZombies, `Au moins un zombie standard au palier ${enc.tierNumber}`);
-  assert.ok(enc.maxSimultaneousSpitter <= 2, `Pas plus de deux cracheurs simultanés`);
+  assert.ok(enc.maxSimultaneousSpitter <= 3, `Pas plus de trois cracheurs simultanés`);
+  assert.ok(enc.maxActiveZombies <= 8, `Plafond global par rencontre borné à huit`);
 }
 
 // Vérifications spécifiques des intentions tactiques
@@ -179,7 +180,7 @@ Object.assign(game, {
   spawnCooldownTimer: 0,
   tierAgileSpawned: 0,
   lastSpawnQuadrant: -1,
-  maxSimultaneousZombies: 4,
+  maxSimultaneousZombies: 8,
   state: 'playing',
   zombies: [],
   medkits: [],
@@ -235,12 +236,8 @@ for (let tier = 1; tier <= 7; tier++) {
     assert.equal(game['state'], 'exploration', `Après le Palier ${tier}, transition vers exploration`);
     assert.equal(game['pendingTierStart'], tier + 1, `Palier ${tier + 1} en attente`);
 
-    if (tier >= 3) {
-      // Pour les paliers 4, 5, 6, 7 : le carillon d'arène DOIT être activé
-      assert.equal(game['encounterBell'].isActive(), true, `Le carillon doit être actif pour déclencher le Palier ${tier + 1}`);
-      game['encounterBell'].trigger();
-      assert.equal(game['encounterBell'].isActive(), false, 'Le carillon se désactive après le déclic');
-    }
+    assert.equal(game['encounterBell'].isActive(), false, 'Le carillon ne déclenche plus le combat');
+    assert.equal(game['respiteTimer'], 10, 'Dix secondes de récupération avant le prochain palier');
 
     // Lancer le palier suivant
     game['launchPendingTier']();
@@ -263,7 +260,7 @@ for (let tier = 1; tier <= 7; tier++) {
   }
 }
 
-console.log('   -> PASS : Cycle complet 1->2->3->4->5->6->7 validé avec carillon réarmé.\n');
+console.log('   -> PASS : Cycle complet 1->2->3->4->5->6->7 validé avec décompte.\n');
 
 // L'appel public direct utilisé par l'instrumentation doit synchroniser son palier.
 game.startTier(7);
@@ -276,7 +273,7 @@ assert.equal(game['spawnQueue'], e7.totalZombies, 'Un numéro direct invalide ne
 // ============================================================================
 // ÉPREUVE 4 : IMPRÉVISIBILITÉ & DISPERSION MULTIDIRECTIONNELLE DES APPARITIONS
 // ============================================================================
-console.log('4. Test de la distribution multidirectionnelle des apparitions (imprévisibilité)...');
+console.log('4. Test des points d’apparition sûrs et de l’escorte du Cracheur...');
 
 // Les offres du premier répit sont dans une pièce du secteur 1, sans obstacle.
 const placementLevel = new Level(new THREE.Scene());
@@ -316,7 +313,7 @@ Math.random = () => randomValues[randomIndex++ % randomValues.length];
 
 // Simuler l'apparition de 4 zombies consécutifs
 const spawnedQuadrants = [];
-for (let i = 0; i < 4; i++) {
+for (let i = 0; game['zombies'].length < 4; i++) {
   const success = game.trySpawnZombie();
   assert.equal(success, true, `L'apparition ${i + 1} doit réussir dans le manoir ouvert`);
   const newestZombie = game['zombies'][game['zombies'].length - 1];
@@ -348,8 +345,10 @@ for (let i = 0; i < 4; i++) {
 
 // Vérifier que les zombies n'ont PAS tous popé dans le même quadrant
 const uniqueQuadrants = new Set(spawnedQuadrants);
-console.log(`   Quadrants des 4 apparitions consécutives : [${spawnedQuadrants.join(', ')}] (Directions distinctes : ${uniqueQuadrants.size}/4)`);
-assert.ok(uniqueQuadrants.size >= 2, `Le hasard contrôlé doit exercer plusieurs directions lorsque la géométrie le permet (actuel : ${uniqueQuadrants.size})`);
+console.log(`   Quadrants des apparitions : [${spawnedQuadrants.join(', ')}] (Directions distinctes : ${uniqueQuadrants.size})`);
+const spitter = game['zombies'].find((z) => z.getKind() === 'spitter');
+const escorts = game['zombies'].filter((z) => z.getKind() === 'agile');
+assert.ok(spitter && escorts.some((z) => z.getPosition().distanceTo(spitter.getPosition()) <= 8), 'Le Cracheur arrive avec un Coureur proche');
 
 // Deuxième position représentative : aile sud-ouest. Les contraintes de sécurité restent actives.
 game['player'].camera.position.set(-19, 1.7, 14);

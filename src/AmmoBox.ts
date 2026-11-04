@@ -80,4 +80,14 @@ export class AmmoBox {
     this.consumed = false;
     this.scene.add(this.group);
   }
+
+  public dispose(): void {
+    this.scene.remove(this.group);
+    this.group.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) return;
+      object.geometry.dispose();
+      if (Array.isArray(object.material)) object.material.forEach((material) => material.dispose());
+      else object.material.dispose();
+    });
+  }
 }

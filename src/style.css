@@ -163,6 +163,15 @@ canvas {
   pointer-events: none;
 }
 
+.hud::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  background: repeating-linear-gradient(to bottom, transparent 0 2px, rgb(0 0 0 / 4.5%) 2px 3px);
+}
+
 #damage-overlay {
   position: absolute;
   inset: 0;
@@ -188,6 +197,8 @@ canvas {
   background: var(--ivory);
   box-shadow: 0 0 0 1px #24242a;
 }
+.crosshair.head-hit { opacity: 1; }
+.crosshair.head-hit::after { background: #ffd171; box-shadow: 0 0 7px #ffd171; }
 .crosshair span {
   position: absolute;
   background: var(--ivory);

@@ -15,7 +15,6 @@ import { PerfTracker, type DetailedPerfReport } from './PerfTracker';
 import {
   MANSION_BUDGET,
   MANSION_PICKUPS,
-  MANSION_UPGRADE_PEDESTALS,
   type Point2D,
 } from './MansionConfig.ts';
 import { ENCOUNTER_CONFIGS, type EncounterSpec } from './EncounterConfig.ts';
@@ -40,6 +39,12 @@ export class Game {
   private spitProjectiles: SpitProjectile[] = [];
   private medkits: Medkit[] = [];
   private ammoBoxes: AmmoBox[] = [];
+  private ammoDrops: AmmoBox[] = [];
+  private dropBudget = 0;
+  private dropsMade = 0;
+  private killsThisTier = 0;
+  private hordeAlertTimer = 0;
+  private respiteTimer = 0;
   private shotgunPickup: ShotgunPickup;
   private encounterBell: EncounterBell;
   private upgradePedestals: UpgradePedestal[] = [];
@@ -71,6 +76,8 @@ export class Game {
   private readonly pauseDisplay = document.querySelector<HTMLElement>('#pause-message');
   private readonly horrorVolumeInput = document.querySelector<HTMLInputElement>('#horror-volume');
   private readonly horrorVolumeValue = document.querySelector<HTMLOutputElement>('#horror-volume-value');
+  private readonly musicVolumeInput = document.querySelector<HTMLInputElement>('#music-volume');
+  private readonly musicVolumeValue = document.querySelector<HTMLOutputElement>('#music-volume-value');
   private readonly damageOverlay = document.querySelector<HTMLElement>('#damage-overlay');
   private readonly damageEffectDuration = 0.4;
   private damageEffectRemaining = 0;
@@ -78,6 +85,8 @@ export class Game {
   // Facteur de réduction de résolution pour le rendu 3D rétro (divise par 3)
   private readonly retroScale = 3;
   private ambianceAudio: THREE.Audio | null = null;
+  private musicAudio: THREE.Audio | null = null;
+  private musicVolume = 0.4;
   private readonly horrorDirector = new HorrorDirector();
   private stormController: StormController;
   private disposed = false;
@@ -186,17 +195,6 @@ export class Game {
             const clickSound = new Audio('/assets/sounds/empty-soft.wav');
             clickSound.volume = 0.4;
             void clickSound.play().catch(() => {});
-          } else if (toggled) {
-            // Déclencheur immersif : ouvrir la porte de l'aile déverrouillée déclenche le combat du palier suivant
-            if (this.state === 'exploration' && this.pendingTierStart > 0) {
-              const nextEncounter = this.encounterConfigs[this.pendingTierStart - 1];
-              if (nextEncounter?.activationType === 'wing_gate') {
-                const targetUnlockTier = this.pendingTierStart - 1;
-                if (door.getUnlockAfterTier() === targetUnlockTier) {
-                  this.launchPendingTier();
-                }
-              }
-            }
           }
           break;
         }
@@ -255,12 +253,18 @@ export class Game {
       this.horrorDirector.setVolume(volume);
       if (this.horrorVolumeValue) this.horrorVolumeValue.value = `${Math.round(volume * 100)} %`;
     });
+    this.musicVolumeInput?.addEventListener('input', () => {
+      this.musicVolume = Number(this.musicVolumeInput?.value ?? 0);
+      if (this.musicVolumeValue) this.musicVolumeValue.value = `${Math.round(this.musicVolume * 100)} %`;
+      this.updateMusicVolume();
+    });
 
     // Ambiance sonore et audio spatial du manoir
     const audioLoader = new THREE.AudioLoader();
 
     // 1. Nappe sonore feutrée de vent nocturne en boucle
     audioLoader.load('/assets/sounds/ambiance-soft.wav', (buffer) => {
+      if (this.disposed) return;
       const sound = new THREE.Audio(this.player.audioListener);
       sound.setBuffer(buffer);
       sound.setLoop(true);
@@ -268,6 +272,16 @@ export class Game {
       this.ambianceAudio = sound;
       this.syncAmbientAudio();
     }, undefined, (error) => console.warn('Chargement ambiance impossible :', error));
+
+    audioLoader.load('/assets/sounds/combat-music.wav', (buffer) => {
+      if (this.disposed) return;
+      const music = new THREE.Audio(this.player.audioListener);
+      music.setBuffer(buffer);
+      music.setLoop(true);
+      music.setVolume(0.3 * this.musicVolume);
+      this.musicAudio = music;
+      this.syncAmbientAudio();
+    }, undefined, (error) => console.warn('Chargement musique impossible :', error));
 
     // 1B. Événement sonore spatial rare du manoir (source unique réutilisée)
     audioLoader.load('/assets/sounds/creak-soft.wav', (buffer) => {
@@ -322,10 +336,8 @@ export class Game {
       .filter((p) => p.type === 'medkit')
       .map((m) => new Medkit(this.scene, m.x, m.z, m.value, this.level.getFloorHeightAt(m.x, m.z)));
 
-    // Caisses de munitions de ravitaillement dans chaque secteur.
-    this.ammoBoxes = MANSION_PICKUPS
-      .filter((p) => p.type === 'ammo')
-      .map((a) => new AmmoBox(this.scene, a.x, a.z, a.value, a.weaponType ?? 'pistol', this.level.getFloorHeightAt(a.x, a.z)));
+    // Les munitions proviennent désormais des ennemis éliminés.
+    this.ammoBoxes = [];
 
     // Fusil à pompe placé au centre du Grand Hall (Secteur 2)
     const shotgunFloorY = this.level.getFloorHeightAt(0, 0);
@@ -335,16 +347,8 @@ export class Game {
     const bellFloorY = this.level.getFloorHeightAt(0, 2.5);
     this.encounterBell = new EncounterBell(this.scene, 0, 2.5, bellFloorY);
 
-    // Présentoirs placés dans les données du manoir, accessibles après P1.
-    this.upgradePedestals = MANSION_UPGRADE_PEDESTALS.map((position, index) =>
-      new UpgradePedestal(
-        this.scene,
-        position.x,
-        position.z,
-        this.level.getFloorHeightAt(position.x, position.z),
-        index === 0 ? 'left' : 'right'
-      )
-    );
+    // Les présentoirs sont retirés du cycle normal de rencontres.
+    this.upgradePedestals = [];
 
     // Création de l'arme (cibles actualisées dynamiquement lors du démarrage de chaque palier).
     this.weapon = new Weapon(
@@ -352,12 +356,15 @@ export class Game {
       this.renderer.domElement,
       [],
       this.level.getSolidMeshes(),
-      (target, damage) => {
+      (target, damage, shot) => {
         const zombie = this.zombies.find(
           (candidate) => candidate.getMesh() === target
         );
         if (zombie) {
-          zombie.takeDamage(damage);
+          const wasAlive = zombie.isAlive();
+          zombie.takeDamage(damage, shot.headHits > 0, shot.impactForce);
+          this.tierDiagnostics?.recordHit(shot.headHits, shot.bodyHits);
+          if (wasAlive && !zombie.isAlive()) this.onZombieKilled(zombie);
           this.tierDiagnostics?.recordDamageDealt();
         }
         this.checkTierCompletion();
@@ -419,6 +426,15 @@ export class Game {
         this.updateResolution();
       }
     );
+
+    // Préchauffage des shaders WebGL pour éviter le micro-gel de la première frame de rendu
+    if (typeof this.renderer.compile === 'function') {
+      try {
+        this.renderer.compile(this.scene, this.player.camera);
+      } catch {
+        // Ignorer en environnement de test sans contexte WebGL complet
+      }
+    }
   }
 
   private isSimulationActive(): boolean {
@@ -471,19 +487,13 @@ export class Game {
       if (this.isSimulationActive() && document.pointerLockElement === this.renderer.domElement) {
         this.player.update(delta);
 
-        // Déclencheur de secours si le joueur franchit le seuil d'accès dans la nouvelle aile
-        if (this.state === 'exploration' && this.pendingTierStart > 0) {
-          const nextEncounter = this.encounterConfigs[this.pendingTierStart - 1];
-          if (nextEncounter?.activationType === 'wing_gate') {
-            const pZ = this.player.camera.position.z;
-            if ((this.pendingTierStart === 2 && pZ < 5.8) || (this.pendingTierStart === 3 && pZ < -8.2)) {
-              this.launchPendingTier();
-            }
-          }
-        }
-
         // Simulation des zombies pendant le combat actif
         if (this.state === 'playing') {
+          this.hordeAlertTimer -= delta;
+          if (this.hordeAlertTimer <= 0) {
+            this.hordeAlertTimer = 0.75;
+            for (const zombie of this.zombies) if (zombie.isAlive()) zombie.alert(this.player.camera.position);
+          }
           this.spitProjectiles = this.spitProjectiles.filter((projectile) => projectile.update(delta, this.scene, this.level, this.player.camera.position, (damage) => {
             const previousHealth = this.player.getHealth();
             this.player.takeDamage(damage);
@@ -499,7 +509,8 @@ export class Game {
           this.spawnCooldownTimer -= delta;
           const livingCount = this.zombies.filter((z) => z instanceof Zombie ? z.isThreat() : z.isAlive()).length;
           this.tierDiagnostics?.updateActiveThreats(livingCount);
-          if (this.spawnQueue > 0 && livingCount < this.maxSimultaneousZombies && this.spawnCooldownTimer <= 0) {
+          const activeLimit = Math.min(this.maxSimultaneousZombies, this.encounterConfigs[this.currentTier - 1]?.maxActiveZombies ?? this.maxSimultaneousZombies);
+          if (this.spawnQueue > 0 && livingCount < activeLimit && this.spawnCooldownTimer <= 0) {
             if (this.trySpawnZombie()) {
               this.spawnQueue--;
               const config = this.encounterConfigs[this.currentTier - 1];
@@ -539,6 +550,10 @@ export class Game {
             });
           }
         }
+      }
+
+      if (this.state === 'exploration' && this.pendingTierStart > 0 && document.pointerLockElement === this.renderer.domElement && !document.hidden && (document.hasFocus?.() ?? true)) {
+        this.advanceRespite(delta);
       }
 
       this.updateZombieRemains(delta);
@@ -629,6 +644,15 @@ export class Game {
           this.updateAmmoDisplay();
         }
       }
+      for (const box of this.ammoDrops) {
+        box.update(delta, this.player.camera.position);
+        if (this.isSimulationActive() && box.tryPickup(this.player.camera.position, this.weapon)) this.updateAmmoDisplay();
+      }
+      this.ammoDrops = this.ammoDrops.filter((box) => {
+        if (!box.isConsumed()) return true;
+        box.dispose();
+        return false;
+      });
 
       // Mise à jour de la balistique des douilles éjectées
       this.shellCasings = this.shellCasings.filter((casing) => casing.update(delta));
@@ -645,6 +669,7 @@ export class Game {
       this.weapon.setEnvironmentalLighting(envLight.brightness + flashlightBoost, envLight.warmth);
 
       this.weapon.update(delta);
+      this.updateMusicVolume();
 
       // Affichage.
       this.renderer.render(
@@ -748,7 +773,26 @@ export class Game {
 
   public respawnPickups(): void {
     for (const medkit of this.medkits) medkit.respawn();
-    for (const box of this.ammoBoxes) box.respawn();
+  }
+
+  private advanceRespite(delta: number): void {
+    this.respiteTimer = Math.max(0, this.respiteTimer - delta);
+    this.updateObjectiveDisplay();
+    if (this.respiteTimer === 0) this.launchPendingTier();
+  }
+
+  private onZombieKilled(zombie: Zombie | SpitterZombie): void {
+    this.killsThisTier++;
+    const remaining = this.encounterConfigs[this.currentTier - 1].totalZombies - this.killsThisTier;
+    const due = this.dropBudget > 0 && (this.killsThisTier <= 2 || remaining <= this.dropBudget);
+    if (!due && (this.dropBudget <= 0 || Math.random() >= 0.32)) return;
+    const pos = zombie.getPosition();
+    const kind = this.weapon.isWeaponUnlocked('shotgun') && this.dropsMade % 3 === 2 ? 'shotgun' : 'pistol';
+    const count = kind === 'shotgun' ? 4 : 10;
+    this.ammoDrops.push(new AmmoBox(this.scene, pos.x, pos.z, count, kind, this.level.getFloorHeightAt(pos.x, pos.z)));
+    this.tierDiagnostics?.recordAmmoDrop();
+    this.dropsMade++;
+    this.dropBudget = Math.max(0, this.dropBudget - 1);
   }
 
   private enterRespite(): void {
@@ -763,6 +807,7 @@ export class Game {
       for (const door of doors) {
         if (door.getUnlockAfterTier() === currentEncounter.unlockSectorTier) {
           door.unlock();
+          if (door.getState() === 'CLOSED') door.toggle();
         }
       }
     }
@@ -789,12 +834,8 @@ export class Game {
     // 5. Transition directe et fluide vers l'exploration sécurisée (sans menu bloquant)
     this.pendingTierStart = this.currentTier + 1;
     this.state = 'exploration';
-    const nextEncounter = configs?.[this.pendingTierStart - 1];
-    if (nextEncounter?.activationType === 'arena_signal') {
-      this.encounterBell?.setActive(true);
-    } else {
-      this.encounterBell?.setActive(false);
-    }
+    this.encounterBell?.setActive(false);
+    this.respiteTimer = 10;
 
     // 6. Proposer jusqu'à deux bonus encore inédits ; le ravitaillement reste indépendant.
     const offers = drawTierUpgrades(this.appliedUpgrades ?? []);
@@ -853,6 +894,10 @@ export class Game {
     this.tierAgileSpawned = 0;
     this.tierSpitterSpawned = 0;
     this.tierStandardSpawned = 0;
+    this.dropBudget = Math.max(2, Math.ceil((configs?.[tierNumber - 1]?.totalZombies ?? 4) / 3));
+    this.dropsMade = 0;
+    this.killsThisTier = 0;
+    this.hordeAlertTimer = 0;
     this.lastSpawnQuadrant = -1;
     this.tierDiagnostics?.startTier(tierNumber);
     this.encounterBell?.setActive(false);
@@ -877,6 +922,7 @@ export class Game {
       } else if (door.getType() === 'sector_access') {
         if (door.getUnlockAfterTier() < tierNumber) {
           door.unlock();
+          if (door.getState() === 'CLOSED') door.toggle();
         } else {
           door.lock();
         }
@@ -948,11 +994,12 @@ export class Game {
     const remainingSpitter = Math.max(0, maxSpitterThisTier - this.tierSpitterSpawned);
     const remainingStandard = Math.max(0, maxStandardThisTier - this.tierStandardSpawned);
 
-    const livingAgile = livingZombies.filter((z) => z.getKind() === 'agile').length;
+    const livingAgile = this.zombies.filter((z) => z instanceof Zombie && z.getKind() === 'agile' && z.isThreat()).length;
     const livingSpitter = livingZombies.filter((z) => z.getKind() === 'spitter').length;
 
     const canSpawnSpitter = remainingSpitter > 0 && livingSpitter < config.maxSimultaneousSpitter;
     const canSpawnAgile = remainingAgile > 0 && livingAgile < config.maxSimultaneousAgile;
+    const canSpawnSoloAgile = canSpawnAgile && remainingAgile > remainingSpitter;
     const canSpawnStandard = remainingStandard > 0;
 
     if (!canSpawnSpitter && !canSpawnAgile && !canSpawnStandard) {
@@ -963,16 +1010,16 @@ export class Game {
     let chosenKind: ZombieKind;
     if (this.currentTier === 3 && this.tierSpitterSpawned === 0 && canSpawnSpitter) {
       chosenKind = 'spitter';
-    } else if (canSpawnSpitter && livingSpitter === 0) {
+    } else if (canSpawnSpitter) {
       chosenKind = 'spitter';
-    } else if (canSpawnAgile && canSpawnStandard) {
+    } else if (canSpawnSoloAgile && canSpawnStandard) {
       chosenKind = this.tierAgileSpawned <= this.tierStandardSpawned ? 'agile' : 'standard';
-    } else if (canSpawnAgile) {
+    } else if (canSpawnSoloAgile) {
       chosenKind = 'agile';
     } else if (canSpawnStandard) {
       chosenKind = 'standard';
     } else {
-      chosenKind = 'spitter';
+      return false;
     }
 
     for (const c of pool) {
@@ -1022,23 +1069,24 @@ export class Game {
       const angle = Math.atan2(dz, dx);
       const quadrant = Math.floor(((angle + Math.PI + Math.PI / 4) % (2 * Math.PI)) / (Math.PI / 2)) % 4;
 
-      let score = dist;
-      if (!hasLOS) score += 12; // Fort bonus pour les points masqués par un mur ou une porte
-      if (dot <= 0) score += 4;  // Bonus pour les positions latérales ou arrières
+      // Une apparition sûre mais proche met la vague en contact sans longue chasse dans le manoir.
+      let score = Math.max(0, 24 - dist) * 2;
+      if (!hasLOS) score += 5;
+      if (dot <= 0) score += 2;
 
       // Diversité multidirectionnelle et imprévisibilité :
       // 1. Privilégier les directions sans aucun zombie vivant
       if (livingQuadrantCounts[quadrant] === 0) {
-        score += 16;
-      } else if (livingQuadrantCounts[quadrant] === 1) {
         score += 4;
+      } else if (livingQuadrantCounts[quadrant] === 1) {
+        score += 1;
       } else {
-        score -= 12; // Éviter l'agglutination de plusieurs zombies dans la même direction
+        score -= 3;
       }
 
       // 2. Alterner par rapport à la dernière direction d'apparition
       if (this.lastSpawnQuadrant >= 0 && quadrant !== this.lastSpawnQuadrant) {
-        score += 10;
+        score += 2;
       }
 
       eligible.push({ x: c.x, z: c.z, score, quadrant });
@@ -1054,7 +1102,24 @@ export class Game {
     // Trier par score et piocher aléatoirement parmi les meilleurs candidats variés
     eligible.sort((a, b) => b.score - a.score);
     const selectionPoolSize = Math.min(5, eligible.length);
-    const chosen = eligible[Math.floor(Math.random() * selectionPoolSize)];
+    let chosen = eligible[Math.floor(Math.random() * selectionPoolSize)];
+    let escort: CandidateScore | undefined;
+    if (chosenKind === 'spitter') {
+      const threats = this.zombies.filter((z) => z instanceof Zombie ? z.isThreat() : z.isAlive()).length;
+      const activeLimit = Math.min(this.maxSimultaneousZombies, config.maxActiveZombies);
+      if (!canSpawnAgile || this.spawnQueue < 2 || threats > activeLimit - 2) return false;
+      for (const candidate of eligible) {
+        const partner = eligible.find((other) => {
+          const distance = Math.hypot(other.x - candidate.x, other.z - candidate.z);
+          if (distance < 2 || distance > 8) return false;
+          const first = new THREE.Vector3(candidate.x, this.level.getFloorHeightAt(candidate.x, candidate.z) + 1, candidate.z);
+          const second = new THREE.Vector3(other.x, this.level.getFloorHeightAt(other.x, other.z) + 1, other.z);
+          return Math.abs(first.y - second.y) < 1 && this.level.hasLineOfSight(first, second);
+        });
+        if (partner) { chosen = candidate; escort = partner; break; }
+      }
+      if (!escort) return false;
+    }
     this.lastSpawnQuadrant = chosen.quadrant;
 
     if (chosenKind === 'spitter') {
@@ -1075,6 +1140,16 @@ export class Game {
     }
     this.zombies.push(zombie);
     this.tierDiagnostics?.recordSpawn(chosenKind, livingZombies.length + 1);
+
+    if (escort) {
+      const runner = new Zombie(this.scene, this.level, escort.x, escort.z, 'agile');
+      runner.alert(playerPos);
+      if (this.zombieGroanBuffer) runner.setupAudio(this.player.audioListener, this.zombieGroanBuffer);
+      this.zombies.push(runner);
+      this.tierAgileSpawned++;
+      this.spawnQueue--;
+      this.tierDiagnostics?.recordSpawn('agile', livingZombies.length + 2);
+    }
 
     if (this.weapon) {
       this.weapon.setTargets(this.zombies.map((z) => z.getMesh()));
@@ -1103,8 +1178,7 @@ export class Game {
       this.objectiveDisplay.textContent = `PALIER ${this.currentTier} PURGÉ · ACCALMIE EN COURS`;
       this.objectiveDisplay.style.color = 'var(--gold, #dfba73)';
     } else if (this.state === 'exploration') {
-      const nextEncounter = this.encounterConfigs[this.pendingTierStart - 1];
-      this.objectiveDisplay.textContent = nextEncounter?.explorationPrompt ?? `PALIER ${this.currentTier} PURGÉ · EXPLORATION EN COURS`;
+      this.objectiveDisplay.textContent = `PALIER ${this.currentTier} PURGÉ · PROCHAIN COMBAT DANS ${Math.ceil(this.respiteTimer)} S`;
       this.objectiveDisplay.style.color = 'var(--gold, #dfba73)';
     } else {
       const plural = totalRemaining > 1 ? 'MENACES' : 'MENACE';
@@ -1154,6 +1228,7 @@ export class Game {
     if (this.ambianceAudio && this.ambianceAudio.isPlaying) {
       this.ambianceAudio.stop();
     }
+    if (this.musicAudio?.isPlaying) this.musicAudio.stop();
     this.horrorDirector?.suspend();
     const message = result === 'won' ? this.victoryDisplay : this.gameOverDisplay;
     if (message) message.hidden = false;
@@ -1178,16 +1253,26 @@ export class Game {
         console.warn('Activation audio impossible :', error);
       });
       if (this.ambianceAudio && !this.ambianceAudio.isPlaying) this.ambianceAudio.play();
+      if (this.musicAudio && !this.musicAudio.isPlaying) this.musicAudio.play();
     } else {
       if (this.ambianceAudio?.isPlaying) this.ambianceAudio.pause();
+      if (this.musicAudio?.isPlaying) this.musicAudio.pause();
       this.horrorDirector?.suspend();
       this.stormController?.suspend();
       for (const zombie of this.zombies) zombie.stopAudio();
     }
   }
 
+  private updateMusicVolume(): void {
+    this.musicAudio?.setVolume(0.3 * this.musicVolume * (this.state === 'playing' ? 1 : 1 / 3));
+  }
+
   public dispose(): void {
     this.disposed = true;
+    if (this.ambianceAudio?.isPlaying) this.ambianceAudio.stop();
+    if (this.musicAudio?.isPlaying) this.musicAudio.stop();
+    for (const drop of (this.ammoDrops ?? [])) drop.dispose();
+    this.ammoDrops = [];
     for (const projectile of (this.spitProjectiles ?? [])) projectile.dispose(this.scene);
     this.spitProjectiles = [];
     for (const zombie of this.zombies) {

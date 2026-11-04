@@ -430,7 +430,7 @@ console.log('9. Test de respect du budget formel du manoir (MANSION_BUDGET)...')
 assert.equal(MANSION_BUDGET.bounds.width, 48, 'La largeur totale doit être de 48m');
 assert.equal(MANSION_BUDGET.bounds.depth, 40, 'La profondeur totale doit être de 40m');
 assert.ok(MANSION_BUDGET.currentRooms <= MANSION_BUDGET.maxRooms, `Nombre de pièces (${MANSION_BUDGET.currentRooms}) <= max (${MANSION_BUDGET.maxRooms})`);
-assert.equal(MANSION_BUDGET.maxSimultaneousZombies, 4, 'Budget de 4 zombies simultanés');
+assert.equal(MANSION_BUDGET.maxSimultaneousZombies, 8, 'Budget de 8 zombies simultanés');
 assert.equal(MANSION_BUDGET.maxShadowCastingLights, 2, 'Budget de 2 lumières avec ombres');
 assert.equal(MANSION_BUDGET.maxPointLights, 6, 'Budget de 6 lumières ponctuelles');
 

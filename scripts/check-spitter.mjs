@@ -81,8 +81,13 @@ preparing.takeDamage(1);
 assert.equal(preparing.getPose(), 'windup', 'Une égratignure n’annule pas la préparation (résistance)');
 preparing.takeDamage(40);
 assert.equal(preparing.getPose(), 'windup', 'Une balle de pistolet isolée (40 dégâts) ne brise pas le windup');
-preparing.takeDamage(40);
-assert.equal(preparing.getPose(), 'idle', 'Deux balles de pistolet (81 dégâts cumulés >= 75) interrompent le tir');
+preparing.takeDamage(80, true, 40);
+assert.equal(preparing.getPose(), 'idle', 'La seconde balle 9 mm atteint le seuil de choc cumulé, même à la tête');
+const headPreparing = new SpitterZombie(scene, clearLevel, 0, 0);
+headPreparing.update(2.0, player, [], () => {});
+headPreparing.takeDamage(80, true, 40);
+assert.equal(headPreparing.getPose(), 'windup', 'Un tir 9 mm isolé à la tête ne compte que 40 de choc');
+headPreparing.dispose(scene);
 
 // Coup lourd de fusil à pompe direct (gros choc >= 55)
 const shotgunPreparing = new SpitterZombie(scene, clearLevel, 0, 0);
@@ -124,7 +129,7 @@ const spawnScene = new THREE.Scene();
 const spawnLevel = {
   isColliding: () => false,
   getFloorHeightAt: () => 2.4,
-  hasLineOfSight: () => false,
+  hasLineOfSight: (from) => from.x !== 0,
   findNextWaypoint: (_from, to) => to,
   getDoors: () => [],
   getLastPathfindingDurationMs: () => 0,
@@ -134,19 +139,25 @@ Object.assign(game, {
   level: spawnLevel,
   player: { camera: { position: new THREE.Vector3(0, 4.1, 0), getWorldDirection: (out) => out.set(0, 0, 1) }, audioListener: {} },
   currentTier: 3,
+  spawnQueue: ENCOUNTER_CONFIGS[2].totalZombies,
   tierSpitterSpawned: 0,
   tierAgileSpawned: 0,
   lastSpawnQuadrant: -1,
   zombies: [],
   encounterConfigs: ENCOUNTER_CONFIGS,
+  maxSimultaneousZombies: 8,
   weapon: { setTargets() {} },
   zombieGroanBuffer: null,
 });
 assert.equal(game.trySpawnZombie(), true);
 assert.equal(game.zombies[0].getKind(), 'spitter', 'Le premier spawn P3 réservé est le cracheur');
+assert.equal(game.zombies[1].getKind(), 'agile', 'Le cracheur arrive avec un coureur');
 assert(game.zombies[0].getPosition().y >= 3.4, 'Le cracheur apparaît sur le demi-niveau supérieur');
-for (let i = 0; i < ENCOUNTER_CONFIGS[2].totalZombies - 1; i++) {
+game.spawnQueue--;
+for (const zombie of game.zombies) zombie.takeDamage(10000);
+while (game.spawnQueue > 0) {
   assert.equal(game.trySpawnZombie(), true);
+  game.spawnQueue--;
   game.zombies.at(-1).takeDamage(10000);
 }
 assert.equal(game.zombies.filter((zombie) => zombie.getKind() === 'spitter').length, 1, 'Exactement un cracheur pour les six ennemis du P3');
@@ -158,13 +169,31 @@ for (const tier of [4, 5, 6, 7]) {
   game.tierStandardSpawned = 0;
   game.zombies = [];
   const config = ENCOUNTER_CONFIGS[tier - 1];
-  for (let i = 0; i < config.totalZombies; i++) {
-    assert.equal(game.trySpawnZombie(), true, `Apparition ${i + 1} du palier ${tier}`);
-    game.zombies.at(-1).takeDamage(10000);
+  game.spawnQueue = config.totalZombies;
+  while (game.spawnQueue > 0) {
+    assert.equal(game.trySpawnZombie(), true, `Apparition du palier ${tier}`);
+    game.spawnQueue--;
+    for (const zombie of game.zombies) if (zombie.isAlive()) zombie.takeDamage(10000);
   }
   assert.equal(game.zombies.filter((zombie) => zombie.getKind() === 'spitter').length, config.maxSpitter, `Quota de Cracheurs P${tier}`);
   assert.equal(game.zombies.filter((zombie) => zombie.getKind() === 'agile').length, config.maxAgile, `Quota de Coureurs P${tier}`);
   assert(game.zombies.some((zombie) => zombie.getKind() === 'standard'), `Zombies standards encore présents P${tier}`);
+  for (const zombie of game.zombies) zombie.dispose(spawnScene);
+}
+for (const tier of [6, 7]) {
+  game.currentTier = tier;
+  game.zombies = [];
+  game.tierSpitterSpawned = 0;
+  game.tierAgileSpawned = 0;
+  game.tierStandardSpawned = 0;
+  const config = ENCOUNTER_CONFIGS[tier - 1];
+  game.spawnQueue = config.totalZombies;
+  while (game.zombies.length < config.maxActiveZombies) {
+    assert.equal(game.trySpawnZombie(), true, `La salve P${tier} remplit le nouveau plafond`);
+    game.spawnQueue--;
+  }
+  assert.equal(game.zombies.filter((z) => z.getKind() === 'spitter').length, 3, `Trois Cracheurs peuvent coexister au P${tier}`);
+  assert.equal(game.zombies.filter((z) => z.getKind() === 'agile').length >= 3, true, 'Chaque Cracheur a son escorte');
   for (const zombie of game.zombies) zombie.dispose(spawnScene);
 }
 disposeAllZombieResources();

@@ -12,8 +12,10 @@ import {
 } from './WeaponSpread.ts';
 import type { ShotImpact } from './HitEffects.ts';
 import type { CasingType } from './ShellCasing.ts';
+import { isHeadSpriteHit, isOpaqueSpriteHit } from './SpriteHitMask.ts';
 
 export type WeaponId = 'pistol' | 'shotgun';
+export interface ShotDamage { headHits: number; bodyHits: number; impactForce: number }
 
 export interface WeaponState {
   id: WeaponId;
@@ -83,8 +85,11 @@ export class Weapon {
   // Effets sonores
   private readonly emptySound = new Audio('/assets/sounds/empty-soft.wav');
   private readonly shotSound = new Audio('/assets/sounds/shot-soft.wav');
+  private readonly shotgunSound = new Audio('/assets/sounds/shotgun-shot.wav');
   private readonly metalImpactSound = new Audio('/assets/sounds/impact-metal-soft.wav');
   private readonly zombieImpactSound = new Audio('/assets/sounds/impact-zombie-soft.wav');
+  private readonly crosshair = document.querySelector<HTMLElement>('.crosshair');
+  private headMarkerTimer: ReturnType<typeof setTimeout> | null = null;
 
   private shotAnimationTime = Infinity;
   private spentShellScheduled = false;
@@ -119,7 +124,7 @@ export class Weapon {
 
   private targets: THREE.Mesh[];
   private blockers: THREE.Mesh[];
-  private onHit: (target: THREE.Mesh, damage: number) => void;
+  private onHit: (target: THREE.Mesh, damage: number, shot: ShotDamage) => void;
   private onAmmoChange:
     | ((magazine: number, capacity: number, reserve: number, isReloading: boolean, weaponName: string, weaponId: WeaponId) => void)
     | null = null;
@@ -138,7 +143,7 @@ export class Weapon {
     canvas: HTMLCanvasElement,
     targets: THREE.Mesh[],
     blockers: THREE.Mesh[],
-    onHit: (target: THREE.Mesh, damage: number) => void,
+    onHit: (target: THREE.Mesh, damage: number, shot: ShotDamage) => void,
     canPlay: () => boolean,
     onAimChange: (amount: number) => void
   ) {
@@ -153,6 +158,7 @@ export class Weapon {
     this.camera.add(this.muzzleLight);
 
     this.shotSound.volume = 0.5;
+    this.shotgunSound.volume = 0.42;
     this.metalImpactSound.volume = 0.3;
     this.zombieImpactSound.volume = 0.35;
     this.emptySound.volume = 0.3;
@@ -376,7 +382,7 @@ export class Weapon {
     this.spentShellScheduled = false;
     this.muzzleLight.intensity = this.activeWeaponId === 'shotgun' ? 14.0 : 10.0;
     this.renderShotEffects();
-    this.playSound(this.shotSound);
+    this.playSound(this.activeWeaponId === 'shotgun' ? this.shotgunSound : this.shotSound);
 
     // 1. Enregistrement de la position et de l'orientation de la caméra AVANT le recul de tir
     this.camera.updateWorldMatrix(true, false);
@@ -398,7 +404,7 @@ export class Weapon {
     }
 
     // Accumulation des dégâts par cible touchée (pour appliquer un unique retour de blessure)
-    const zombieHits = new Map<THREE.Mesh, { damage: number; hitPoint: THREE.Vector3; normal: THREE.Vector3 }>();
+    const zombieHits = new Map<THREE.Mesh, { damage: number; headHits: number; bodyHits: number; hitPoint: THREE.Vector3; normal: THREE.Vector3 }>();
     let hitAnyDeco = false;
 
     // 3. Résolution instantanée de tous les plombs (1 pour pistolet, 8 pour fusil)
@@ -413,7 +419,10 @@ export class Weapon {
       this.raycaster.ray.direction.copy(localDir).applyQuaternion(camQuat).normalize();
 
       const hits = this.raycaster.intersectObjects(objects, false);
-      const hit = hits[0];
+      const hit = hits.find((candidate) => {
+        const mesh = candidate.object as THREE.Mesh;
+        return !targets.includes(mesh) || isOpaqueSpriteHit(mesh, candidate.uv);
+      });
 
       if (hit) {
         const isZombie = targets.includes(hit.object as THREE.Mesh);
@@ -424,12 +433,17 @@ export class Weapon {
 
         if (isZombie) {
           const targetMesh = hit.object as THREE.Mesh;
+          const head = isHeadSpriteHit(targetMesh, hit.uv);
+          const damage = this.activeWeaponId === 'pistol' ? (head ? 80 : 28) : (head ? 24 : 12);
           const current = zombieHits.get(targetMesh);
           if (current) {
-            current.damage += config.damagePerPellet;
+            current.damage += damage;
+            if (head) current.headHits++; else current.bodyHits++;
           } else {
             zombieHits.set(targetMesh, {
-              damage: config.damagePerPellet,
+              damage,
+              headHits: head ? 1 : 0,
+              bodyHits: head ? 0 : 1,
               hitPoint: hit.point.clone(),
               normal,
             });
@@ -450,7 +464,7 @@ export class Weapon {
     // Appliquer les dégâts cumulés à chaque zombie touché
     if (zombieHits.size > 0) {
       this.playSound(this.zombieImpactSound);
-      zombieHits.forEach(({ damage, hitPoint, normal }, targetMesh) => {
+      zombieHits.forEach(({ damage, headHits, bodyHits, hitPoint, normal }, targetMesh) => {
         console.log(`Zombie touché par ${this.activeWeaponId} (${damage} dégâts cumulés) !`);
         this.onImpact?.({
           kind: 'zombie',
@@ -459,7 +473,12 @@ export class Weapon {
           normal,
           direction: new THREE.Vector3(0, 0, -1).applyQuaternion(camQuat),
         });
-        this.onHit(targetMesh, damage);
+        this.onHit(targetMesh, damage, { headHits, bodyHits, impactForce: config.damagePerPellet * (headHits + bodyHits) });
+        if (headHits > 0) {
+          this.crosshair?.classList.add('head-hit');
+          if (this.headMarkerTimer) clearTimeout(this.headMarkerTimer);
+          this.headMarkerTimer = setTimeout(() => this.crosshair?.classList.remove('head-hit'), 130);
+        }
       });
     } else if (hitAnyDeco) {
       console.log('Tir bloqué par le décor.');

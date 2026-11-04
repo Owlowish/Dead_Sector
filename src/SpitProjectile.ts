@@ -7,7 +7,7 @@ export class SpitProjectile {
   private readonly ray = new THREE.Raycaster();
   private age = 0;
   private disposed = false;
-  private readonly speed = 6.5;
+  private readonly speed = 9;
   private readonly radius = 0.18;
 
   constructor(scene: THREE.Scene, origin: THREE.Vector3, target: THREE.Vector3) {

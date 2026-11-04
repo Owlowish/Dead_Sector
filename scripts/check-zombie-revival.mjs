@@ -44,6 +44,11 @@ game.checkTierCompletion();
 assert.equal(game.state, 'respite');
 zombie.dispose(scene);
 
+const precise = new Zombie(scene, level, 0, 0, 'standard', () => 0);
+precise.takeDamage(100, true);
+assert.equal(precise.isThreat(), false, 'Une élimination à la tête empêche la relève');
+precise.dispose(scene);
+
 // Test de la relève du Coureur agile (Tâche 4)
 const agile = new Zombie(scene, level, 0, 0, 'agile', () => 0); // random() = 0 < 0.12 -> déclenche la relève
 Object.assign(game, { state: 'playing', spawnQueue: 0, zombies: [agile] });

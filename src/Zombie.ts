@@ -4,6 +4,7 @@ import { visualColors } from './VisualStyle.ts';
 import { zombieAnimation, attackFrame, createAtlasFrameGeometry } from './ZombieAnimation.ts';
 import { ZombieRemains, type ZombieKind } from './ZombieRemains.ts';
 import { SpitterZombie } from './SpitterZombie.ts';
+import { prepareSpriteHitMask } from './SpriteHitMask.ts';
 import {
   agileZombieConfig,
   agileAnimationsData,
@@ -53,10 +54,10 @@ export function getStandardSharedResources(): StandardSharedResources {
   }
 
   const loader = new THREE.TextureLoader();
-  const idle = loader.load('/assets/zombies/zombie_idle.png');
-  const walk = loader.load('/assets/zombies/zombie_walk_v2.png');
-  const attack = loader.load('/assets/zombies/zombie_attack.png');
-  const hurt = loader.load('/assets/zombies/zombie_hurt_v2.png');
+  const idle = loader.load('/assets/zombies/zombie_idle.png', prepareSpriteHitMask);
+  const walk = loader.load('/assets/zombies/zombie_walk_v2.png', prepareSpriteHitMask);
+  const attack = loader.load('/assets/zombies/zombie_attack.png', prepareSpriteHitMask);
+  const hurt = loader.load('/assets/zombies/zombie_hurt_v2.png', prepareSpriteHitMask);
 
   for (const texture of [idle, walk, attack, hurt]) {
     texture.magFilter = THREE.NearestFilter;
@@ -352,14 +353,14 @@ export class Zombie {
     }
   }
 
-  public takeDamage(amount: number): void {
+  public takeDamage(amount: number, headHit = false): void {
     if (!this.alive) return;
 
     this.health = Math.max(0, this.health - amount);
     console.log(`Zombie [${this.kind}] HP: ${this.health}`);
 
     if (this.health <= 0) {
-      this.die();
+      this.die(headHit);
     } else {
       this.hitFlashRemaining = this.hitFlashDuration;
       this.hurtRemaining = this.hurtDuration;
@@ -378,9 +379,9 @@ export class Zombie {
     }
   }
 
-  private die(): void {
+  private die(headHit = false): void {
     const revivalChance = this.kind === 'agile' ? 0.12 : 0.2;
-    this.revivalPending = (this.kind === 'standard' || this.kind === 'agile') && !this.hasRevived && this.random() < revivalChance;
+    this.revivalPending = !headHit && (this.kind === 'standard' || this.kind === 'agile') && !this.hasRevived && this.random() < revivalChance;
     this.revivalDelay = this.revivalPending ? (this.kind === 'agile' ? 2.0 : 2.5) : 0;
     this.alive = false;
     this.mesh.visible = false;
