@@ -1,0 +1,320 @@
+{
+  "documentType": "asset-pack",
+  "templateVersion": 1,
+  "id": "ARMES_SONS_MOUVEMENT_2026-11-05",
+  "request": "Sons de rechargement pistolet/fusil et pompe à volume discret, mouvement des armes pendant déplacement.",
+  "scope": {
+    "prepare": true,
+    "generate": true,
+    "integrate": true,
+    "authorizedDecisions": [
+      "Accord explicite utilisateur sur les deux fonctionnalités",
+      "Délégation et autonomie déjà reçues"
+    ],
+    "assumptions": [
+      "Synthèse WebAudio native, même contexte audio",
+      "Aucun nouvel asset d'arme raster, cadrages et recul2s conservés",
+      "Balancement DOM depuis distance réelle ; pas de mouvement caméra"
+    ],
+    "pendingDecisions": []
+  },
+  "style": {
+    "workflow": "docs/PIPELINE_ASSETS.md",
+    "references": [
+      {
+        "path": "src/WeaponAnimation.ts",
+        "role": "chronologie pistolet, phases extract/insert/seat",
+        "inspected": true
+      },
+      {
+        "path": "src/ShotgunAnimation.ts",
+        "role": "chronologie cartouche etpompe",
+        "inspected": true
+      },
+      {
+        "path": "src/FootstepAudio.ts",
+        "role": "gain discret/cadence/distance réelle",
+        "inspected": true
+      },
+      {
+        "path": "public/assets/sounds/empty-soft.wav",
+        "role": "ancienne source mécanique à remplacer pourcartouche",
+        "inspected": true,
+        "observations": "Format et enveloppe mesurés sans écoute : mono44.1kHz,0.1s,peak0.300,RMS0.0417. Ancien gain0.3 ; pas repris pour les nouveaux clics."
+      }
+    ],
+    "lockedIdentity": [
+      "Même arme/mains/cadrage/recul",
+      "Manipulations courtes etfeutrées, distinctes destirs"
+    ],
+    "humanApproval": "not_requested"
+  },
+  "technicalContract": {
+    "usage": "BuffersmonoWebAudio, événementssur seuils deschronologies ; transformDOM parent .weapon-view",
+    "coordinateSpace": "Audio ensecondes, mouvement enpixelsetdegrés depuismètresX/Z",
+    "fixedParts": [
+      "Caméra,raycast,dispersion,munitions etchronologies"
+    ],
+    "movingParts": [
+      "Translationslégères etroulis duparentdesarmes"
+    ],
+    "uniqueEvents": [
+      "Extraction/insertion/encliquetage chargeur",
+      "Insertioncartouche effectivement engagée",
+      "Retourarrière/avantdepompeaprèsuntir"
+    ],
+    "interruptions": "Pause/blur/pointerlock/annulation/switch/dispose sans sons différés ni rattrapage",
+    "budget": {
+      "newTextures": 0,
+      "newLights": 0,
+      "newRasterFiles": 0,
+      "audioBuffers": 6,
+      "audioVoicesMax": 4,
+      "mechanicalBaseGain": 0.04,
+      "audioBufferBytesAt48kHz": 168008,
+      "audioDurationTotalSeconds": 0.875
+    }
+  },
+  "assets": [
+    {
+      "id": "mechanical-audio",
+      "purpose": "6timbres courts discrets",
+      "required": true,
+      "productionStatus": "generated",
+      "plannedFile": "src/WeaponMechanicalAudio.ts",
+      "format": "Buffersfloat32mono créés unefois",
+      "validation": {
+        "file": "pass",
+        "art": "not_checked",
+        "integration": "pass",
+        "gameplay": "not_checked"
+      },
+      "sourceFile": "src/WeaponMechanicalAudio.ts",
+      "exportFile": "src/WeaponMechanicalAudio.ts",
+      "runtimeUrl": null,
+      "productionMethod": "Synthèse native déterministe de bruit filtré etcontacts amortis, aucun appel à un modèle audio externe",
+      "technicalParameters": {
+        "gain": 0.04,
+        "bufferDurations": {
+          "mag-out": 0.16,
+          "mag-in": 0.14,
+          "seat": 0.085,
+          "shell-insert": 0.11,
+          "pump-back": 0.2,
+          "pump-forward": 0.18
+        },
+        "format": "float32mono, fréquence du listener",
+        "filtersHz": [
+          260,
+          2200
+        ],
+        "edgeSeconds": {
+          "attack": 0.005,
+          "release": 0.012
+        },
+        "maxVoices": 4,
+        "peakAt48kHzMax": 0.5938514,
+        "rmsAt48kHzMax": 0.1068304,
+        "peakAt44kHzMax": 0.6285,
+        "bytesAt48kHz": 168008
+      },
+      "evidence": [
+        "Six buffers testés, extrémités nulles,pics/RMS bornés ; aucune écoute effectuée",
+        "Aucune lecture suspendue/muette mise enattente ; ≤4voix etlibération uniquedesnœuds"
+      ],
+      "knownDefects": [
+        "Timbres etvolume perçu non évalués à l'écoute"
+      ]
+    },
+    {
+      "id": "sound-events",
+      "purpose": "Seuils partagés jeu/aperçu dérivés desanimations",
+      "required": true,
+      "productionStatus": "generated",
+      "plannedFile": "src/WeaponSoundEvents.ts",
+      "sourceFile": "src/WeaponSoundEvents.ts",
+      "timings": {
+        "pistol": [
+          0.36,
+          1.02,
+          1.26
+        ],
+        "pump": [
+          0.15,
+          0.35
+        ],
+        "shell": "Appel surcommitShotgunShell réel,0.5s parcycle0.65s"
+      },
+      "evidence": [
+        "Temps dérivés des chronologies etfranchissements previous<at<=next",
+        "Cartouche sonoriséeuniquementlorsdutransfert effectivementengagé"
+      ],
+      "validation": {
+        "file": "pass",
+        "integration": "pass",
+        "continuity": "pass"
+      }
+    },
+    {
+      "id": "weapon-motion",
+      "purpose": "Balancementmarche/course,amorti etvisée stable",
+      "required": true,
+      "productionStatus": "generated",
+      "plannedFile": "src/WeaponMotion.ts",
+      "acceptanceCriteria": [
+        "Pasdemouvementàl'arrêtoucontreunmur",
+        "ADSstable et rechargementatténué",
+        "Figer/resetpause",
+        "Delta30/144Hz"
+      ],
+      "sourceFile": "src/WeaponMotion.ts",
+      "technicalParameters": {
+        "walk": {
+          "maxXpx": 4,
+          "maxYpx": 3,
+          "rollDegrees": 0.3,
+          "cycleMeters": 3.8
+        },
+        "run": {
+          "maxXpx": 6,
+          "maxYpx": 5,
+          "rollDegrees": 0.45,
+          "cycleMeters": 5.2
+        },
+        "damping": 12,
+        "aimStrength": "(1-aim)^2",
+        "reloadFactor": 0.25,
+        "teleportCutoffMeters": 1.5,
+        "cssWritesMaxPerFrame": 3
+      },
+      "validation": {
+        "file": "pass",
+        "logic": "pass",
+        "art": "not_checked",
+        "continuity": "not_checked",
+        "integration": "pass",
+        "gameplay": "not_checked"
+      },
+      "evidence": [
+        "Check30/144Hz, déplacement diagonal, mur/arrêt, amplitudes bornées, ADScompletstable, rechargeatténuée, pause/téléportation/dispose",
+        "Transformparent.weapon-view, caméra/raycastettransformsdesenfants conservés"
+      ],
+      "knownDefects": [
+        "Balancement non observé dans une partie ou enlecturetempsréel"
+      ]
+    },
+    {
+      "id": "existing-presentation",
+      "required": false,
+      "productionStatus": "reused",
+      "reason": "Spritesarmes/animations/recul/tirs/impacts existants conservés ; pas d'images nouvelles"
+    },
+    {
+      "id": "listening-preview",
+      "purpose": "Séquence d'écoute pistolet/cartouche/pompe au gain du jeu",
+      "required": true,
+      "productionStatus": "generated",
+      "sourceFile": "scripts/make-weapon-feedback-preview.mjs",
+      "exportFile": "docs/asset-packs/weapon-feedback-v1/mechanics-preview.wav",
+      "format": "WAVPCM16mono48kHz",
+      "durationSeconds": 5,
+      "diskBytes": 480044,
+      "transformations": [
+        "Synthèse depuiscreateWeaponMechanicalSamples",
+        "Placement selonWeaponSoundEvents etShotgunReload",
+        "Gain0.04 sansnormalisation ; aucune lecture runtime de ce fichier"
+      ],
+      "validation": {
+        "file": "pass",
+        "art": "not_checked"
+      },
+      "evidence": [
+        "En-tête WAV etdurée mesurés ; écoute non effectuée"
+      ]
+    }
+  ],
+  "handoff": {
+    "sharedAnimationModule": [
+      "src/WeaponAnimation.ts",
+      "src/ShotgunAnimation.ts",
+      "src/WeaponSoundEvents.ts",
+      "src/WeaponMotion.ts"
+    ],
+    "previewCommand": "node scripts/make-weapon-feedback-preview.mjs",
+    "previewLocation": "http://127.0.0.1:5180/tmp/weapon-feedback-preview/index.html",
+    "checksActuallyRun": [
+      {
+        "name": "check-weapon-mechanics",
+        "status": "fulfilled",
+        "exit": 0
+      },
+      {
+        "name": "check-weapon-motion",
+        "status": "fulfilled",
+        "exit": 0
+      },
+      {
+        "name": "check-weapon",
+        "status": "fulfilled",
+        "exit": 0
+      },
+      {
+        "name": "check-shotgun",
+        "status": "fulfilled",
+        "exit": 0
+      },
+      {
+        "name": "check-audiovisual-pass",
+        "status": "fulfilled",
+        "exit": 0
+      },
+      {
+        "name": "check-mansion-audio",
+        "status": "fulfilled",
+        "exit": 0
+      },
+      {
+        "name": "check-combat-feedback",
+        "status": "fulfilled",
+        "exit": 0
+      },
+      {
+        "name": "check-debug-menu",
+        "status": "fulfilled",
+        "exit": 0
+      },
+      {
+        "name": "check-tiers",
+        "status": "fulfilled",
+        "exit": 0
+      },
+      {
+        "name": "check-storm",
+        "status": "fulfilled",
+        "exit": 0
+      },
+      {
+        "name": "check-horror-f5",
+        "status": "fulfilled",
+        "exit": 0
+      },
+      {
+        "name": "check-hearth-fire",
+        "status": "fulfilled",
+        "exit": 0
+      }
+    ],
+    "buildActuallyRun": true,
+    "buildBundle": {
+      "jsKB": 774.64,
+      "gzipKB": 199.63,
+      "cssKB": 13.79
+    },
+    "browserActuallyObserved": false,
+    "missingRequiredAssets": [],
+    "remainingWork": [
+      "Écoute etobservation du mouvement non effectuées ; non bloquantes selonautonomie utilisateur"
+    ],
+    "lastSpecificDefect": "Aucun défaut bloquant trouvé parrevue indépendante ; même recul2s,mêmegainpas0.06. Aucun contrôle écran/navigateur utilisé."
+  }
+}

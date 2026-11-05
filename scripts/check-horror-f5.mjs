@@ -48,9 +48,9 @@ console.log('=== F5 — bruit spatial conditionnel ===');
     hidden: false,
     hasFocus: () => true,
   };
-  const makeGame = () => {
+  const makeGame = (random = () => 0) => {
     const source = new FakeSource();
-    const director = new HorrorDirector(() => 0);
+    const director = new HorrorDirector(random);
     director.setSource(source);
     const game = Object.create(Game.prototype);
     Object.assign(game, {
@@ -90,12 +90,30 @@ console.log('=== F5 — bruit spatial conditionnel ===');
   globalThis.document.hidden = false;
   globalThis.document.hasFocus = () => true;
   const { game, source, director } = makeGame();
-  for (let i = 0; i < 362; i++) game.updateHorrorAudio(0.05);
+  for (let i = 0; i < 82; i++) game.updateHorrorAudio(0.05);
   assert.equal(source.playCount, 1, 'Game transmet une exploration admissible au vrai directeur');
   globalThis.document.pointerLockElement = null;
   game.syncAmbientAudio();
   assert.equal(source.isPlaying, false, 'syncAmbientAudio arrête réellement le craquement à la pause');
   director.dispose();
+
+  // La temporisation du directeur doit tenir dans le vrai décompte de Game.
+  for (const randomValue of [0, 0.5, 0.999]) {
+    const { game, source, director } = makeGame(() => randomValue);
+    game.respiteTimer = 10;
+    game.launchPendingTier = () => {
+      game.state = 'playing';
+      game.pendingTierStart = 0;
+      director.resetRespite();
+    };
+    for (let i = 0; i < 220; i++) {
+      if (game.state === 'exploration') game.advanceRespite(0.05);
+      game.updateHorrorAudio(0.05);
+    }
+    assert.equal(game.state, 'playing', 'Le combat suivant démarre après les dix secondes');
+    assert.equal(source.playCount, 1, 'Un seul craquement peut jouer avant la fin de l’accalmie, même au délai maximal');
+    director.dispose();
+  }
 }
 
 // Délai, sélection regard/distance et unicité de l'événement.
@@ -103,8 +121,8 @@ console.log('=== F5 — bruit spatial conditionnel ===');
   const source = new FakeSource();
   const director = new HorrorDirector(() => 0);
   director.setSource(source);
-  ticks(director, 17.95, true);
-  assert.equal(source.playCount, 0, 'le délai minimum de 18 s doit être respecté');
+  ticks(director, 3.95, true);
+  assert.equal(source.playCount, 0, 'le délai minimum de 4 s doit être respecté');
   ticks(director, 0.1, true);
   assert.equal(source.playCount, 1, 'un point à 10 m derrière le joueur doit être choisi');
   assert.deepEqual(source.position.toArray(), [0, 1.3, 10], 'la source audio prend la position du point choisi');
@@ -123,10 +141,10 @@ console.log('=== F5 — bruit spatial conditionnel ===');
   director.setSource(source);
   ticks(director, 60, false);
   assert.equal(source.playCount, 0, 'combat, terminal et pause sont exclus par le contexte non éligible');
-  ticks(director, 29.95, true);
-  assert.equal(source.playCount, 0, 'le délai aléatoire peut atteindre 30 s');
+  ticks(director, 6.95, true);
+  assert.equal(source.playCount, 0, 'le délai aléatoire peut atteindre 7 s');
   ticks(director, 0.1, true);
-  assert.equal(source.playCount, 1, 'l’événement devient possible après 30 s éligibles');
+  assert.equal(source.playCount, 1, 'l’événement devient possible avant la fin des 10 s d’accalmie');
   director.dispose();
 }
 
@@ -135,13 +153,13 @@ console.log('=== F5 — bruit spatial conditionnel ===');
   const source = new FakeSource();
   const director = new HorrorDirector(() => 0);
   director.setSource(source);
-  ticks(director, 12, true);
+  ticks(director, 2, true);
   director.suspend();
   assert.equal(source.isPlaying, false, 'la suspension coupe la source immédiatement');
   ticks(director, 50, false);
   ticks(director, 3.95, true);
   assert.equal(source.playCount, 0, 'la reprise impose au moins quatre secondes de silence');
-  ticks(director, 6.1, true);
+  ticks(director, 2.2, true);
   assert.equal(source.playCount, 1, 'le délai restant reprend après le silence de reprise');
   director.dispose();
 }
@@ -151,7 +169,7 @@ console.log('=== F5 — bruit spatial conditionnel ===');
   const source = new FakeSource();
   const director = new HorrorDirector(() => 0);
   director.setSource(source);
-  ticks(director, 18.5, true, ahead);
+  ticks(director, 4.5, true, ahead);
   assert.equal(source.playCount, 0, 'un point dans le cône de regard ne doit pas jouer');
   ticks(director, 2, true, [{ x: 0, y: 1.3, z: 5 }]);
   assert.equal(source.playCount, 0, 'un point trop proche ne doit pas jouer');
@@ -173,7 +191,7 @@ console.log('=== F5 — bruit spatial conditionnel ===');
   const source = new FakeSource();
   const director = new HorrorDirector(() => 0);
   director.setSource(source);
-  ticks(director, 18.1, true);
+  ticks(director, 4.1, true);
   assert.equal(source.isPlaying, true);
   director.setVolume(0);
   assert.equal(source.isPlaying, false, 'passer le volume à zéro coupe aussi une lecture en cours');

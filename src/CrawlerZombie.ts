@@ -171,7 +171,7 @@ export class CrawlerZombie {
     this.routeReplanTimer = 0.2;
   }
 
-  public setupAudio(listener: THREE.AudioListener, buffer: AudioBuffer): void {
+  public setupAudio(listener: THREE.AudioListener, buffer: AudioBuffer, effectsVolume = 1): void {
     if (!this.alive || this.disposed) return;
     try {
       this.hissAudio = new THREE.PositionalAudio(listener);
@@ -179,11 +179,15 @@ export class CrawlerZombie {
       this.hissAudio.setRefDistance(3);
       this.hissAudio.setMaxDistance(18);
       this.hissAudio.setPlaybackRate(1.45);
-      this.hissAudio.setVolume(0.35);
+      this.setAudioVolume(effectsVolume);
       this.mesh.add(this.hissAudio);
     } catch {
       // Audio facultatif si contexte verrouillé
     }
+  }
+
+  public setAudioVolume(volume: number): void {
+    this.hissAudio?.setVolume(0.35 * THREE.MathUtils.clamp(volume, 0, 1));
   }
 
   public stopAudio(): void {
@@ -629,6 +633,12 @@ export class CrawlerZombie {
     if (this.disposed) return;
     this.disposed = true;
     this.stopAudio();
+    if (this.hissAudio) {
+      this.hissAudio.disconnect();
+      this.hissAudio.gain.disconnect();
+      this.hissAudio.removeFromParent();
+      this.hissAudio = null;
+    }
     scene.remove(this.mesh);
   }
 }

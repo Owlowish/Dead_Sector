@@ -1,0 +1,329 @@
+{
+  "documentType": "asset-pack",
+  "templateVersion": 1,
+  "id": "MANOIR_RELIEF_AMBIANCE_2026-11-05",
+  "updatedAt": "2026-11-05",
+  "request": "Avancer au maximum sur visuel et son sans validations humaines intermédiaires.",
+  "scope": {
+    "prepare": true,
+    "generate": true,
+    "integrate": true,
+    "authorizedDecisions": [
+      "Décor et son du jeu ; autonomie d'implémentation demandée le5novembre",
+      "Délégation déjà autorisée"
+    ],
+    "assumptions": [
+      "Six pièces existantes",
+      "Volumes décoratifs adossés aux solides actuels",
+      "Formes 3D natives et sons synthétisés, pas de nouveau bitmap"
+    ],
+    "pendingDecisions": []
+  },
+  "style": {
+    "workflow": "docs/PIPELINE_ASSETS.md",
+    "references": [
+      {
+        "path": "public/assets/textures/mansion/wood-structure-v1.png",
+        "role": "palette bois et formes",
+        "inspected": true,
+        "attachedToGenerator": false
+      },
+      {
+        "path": "public/assets/textures/mansion/stone-ashlar-v1.png",
+        "role": "palette pierre et contraste",
+        "inspected": true,
+        "attachedToGenerator": false
+      },
+      {
+        "path": "src/VisualStyle.ts",
+        "role": "palette de matériaux existante",
+        "inspected": true
+      }
+    ],
+    "lockedIdentity": [
+      "Manoir victorien, bordeaux/ivoire/laiton/bois/pierre",
+      "Pas = bois/tapis/escalier sobres"
+    ],
+    "humanApproval": "not_requested"
+  },
+  "technicalContract": {
+    "usage": "Géométrie statique regroupée par pièce, poussière en points, sons courts WebAudio",
+    "sourceDimensions": null,
+    "exportDimensions": null,
+    "format": "TypeScript natif ; aucun raster supplémentaire",
+    "coordinateSpace": "Mètres, repère du manoir, +2.4m étage",
+    "fixedParts": [
+      "Tous les meubles et murs"
+    ],
+    "movingParts": [
+      "Poussière en boucle périodique lente"
+    ],
+    "phases": [
+      "Dérive des poussières, pas déclenchés par distance réelle"
+    ],
+    "budget": {
+      "furnishingMeshes": 6,
+      "furnishingPrimitives": 160,
+      "furnishingTriangles": 2152,
+      "furnishingGeometryBytes": 232416,
+      "furnishingMaterials": 1,
+      "dustPoints": 144,
+      "dustDrawCallsMax": 6,
+      "extraDrawCallsMainMax": 12,
+      "newTextures": 0,
+      "newLights": 0,
+      "newShadowCasters": 0,
+      "audioBuffers": 3,
+      "audioBufferBytesAt48kHz": 92164,
+      "audioVoicesMax": 2
+    }
+  },
+  "assets": [
+    {
+      "id": "relief",
+      "purpose": "Grandes formes de décor spécifiques aux six pièces",
+      "required": true,
+      "productionStatus": "generated",
+      "plannedFile": "src/MansionFurnishings.ts",
+      "referencesActuallyAttached": [],
+      "promptExact": null,
+      "toolAndModelActuallyUsed": "Code Three.js, assistant et sous-agent",
+      "acceptanceCriteria": [
+        "Supports solides existants ou hors zone de passage",
+        "Pas de nouvelle collision",
+        "Géométries fusionnées",
+        "Matériaux partagés"
+      ],
+      "sourceFile": "src/MansionFurnishings.ts",
+      "exportFile": "src/MansionFurnishings.ts",
+      "runtimeUrl": null,
+      "modules": [
+        "Corniches à deux profils des six pièces",
+        "Consoles et ornements du Vestibule",
+        "Deux chandeliers non allumés et deux livres du Salon",
+        "Buste facetté de la Galerie",
+        "Chapiteaux des deux piliers du Hall",
+        "Couronnements et montants hauts des bibliothèques",
+        "Deux pots, six pinceaux, un livre et une toile roulée sur l'établi"
+      ],
+      "perRoomTriangles": {
+        "vestibule": 232,
+        "salon": 520,
+        "galerie": 248,
+        "grand_hall": 304,
+        "bibliotheque": 432,
+        "atelier": 416
+      },
+      "composition": "Supports MANSION_WALLS, emprises basses dans celles des obstacles ; reliefs hauts à≥sol+2.5m. Matériaux vertexColors de VisualStyle, sans raster.",
+      "validation": {
+        "file": "pass",
+        "geometry": "pass",
+        "art": "not_checked",
+        "integration": "pass",
+        "gameplay": "not_checked"
+      },
+      "evidence": [
+        "check-mansion-furnishings : supports, volumes transformés, limites plafonds, attributs, budget, libération",
+        "Revue indépendante sans défaut bloquant"
+      ]
+    },
+    {
+      "id": "dust",
+      "purpose": "Poussière discrète localisée aux lumières",
+      "required": true,
+      "productionStatus": "generated",
+      "plannedFile": "src/MansionAtmosphere.ts",
+      "acceptanceCriteria": [
+        "Budgetfixe",
+        "Aucune texture ni lumière",
+        "Aucune allocationparimage",
+        "Pause du mouvement avecdelta0"
+      ],
+      "sourceFile": "src/MansionAtmosphere.ts",
+      "exportFile": "src/MansionAtmosphere.ts",
+      "composition": "6volumes de24points carrés translucides près des sources ; oscillations lentes amplitude0.12m X/Z et0.08m Y ; opacité0.17,taille0.028m.",
+      "validation": {
+        "file": "pass",
+        "geometry": "pass",
+        "art": "not_checked",
+        "integration": "pass",
+        "gameplay": "not_checked"
+      },
+      "evidence": [
+        "check-mansion-atmosphere : confinement sixpièces et solides, plafond/sol, pause, delta30/144Hz, enveloppes fixes etdispose",
+        "Dérive figée enpause/pertefocus via Game stormActive"
+      ]
+    },
+    {
+      "id": "footsteps",
+      "purpose": "Pas bois/tapis/escalier",
+      "required": true,
+      "productionStatus": "generated",
+      "plannedFile": "src/FootstepAudio.ts",
+      "toolAndModelActuallyUsed": "Synthèse WebAudio native",
+      "acceptanceCriteria": [
+        "Cadence par distance réelle",
+        "Silence enpause et contre mur",
+        "Volume Effets",
+        "Voix≤2",
+        "Aucun impact suralerte"
+      ],
+      "sourceFile": "src/FootstepAudio.ts",
+      "exportFile": "src/FootstepAudio.ts",
+      "technicalParameters": {
+        "durationsSeconds": {
+          "wood": 0.16,
+          "carpet": 0.14,
+          "stairs": 0.18
+        },
+        "sampleRate": "AudioContext du listener (44100/48000 testés)",
+        "channels": 1,
+        "bodyFrequenciesHz": {
+          "wood": 104,
+          "carpet": 76,
+          "stairs": 136
+        },
+        "noise": "Bruit déterministe filtré +sinus descendant, attaque3ms et décroissance exponentielle",
+        "masterGain": 0.06,
+        "playbackRateCycle": [
+          0.98,
+          1.025,
+          1.01,
+          0.965
+        ],
+        "panCycle": [
+          -0.12,
+          0.12
+        ],
+        "strideMeters": {
+          "walk": 1.9,
+          "run": 2.6
+        },
+        "sharedGainConstant": "FootstepAudio.FOOTSTEP_BASE_GAIN, importé par l'aperçu"
+      },
+      "validation": {
+        "file": "pass",
+        "art": "not_checked",
+        "integration": "pass",
+        "gameplay": "not_checked"
+      },
+      "evidence": [
+        "check-mansion-audio : cadence30/144Hz, pause/mute, mur sans déplacement, téléportation, plafonnement etnettoyage",
+        "Revue indépendante pics/RMS44100/48000Hz : peak≤0.712 avantgain0.18",
+        "Aucune écoute effectuée",
+        "Retour utilisateur : pas trop forts ; gain0.18→0.06(-9.54dB), vérifié initialisation et réglageEffets ; écoute après correction non effectuée."
+      ],
+      "knownDefects": [
+        "Timbre et niveau dans le mix à l'écoute non évalués."
+      ]
+    },
+    {
+      "id": "existing-art",
+      "required": false,
+      "productionStatus": "reused",
+      "reason": "Textures, lumières, sons d'armes et ennemis existants ; pas d'animation de personnage nouvelle."
+    },
+    {
+      "id": "audio-settings",
+      "required": true,
+      "productionStatus": "generated",
+      "sourceFile": "src/AudioMix.ts",
+      "purpose": "Sauvegarde locale versionnée des quatre curseurs",
+      "evidence": [
+        "Stockage invalide/refusé/ancienneversion toléré ; écriture seulement sur input ; gains restaurés avant premierpalier"
+      ],
+      "validation": {
+        "file": "pass",
+        "integration": "pass"
+      }
+    }
+  ],
+  "handoff": {
+    "previewCommand": "node scripts/make-dressing-preview.mjs --relief",
+    "previewLocation": "http://127.0.0.1:5180/tmp/mansion-relief-preview/index.html",
+    "sharedAnimationModule": "src/MansionAtmosphere.ts et src/FootstepAudio.ts utilisés par aperçu et jeu",
+    "checksActuallyRun": [
+      {
+        "name": "check-mansion-furnishings",
+        "passed": true
+      },
+      {
+        "name": "check-mansion-atmosphere",
+        "passed": true
+      },
+      {
+        "name": "check-mansion-audio",
+        "passed": true
+      },
+      {
+        "name": "check-audiovisual-pass",
+        "passed": true
+      },
+      {
+        "name": "check-visual-room-f3",
+        "passed": true
+      },
+      {
+        "name": "check-decor-surfaces",
+        "passed": true
+      },
+      {
+        "name": "check-mansion-dressing",
+        "passed": true
+      },
+      {
+        "name": "check-salon-surfaces",
+        "passed": true
+      },
+      {
+        "name": "check-tiers",
+        "passed": true
+      },
+      {
+        "name": "check-storm",
+        "passed": true
+      },
+      {
+        "name": "check-horror-f5",
+        "passed": true
+      },
+      {
+        "name": "check-debug-menu",
+        "passed": true
+      }
+    ],
+    "buildActuallyRun": true,
+    "buildBundle": {
+      "jsKB": 765.81,
+      "gzipKB": 197.08
+    },
+    "browserActuallyObserved": false,
+    "humanApproval": "Autonomie d'implémentation reçue ; pas de validation artistique prétendue.",
+    "remainingWork": [
+      "Observation WebGL et écoute non effectuées ; non bloquantes selon demande utilisateur",
+      "Temps GPU etcombat non mesurés"
+    ],
+    "lastSpecificDefect": "Pas de défaut bloquant détecté par revue et contrôles ciblés. Aucun accès navigateur/nativeUI tenté pour ce lot."
+  },
+  "feedback": [
+    {
+      "date": "2026-11-05",
+      "user": "Bureau trop haut et son des pas trop fort",
+      "evidence": "Capture de l'atelier fournie par l'utilisateur, inspectée dans le chat.",
+      "changes": [
+        "Établi2.4→1m dehaut, centre3.6→2.9m, base au sol2.4m",
+        "Accessoires suivent benchTop calculé depuis mêmeconfiguration",
+        "Gainpas réduit aux tiers via constantepartagée jeu/aperçu"
+      ],
+      "checks": [
+        "Build réussi",
+        "check-mansion-furnishings",
+        "check-decor-surfaces",
+        "check-mansion-audio",
+        "check-tiers",
+        "SondeLevel : rayons au-dessus et dans le bureau ; collision au sol"
+      ],
+      "artValidation": "Pas de nouvelle observation ni écoute après correction."
+    }
+  ]
+}

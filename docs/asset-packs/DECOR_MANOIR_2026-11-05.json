@@ -1,0 +1,524 @@
+{
+  "documentType": "asset-pack",
+  "templateVersion": 1,
+  "updatedAt": "2026-11-05",
+  "id": "DECOR_MANOIR_2026-11-05",
+  "request": "Générer et intégrer des assets supplémentaires dans les pièces existantes, en faisant attention aux performances.",
+  "scope": {
+    "prepare": true,
+    "generate": true,
+    "integrate": true,
+    "authorizedDecisions": [
+      "Décor supplémentaire dans les pièces existantes",
+      "Outils nécessaires au lot"
+    ],
+    "assumptions": [
+      "Cinq éléments muraux statiques",
+      "Aucune modification de mécanique ou de circulation"
+    ],
+    "pendingDecisions": []
+  },
+  "style": {
+    "workflow": "docs/PIPELINE_ASSETS.md",
+    "references": [
+      {
+        "path": "public/assets/textures/mansion_wall_v2.png",
+        "role": "style",
+        "inspected": true,
+        "attachedToGenerator": true,
+        "observations": "Damas bordeaux, or vieilli et lambris bruns ; palette et densité de détail inspectées."
+      },
+      {
+        "path": "public/assets/textures/portrait_v2.png",
+        "role": "style",
+        "inspected": true,
+        "attachedToGenerator": true,
+        "observations": "Cadre sculpté doré, ombres peintes et pixels nets ; référence jointe aux quatre variantes."
+      },
+      {
+        "path": "public/assets/textures/mansion/bookshelf-front-v1.png",
+        "role": "style",
+        "inspected": true,
+        "attachedToGenerator": false,
+        "observations": "Bois sombre et dos de livres sourds ; référence inspectée, non jointe au générateur."
+      }
+    ],
+    "sharedPromptBlock": "Asset de jeu DEAD SECTOR, FPS rétro dans un manoir victorien hanté. Traitement pixel art peint, pixels groupés perceptibles et contours en marches d'escalier, détails lisibles à petite taille. Palette sourde : bois brun #684532, bordeaux #4d161a, ivoire vieilli #d4c6a5, laiton patiné #b69a60, fer sombre #343a3b et gris bleuté. Usure sobre, contraste utile à la silhouette, lumière neutre diffuse, pas d'ombre portée extérieure. Aucun rendu photo, lissage brillant ou cartoon arrondi, aucun texte ni signature.",
+    "lockedIdentity": [
+      "Palette victorienne sourde",
+      "Vue orthographique frontale",
+      "Pixels peints et usure sobre",
+      "Aucun personnage ni texte"
+    ],
+    "acceptedBaseFile": "docs/asset-packs/mansion-details-v1/clock.png",
+    "humanApproval": "not_requested"
+  },
+  "technicalContract": {
+    "usage": "Éléments muraux fixes, regroupés par pièce",
+    "displaySize": "Environ 0.8 à 1.8 m de large, rapport du canevas conservé",
+    "sourceDimensions": {
+      "clock": [
+        1024,
+        1536
+      ],
+      "mirror": [
+        887,
+        1774
+      ],
+      "tapestry": [
+        1024,
+        1536
+      ],
+      "curios": [
+        1024,
+        1536
+      ],
+      "tools": [
+        887,
+        1774
+      ]
+    },
+    "exportDimensions": [
+      256,
+      512
+    ],
+    "format": "PNG RGBA",
+    "background": "Alpha réel, découpe binaire correspondant au alphaTest 0.5 du jeu",
+    "coordinateSpace": "Origine supérieure gauche par cellule 256×512",
+    "margins": "Au moins 8 px autour des contours exportés",
+    "anchors": [
+      "Centre de cellule (128,256)"
+    ],
+    "fixedParts": [
+      "Tous les éléments du lot"
+    ],
+    "movingParts": [],
+    "phases": [],
+    "uniqueEvents": [],
+    "interruptions": "Non applicable : décor statique",
+    "tileAxes": [],
+    "budget": {
+      "atlasDimensions": [
+        1024,
+        1024
+      ],
+      "textureCount": 1,
+      "rgbaBytes": 4194304,
+      "mipmaps": false,
+      "maxDrawCalls": 6,
+      "maxPlacements": 28,
+      "newLights": 0,
+      "newShadows": 0,
+      "newColliders": 0,
+      "measured": {
+        "atlasFileBytes": 990381,
+        "runtimeTextureCount": 1,
+        "rgbaBytes": 4194304,
+        "roomMeshes": 6,
+        "placements": 24,
+        "triangles": 48,
+        "materials": 1,
+        "extraShadowPasses": 0,
+        "observedDrawCalls": null,
+        "frameTimeMeasured": false
+      }
+    },
+    "coordinateConversion": "Les exports 256×512 occupent les cellules du manifeste ; MansionDressing convertit ces rectangles en UV Three.js, V inversé et centres de texels."
+  },
+  "inventory": {
+    "decor": "Cinq ressources à produire",
+    "materials": "MeshStandardMaterial partagé, réutilisation du rendu du manoir",
+    "sound": "Non applicable : décor silencieux",
+    "animation": "Non applicable : décor statique",
+    "gameplay": "Non applicable : aucune interaction ajoutée"
+  },
+  "assets": [
+    {
+      "id": "clock",
+      "purpose": "Repère victorien vestibule/hall",
+      "required": true,
+      "productionStatus": "generated",
+      "dependencies": [],
+      "plannedFile": "docs/asset-packs/mansion-details-v1/clock.png",
+      "sourceFile": "C:/Users/Administrateur/.codex/generated_images/01a1ace9-b608-7983-8706-92d9bf693f5a/exec-911935ea-7a16-42b1-a76c-a276ba25ff0c.png",
+      "exportFile": "docs/asset-packs/mansion-details-v1/clock.png",
+      "runtimeUrl": "/assets/decor/mansion-details-v1.png",
+      "measuredDimensions": {
+        "source": [
+          1024,
+          1536
+        ],
+        "alphaBounds": {
+          "height": 480,
+          "y": 16,
+          "x": 16,
+          "width": 224
+        },
+        "export": [
+          256,
+          512
+        ]
+      },
+      "atlasCell": {
+        "x": 0,
+        "y": 0,
+        "width": 256,
+        "height": 512
+      },
+      "promptExact": "Use case: stylized-concept. Asset type: transparent wall-mounted game prop, BASE D'IDENTITÉ du lot de décor DEAD SECTOR. Créer UNE pendule murale victorienne à balancier en noyer sombre, cadran ivoire sale, aiguilles de laiton, vitre assombrie laissant voir un pendule, petit fronton sculpté. Vue frontale orthographique STRICTE, aucune perspective, aucune face latérale exagérée. Composition verticale compacte, objet entier centré, marge transparente autour de toutes les volutes, accroche haute et bas entier visibles. Aucune aiguille animée, aucun mécanisme de gameplay. Le cadran porte seulement des traits discrets, aucun chiffre ou mot. Arrière-plan réellement transparent. Le style doit évoquer des textures peintes pixelisées de boiseries et portraits d'un vieux FPS gothique, pas un dessin vectoriel. Asset de jeu DEAD SECTOR, FPS rétro dans un manoir victorien hanté. Traitement pixel art peint, pixels groupés perceptibles et contours en marches d'escalier, détails lisibles à petite taille. Palette sourde : bois brun #684532, bordeaux #4d161a, ivoire vieilli #d4c6a5, laiton patiné #b69a60, fer sombre #343a3b et gris bleuté. Usure sobre, contraste utile à la silhouette, lumière neutre diffuse, pas d'ombre portée extérieure. Aucun rendu photo, lissage brillant ou cartoon arrondi, aucun texte ni signature.",
+      "toolAndModelActuallyUsed": {
+        "tool": "image_gen.imagegen",
+        "mode": "built-in",
+        "model": "non exposé par l’outil"
+      },
+      "referencesActuallyAttached": [],
+      "transformations": [
+        "Cadrage sur les pixels alpha >=128, sans supprimer une couleur",
+        "Réduction NearestNeighbor proportionnelle vers 240×480 maximum",
+        "Centrage dans 256×512 avec marges transparentes",
+        "Découpe alphaTest 0.5 préappliquée ; pixels écartés mis à RGBA zéro"
+      ],
+      "acceptanceCriteria": [
+        "Silhouette complète",
+        "Alpha réel",
+        "Orthographique frontal",
+        "Palette cohérente",
+        "Lisible à taille réduite"
+      ],
+      "validation": {
+        "file": "pass",
+        "art": "pass",
+        "continuity": "not_checked",
+        "integration": "not_checked",
+        "gameplay": "not_checked"
+      },
+      "evidence": [
+        "Source affichée par image_gen ; export final vu dans l’atlas 1024×1024.",
+        "Contrôle Node : PNG RGBA8 256×512, alpha binaire réel, marges, correspondance exacte de la cellule.",
+        "Contrôle Node : proportions et UV, support mural plein, approche et ligne de vue libres pour chaque placement.",
+        "Élément statique : aucune animation à valider. Rendu navigateur non observé."
+      ],
+      "knownDefects": [],
+      "humanApproval": "not_requested",
+      "sha256": "3bc87118f8c2cd26ce3b3f3db0faf0b2d04c3adb41116fb6aa5287adfe3feefd"
+    },
+    {
+      "id": "mirror",
+      "purpose": "Ornement terne du salon et du hall",
+      "required": true,
+      "productionStatus": "generated",
+      "dependencies": [],
+      "plannedFile": "docs/asset-packs/mansion-details-v1/mirror.png",
+      "sourceFile": "C:/Users/Administrateur/.codex/generated_images/01a1ace9-b608-7983-8706-92d9bf693f5a/exec-2d5e0bc0-6cb4-4ad5-a60a-ef1253f31f1e.png",
+      "exportFile": "docs/asset-packs/mansion-details-v1/mirror.png",
+      "runtimeUrl": "/assets/decor/mansion-details-v1.png",
+      "measuredDimensions": {
+        "source": [
+          887,
+          1774
+        ],
+        "alphaBounds": {
+          "height": 480,
+          "y": 16,
+          "x": 16,
+          "width": 223
+        },
+        "export": [
+          256,
+          512
+        ]
+      },
+      "atlasCell": {
+        "x": 256,
+        "y": 0,
+        "width": 256,
+        "height": 512
+      },
+      "promptExact": "Transformer la pendule de la première référence en UN miroir ovale mural victorien. Première image = base de traitement et de palette, autres images = références de style du manoir seulement. Garder exactement la densité des groupes de pixels, les ombres diffuses et le laiton terni du lot ; remplacer entièrement le sujet horloge par un miroir. Cadre ovale sculpté de laiton assombri avec quelques éclats, verre piqué opaque gris bleu, marbrures oxydées, AUCUN reflet de pièce, personnage, visage ou source lumineuse. Objet entier, STRICTEMENT frontal et orthographique, silhouette verticale, centre du canevas, marges transparentes, pas de décor ni sol. C'est une surface décorative peinte sans reflet temps réel. Asset de jeu DEAD SECTOR, FPS rétro dans un manoir victorien hanté. Traitement pixel art peint, pixels groupés perceptibles et contours en marches d'escalier, détails lisibles à petite taille. Palette sourde : bois brun #684532, bordeaux #4d161a, ivoire vieilli #d4c6a5, laiton patiné #b69a60, fer sombre #343a3b et gris bleuté. Usure sobre, contraste utile à la silhouette, lumière neutre diffuse, pas d'ombre portée extérieure. Aucun rendu photo, lissage brillant ou cartoon arrondi, aucun texte ni signature.",
+      "toolAndModelActuallyUsed": {
+        "tool": "image_gen.imagegen",
+        "mode": "built-in",
+        "model": "non exposé par l’outil"
+      },
+      "referencesActuallyAttached": [
+        "C:/Users/Administrateur/source/dead_sector/docs/asset-packs/mansion-details-v1/clock.png",
+        "C:/Users/Administrateur/source/dead_sector/public/assets/textures/mansion_wall_v2.png",
+        "C:/Users/Administrateur/source/dead_sector/public/assets/textures/portrait_v2.png"
+      ],
+      "transformations": [
+        "Cadrage sur les pixels alpha >=128, sans supprimer une couleur",
+        "Réduction NearestNeighbor proportionnelle vers 240×480 maximum",
+        "Centrage dans 256×512 avec marges transparentes",
+        "Découpe alphaTest 0.5 préappliquée ; pixels écartés mis à RGBA zéro"
+      ],
+      "acceptanceCriteria": [
+        "Silhouette complète",
+        "Alpha réel",
+        "Orthographique frontal",
+        "Palette cohérente",
+        "Lisible à taille réduite"
+      ],
+      "validation": {
+        "file": "pass",
+        "art": "pass",
+        "continuity": "not_checked",
+        "integration": "not_checked",
+        "gameplay": "not_checked"
+      },
+      "evidence": [
+        "Source affichée par image_gen ; export final vu dans l’atlas 1024×1024.",
+        "Contrôle Node : PNG RGBA8 256×512, alpha binaire réel, marges, correspondance exacte de la cellule.",
+        "Contrôle Node : proportions et UV, support mural plein, approche et ligne de vue libres pour chaque placement.",
+        "Élément statique : aucune animation à valider. Rendu navigateur non observé."
+      ],
+      "knownDefects": [],
+      "humanApproval": "not_requested",
+      "sha256": "f0aef8031a5a5c7a8ba3735ce5b23968389529eb817de4d68ffbf417738085ff"
+    },
+    {
+      "id": "tapestry",
+      "purpose": "Habillage textile du salon et de la galerie",
+      "required": true,
+      "productionStatus": "generated",
+      "dependencies": [],
+      "plannedFile": "docs/asset-packs/mansion-details-v1/tapestry.png",
+      "sourceFile": "C:/Users/Administrateur/.codex/generated_images/01a1ace9-b608-7983-8706-92d9bf693f5a/exec-c24cc8d0-25c6-4c3a-8fd0-78783197bd45.png",
+      "exportFile": "docs/asset-packs/mansion-details-v1/tapestry.png",
+      "runtimeUrl": "/assets/decor/mansion-details-v1.png",
+      "measuredDimensions": {
+        "source": [
+          1024,
+          1536
+        ],
+        "alphaBounds": {
+          "height": 388,
+          "y": 62,
+          "x": 8,
+          "width": 240
+        },
+        "export": [
+          256,
+          512
+        ]
+      },
+      "atlasCell": {
+        "x": 512,
+        "y": 0,
+        "width": 256,
+        "height": 512
+      },
+      "promptExact": "Transformer le sujet de la première référence en UNE tenture murale victorienne effilochée ; première image = base de traitement et palette du lot, autres images = style du manoir seulement. Conserver mêmes groupes de pixels peints et usure. Tenture verticale bordeaux délavé et olive sombre, grand motif végétal damassé simplifié en ivoire éteint, tringle mince en laiton en haut, deux attaches, bord inférieur irrégulier et franges usées. Plis larges et sobres, aucun rideau théâtral volumineux. Objet entier STRICTEMENT frontal orthographique, pas de perspective, centré, silhouette isolée sur alpha réel, aucun mur visible à travers le tissu, aucune scène ou figure dans le motif. Asset de jeu DEAD SECTOR, FPS rétro dans un manoir victorien hanté. Traitement pixel art peint, pixels groupés perceptibles et contours en marches d'escalier, détails lisibles à petite taille. Palette sourde : bois brun #684532, bordeaux #4d161a, ivoire vieilli #d4c6a5, laiton patiné #b69a60, fer sombre #343a3b et gris bleuté. Usure sobre, contraste utile à la silhouette, lumière neutre diffuse, pas d'ombre portée extérieure. Aucun rendu photo, lissage brillant ou cartoon arrondi, aucun texte ni signature.",
+      "toolAndModelActuallyUsed": {
+        "tool": "image_gen.imagegen",
+        "mode": "built-in",
+        "model": "non exposé par l’outil"
+      },
+      "referencesActuallyAttached": [
+        "C:/Users/Administrateur/source/dead_sector/docs/asset-packs/mansion-details-v1/clock.png",
+        "C:/Users/Administrateur/source/dead_sector/public/assets/textures/mansion_wall_v2.png",
+        "C:/Users/Administrateur/source/dead_sector/public/assets/textures/portrait_v2.png"
+      ],
+      "transformations": [
+        "Cadrage sur les pixels alpha >=128, sans supprimer une couleur",
+        "Réduction NearestNeighbor proportionnelle vers 240×480 maximum",
+        "Centrage dans 256×512 avec marges transparentes",
+        "Découpe alphaTest 0.5 préappliquée ; pixels écartés mis à RGBA zéro"
+      ],
+      "acceptanceCriteria": [
+        "Silhouette complète",
+        "Alpha réel",
+        "Orthographique frontal",
+        "Palette cohérente",
+        "Lisible à taille réduite"
+      ],
+      "validation": {
+        "file": "pass",
+        "art": "pass",
+        "continuity": "not_checked",
+        "integration": "not_checked",
+        "gameplay": "not_checked"
+      },
+      "evidence": [
+        "Source affichée par image_gen ; export final vu dans l’atlas 1024×1024.",
+        "Contrôle Node : PNG RGBA8 256×512, alpha binaire réel, marges, correspondance exacte de la cellule.",
+        "Contrôle Node : proportions et UV, support mural plein, approche et ligne de vue libres pour chaque placement.",
+        "Élément statique : aucune animation à valider. Rendu navigateur non observé."
+      ],
+      "knownDefects": [],
+      "humanApproval": "not_requested",
+      "sha256": "b9f120a082aa89a12ab47d32918103ce9515549689e2c71fc01f45fa6be83b0e"
+    },
+    {
+      "id": "curios",
+      "purpose": "Collection murale de la bibliothèque",
+      "required": true,
+      "productionStatus": "generated",
+      "dependencies": [],
+      "plannedFile": "docs/asset-packs/mansion-details-v1/curios.png",
+      "sourceFile": "C:/Users/Administrateur/.codex/generated_images/01a1ace9-b608-7983-8706-92d9bf693f5a/exec-6aae9935-b7f4-42f5-bf9a-5673ce12b414.png",
+      "exportFile": "docs/asset-packs/mansion-details-v1/curios.png",
+      "runtimeUrl": "/assets/decor/mansion-details-v1.png",
+      "measuredDimensions": {
+        "source": [
+          1024,
+          1536
+        ],
+        "alphaBounds": {
+          "height": 412,
+          "y": 50,
+          "x": 8,
+          "width": 240
+        },
+        "export": [
+          256,
+          512
+        ]
+      },
+      "atlasCell": {
+        "x": 768,
+        "y": 0,
+        "width": 256,
+        "height": 512
+      },
+      "promptExact": "Transformer le sujet de la première référence en UNE vitrine murale de curiosités victorienne peu profonde ; première image = base de palette et de pixels, autres images = style du manoir seulement. Cadre rectangulaire de noyer sombre, deux tablettes intérieures. Collection sobre : un papillon naturalisé ivoire dans la partie haute, deux fioles vert olive opaques, une petite ammonite claire et un livre fermé bordeaux dans la partie basse. Objets suffisamment grands pour rester lisibles à 100 pixels de haut, éviter les dizaines de bibelots. Vitrage sans reflet extérieur ni brillance blanche ; fond intérieur brun noir opaque, pas de vue vers une pièce. Vue STRICTEMENT frontale orthographique, rectangle vertical entier centré avec fines marges transparentes à l'extérieur seulement. Aucun texte, aucune étiquette lisible. Asset de jeu DEAD SECTOR, FPS rétro dans un manoir victorien hanté. Traitement pixel art peint, pixels groupés perceptibles et contours en marches d'escalier, détails lisibles à petite taille. Palette sourde : bois brun #684532, bordeaux #4d161a, ivoire vieilli #d4c6a5, laiton patiné #b69a60, fer sombre #343a3b et gris bleuté. Usure sobre, contraste utile à la silhouette, lumière neutre diffuse, pas d'ombre portée extérieure. Aucun rendu photo, lissage brillant ou cartoon arrondi, aucun texte ni signature.",
+      "toolAndModelActuallyUsed": {
+        "tool": "image_gen.imagegen",
+        "mode": "built-in",
+        "model": "non exposé par l’outil"
+      },
+      "referencesActuallyAttached": [
+        "C:/Users/Administrateur/source/dead_sector/docs/asset-packs/mansion-details-v1/clock.png",
+        "C:/Users/Administrateur/source/dead_sector/public/assets/textures/mansion_wall_v2.png",
+        "C:/Users/Administrateur/source/dead_sector/public/assets/textures/portrait_v2.png"
+      ],
+      "transformations": [
+        "Cadrage sur les pixels alpha >=128, sans supprimer une couleur",
+        "Réduction NearestNeighbor proportionnelle vers 240×480 maximum",
+        "Centrage dans 256×512 avec marges transparentes",
+        "Découpe alphaTest 0.5 préappliquée ; pixels écartés mis à RGBA zéro"
+      ],
+      "acceptanceCriteria": [
+        "Silhouette complète",
+        "Alpha réel",
+        "Orthographique frontal",
+        "Palette cohérente",
+        "Lisible à taille réduite"
+      ],
+      "validation": {
+        "file": "pass",
+        "art": "pass",
+        "continuity": "not_checked",
+        "integration": "not_checked",
+        "gameplay": "not_checked"
+      },
+      "evidence": [
+        "Source affichée par image_gen ; export final vu dans l’atlas 1024×1024.",
+        "Contrôle Node : PNG RGBA8 256×512, alpha binaire réel, marges, correspondance exacte de la cellule.",
+        "Contrôle Node : proportions et UV, support mural plein, approche et ligne de vue libres pour chaque placement.",
+        "Élément statique : aucune animation à valider. Rendu navigateur non observé."
+      ],
+      "knownDefects": [],
+      "humanApproval": "not_requested",
+      "sha256": "685f8f3f8a684135e0838bdc992bef7a93d6a25440290c50863f1fa29c5d3cb9"
+    },
+    {
+      "id": "tools",
+      "purpose": "Identité de l'atelier d'art",
+      "required": true,
+      "productionStatus": "generated",
+      "dependencies": [],
+      "plannedFile": "docs/asset-packs/mansion-details-v1/tools.png",
+      "sourceFile": "C:/Users/Administrateur/.codex/generated_images/01a1ace9-b608-7983-8706-92d9bf693f5a/exec-e31c9da4-45d1-4efa-8253-69febf9a9408.png",
+      "exportFile": "docs/asset-packs/mansion-details-v1/tools.png",
+      "runtimeUrl": "/assets/decor/mansion-details-v1.png",
+      "measuredDimensions": {
+        "source": [
+          887,
+          1774
+        ],
+        "alphaBounds": {
+          "height": 480,
+          "y": 16,
+          "x": 19,
+          "width": 217
+        },
+        "export": [
+          256,
+          512
+        ]
+      },
+      "atlasCell": {
+        "x": 0,
+        "y": 512,
+        "width": 256,
+        "height": 512
+      },
+      "promptExact": "Transformer le sujet de la première référence en UN panneau mural d'atelier d'art victorien ; première image = base de palette et de pixels, autres images = style du manoir seulement. Planche verticale de bois brun usé avec quatre accessoires accrochés et bien séparés : pinceau large à manche bordeaux, grand compas de laiton fermé, spatule/couteau à palette de fer sombre et palette de peintre ovale avec taches d'ocre et d'ivoire ternes. Un petit chiffon ivoire sale pend en bas. Pas d'outillage moderne, pas d'écriture. Formes lisibles à petite taille, aucun accessoire hors du cadre. STRICTEMENT frontal orthographique, objet entier centré, fin bord de bois visible, aucune perspective, arrière-plan transparent extérieur. Asset de jeu DEAD SECTOR, FPS rétro dans un manoir victorien hanté. Traitement pixel art peint, pixels groupés perceptibles et contours en marches d'escalier, détails lisibles à petite taille. Palette sourde : bois brun #684532, bordeaux #4d161a, ivoire vieilli #d4c6a5, laiton patiné #b69a60, fer sombre #343a3b et gris bleuté. Usure sobre, contraste utile à la silhouette, lumière neutre diffuse, pas d'ombre portée extérieure. Aucun rendu photo, lissage brillant ou cartoon arrondi, aucun texte ni signature.",
+      "toolAndModelActuallyUsed": {
+        "tool": "image_gen.imagegen",
+        "mode": "built-in",
+        "model": "non exposé par l’outil"
+      },
+      "referencesActuallyAttached": [
+        "C:/Users/Administrateur/source/dead_sector/docs/asset-packs/mansion-details-v1/clock.png",
+        "C:/Users/Administrateur/source/dead_sector/public/assets/textures/mansion_wall_v2.png",
+        "C:/Users/Administrateur/source/dead_sector/public/assets/textures/portrait_v2.png"
+      ],
+      "transformations": [
+        "Cadrage sur les pixels alpha >=128, sans supprimer une couleur",
+        "Réduction NearestNeighbor proportionnelle vers 240×480 maximum",
+        "Centrage dans 256×512 avec marges transparentes",
+        "Découpe alphaTest 0.5 préappliquée ; pixels écartés mis à RGBA zéro"
+      ],
+      "acceptanceCriteria": [
+        "Silhouette complète",
+        "Alpha réel",
+        "Orthographique frontal",
+        "Palette cohérente",
+        "Lisible à taille réduite"
+      ],
+      "validation": {
+        "file": "pass",
+        "art": "pass",
+        "continuity": "not_checked",
+        "integration": "not_checked",
+        "gameplay": "not_checked"
+      },
+      "evidence": [
+        "Source affichée par image_gen ; export final vu dans l’atlas 1024×1024.",
+        "Contrôle Node : PNG RGBA8 256×512, alpha binaire réel, marges, correspondance exacte de la cellule.",
+        "Contrôle Node : proportions et UV, support mural plein, approche et ligne de vue libres pour chaque placement.",
+        "Élément statique : aucune animation à valider. Rendu navigateur non observé."
+      ],
+      "knownDefects": [
+        "Le compas est entrouvert malgré le prompt demandant un compas fermé ; conservé comme décor statique lisible, sans mécanique associée."
+      ],
+      "humanApproval": "not_requested",
+      "sha256": "e9900b1b644915a7c976e83b3c607b16589bce8a706d96c5abf72c88a79f8e55"
+    }
+  ],
+  "handoff": {
+    "sharedAnimationModule": null,
+    "placementsModule": "src/MansionDressing.ts",
+    "exportCommand": "powershell -File scripts/export-mansion-dressing.ps1",
+    "previewCommand": "node scripts/make-dressing-preview.mjs",
+    "previewLocation": "/tmp/dressing-preview/index.html",
+    "checksActuallyRun": [
+      "npm.cmd run build",
+      "node scripts/check-mansion-dressing.mjs",
+      "29 scripts check-*.mjs : 24 réussis, cinq échecs historiques inchangés",
+      "node --check tmp/dressing-preview/module.mjs",
+      "git diff --check",
+      "HTTP 200 de l’aperçu sur Vite localhost:5180"
+    ],
+    "buildActuallyRun": true,
+    "browserActuallyObserved": false,
+    "missingRequiredAssets": [],
+    "remainingWork": [
+      "Observer les mêmes vues avant/après dans l’aperçu WebGL",
+      "Observer les 24 éléments sous plusieurs angles en partie",
+      "Mesurer le temps d’image réel ; six appels et 48 triangles sont des budgets logiques, pas une mesure GPU"
+    ],
+    "lastSpecificDefect": "Contrôle Chrome interrompu lors de la navigation : URL non identifiable avec assez de certitude. Pas de contournement."
+  }
+}

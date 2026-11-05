@@ -34,7 +34,8 @@ export class HorrorDirector {
   }
 
   private nextWait(): number {
-    return 18 + this.random() * 12;
+    // Les accalmies durent 10 s : laisser du silence, puis une place au craquement.
+    return 4 + this.random() * 3;
   }
 
   public setSource(source: HorrorAudioSource): void {

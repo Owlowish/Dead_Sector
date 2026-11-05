@@ -13,6 +13,9 @@ import {
 import type { ShotImpact } from './HitEffects.ts';
 import type { CasingType } from './ShellCasing.ts';
 import { isHeadSpriteHit, isOpaqueSpriteHit } from './SpriteHitMask.ts';
+import { WeaponMechanicalAudio } from './WeaponMechanicalAudio.ts';
+import { crossedWeaponSoundEvents, pistolReloadSoundEvents, shotgunPumpSoundEvents } from './WeaponSoundEvents.ts';
+import type { WeaponMechanicalSoundId } from './WeaponSoundEvents.ts';
 
 export type WeaponId = 'pistol' | 'shotgun';
 export interface ShotDamage { headHits: number; bodyHits: number; impactForce: number }
@@ -88,6 +91,13 @@ export class Weapon {
   private readonly shotgunSound = new Audio('/assets/sounds/shotgun-shot.wav');
   private readonly metalImpactSound = new Audio('/assets/sounds/impact-metal-soft.wav');
   private readonly zombieImpactSound = new Audio('/assets/sounds/impact-zombie-soft.wav');
+  private mechanicalAudio: WeaponMechanicalAudio | null = null;
+  private mechanicalContext: AudioContext | null = null;
+  private effectsVolume = 1;
+  private pumpSoundActive = false;
+  private reloadSoundActive = false;
+  private disposed = false;
+  private readonly removeInputListeners: (() => void)[] = [];
   private readonly crosshair = document.querySelector<HTMLElement>('.crosshair');
   private headMarkerTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -136,6 +146,7 @@ export class Weapon {
   private currentWarmth = 0.0;
   private targetBrightness = 0.35;
   private targetWarmth = 0.0;
+  private stormFlash = 0;
   private canvas: HTMLCanvasElement;
 
   constructor(
@@ -157,11 +168,7 @@ export class Weapon {
     this.muzzleLight.position.set(0.08, -0.12, -0.45);
     this.camera.add(this.muzzleLight);
 
-    this.shotSound.volume = 0.5;
-    this.shotgunSound.volume = 0.42;
-    this.metalImpactSound.volume = 0.3;
-    this.zombieImpactSound.volume = 0.35;
-    this.emptySound.volume = 0.3;
+    this.setEffectsVolume(1);
 
     // Préchargement des planches d'armes
     if (typeof Image !== 'undefined') {
@@ -177,7 +184,7 @@ export class Weapon {
     }
 
     // Gestion de la visée et du tir
-    canvas.addEventListener('mousedown', (event) => {
+    this.listen(canvas, 'mousedown', (event: MouseEvent) => {
       if (!this.canPlay() || document.pointerLockElement !== this.canvas) return;
       if (event.button === 2) {
         if (!this.isReloading) this.aimHeld = true;
@@ -185,12 +192,12 @@ export class Weapon {
       if (event.button === 0) this.shoot();
     });
 
-    window.addEventListener('mouseup', (event) => {
+    this.listen(window, 'mouseup', (event: MouseEvent) => {
       if (event.button === 2) this.aimHeld = false;
     });
 
     // Sélection d'armes avec touches 1 / 2 et molette
-    window.addEventListener('keydown', (event) => {
+    this.listen(window, 'keydown', (event: KeyboardEvent) => {
       // Ignorer si la simulation n'est pas active ou si le curseur n'est pas capturé
       if (!this.canPlay() || document.pointerLockElement !== this.canvas) return;
 
@@ -203,7 +210,7 @@ export class Weapon {
       }
     });
 
-    canvas.addEventListener('wheel', (event) => {
+    this.listen(canvas, 'wheel', (event: WheelEvent) => {
       if (!this.canPlay() || document.pointerLockElement !== this.canvas) return;
       if (event.deltaY > 0) {
         this.nextWeapon();
@@ -212,16 +219,26 @@ export class Weapon {
       }
     });
 
-    canvas.addEventListener('contextmenu', (event) => event.preventDefault());
+    this.listen(canvas, 'contextmenu', (event) => event.preventDefault());
 
     // Interruption propre sur perte de focus
-    window.addEventListener('blur', () => {
+    this.listen(window, 'blur', () => {
+      this.suspendMechanicalAudio();
       this.resetAim();
       this.cancelReload();
     });
 
-    document.addEventListener('pointerlockchange', () => {
+    this.listen(document, 'pointerlockchange', () => {
       if (document.pointerLockElement !== this.canvas) {
+        this.suspendMechanicalAudio();
+        this.resetAim();
+        this.cancelReload();
+      }
+    });
+
+    this.listen(document, 'visibilitychange', () => {
+      if (document.hidden) {
+        this.suspendMechanicalAudio();
         this.resetAim();
         this.cancelReload();
       }
@@ -231,6 +248,38 @@ export class Weapon {
     this.updateWeaponDOM();
     this.setHipFrame(0);
     this.renderShotEffects();
+  }
+
+  private listen<T extends Event>(target: EventTarget, type: string, listener: (event: T) => void): void {
+    const handler = listener as EventListener;
+    target.addEventListener(type, handler);
+    this.removeInputListeners.push(() => target.removeEventListener(type, handler));
+  }
+
+  public setupMechanicalAudio(context: AudioContext, destination: AudioNode): void {
+    if (this.disposed || this.mechanicalAudio) return;
+    this.mechanicalContext = context;
+    this.mechanicalAudio = new WeaponMechanicalAudio(context, destination);
+    this.mechanicalAudio.setVolume(this.effectsVolume);
+    this.listen(context, 'statechange', () => {
+      if (context.state !== 'running') this.suspendMechanicalAudio();
+    });
+  }
+
+  public suspendMechanicalAudio(): void {
+    this.pumpSoundActive = false;
+    this.reloadSoundActive = false;
+    this.mechanicalAudio?.suspend();
+  }
+
+  private canPlayMechanicalAudio(): boolean {
+    return !this.disposed && this.canPlay() && document.pointerLockElement === this.canvas
+      && !document.hidden && (typeof document.hasFocus !== 'function' || document.hasFocus())
+      && (!this.mechanicalContext || this.mechanicalContext.state === 'running');
+  }
+
+  private playMechanicalSound(sound: WeaponMechanicalSoundId): void {
+    if (this.canPlayMechanicalAudio()) this.mechanicalAudio?.play(sound);
   }
 
   public getActiveWeapon(): WeaponState {
@@ -254,10 +303,12 @@ export class Weapon {
   }
 
   public switchWeapon(id: WeaponId): boolean {
+    if (this.disposed) return false;
     if (!this.weapons[id].unlocked || this.activeWeaponId === id) return false;
 
     // Interrompre le rechargement en cours
     this.cancelReload();
+    this.suspendMechanicalAudio();
 
     this.activeWeaponId = id;
     this.shotAnimationTime = Infinity;
@@ -300,6 +351,7 @@ export class Weapon {
   }
 
   public reload(): boolean {
+    if (this.disposed) return false;
     if (!this.canPlay() || document.pointerLockElement !== this.canvas) return false;
     if (this.isReloading) return false;
 
@@ -307,6 +359,8 @@ export class Weapon {
     if (w.magazine >= w.capacity || w.reserve <= 0) return false;
 
     this.isReloading = true;
+    this.suspendMechanicalAudio();
+    this.reloadSoundActive = this.canPlayMechanicalAudio();
     this.reloadTimer = 0;
     this.shotgunShellCommitted = false;
     this.shotAnimationTime = Infinity;
@@ -324,6 +378,7 @@ export class Weapon {
   }
 
   public cancelReload(): void {
+    this.suspendMechanicalAudio();
     if (!this.isReloading) return;
     this.isReloading = false;
     this.reloadTimer = 0;
@@ -353,13 +408,11 @@ export class Weapon {
   }
 
   private shoot(): void {
+    if (this.disposed) return;
     if (this.isReloading) {
       if (this.activeWeaponId === 'shotgun' && this.getActiveWeapon().magazine > 0) {
         // Interruption immédiate du rechargement cartouche par cartouche si au moins une cartouche est chambrée
-        this.isReloading = false;
-        this.reloadTimer = 0;
-        this.shotgunRig?.classList.toggle('is-reloading', false);
-        this.notifyAmmoChange();
+        this.cancelReload();
       } else {
         return;
       }
@@ -379,6 +432,7 @@ export class Weapon {
     this.notifyAmmoChange();
     this.lastShot = now;
     this.shotAnimationTime = 0;
+    this.pumpSoundActive = this.activeWeaponId === 'shotgun' && this.canPlayMechanicalAudio();
     this.spentShellScheduled = false;
     this.muzzleLight.intensity = this.activeWeaponId === 'shotgun' ? 14.0 : 10.0;
     this.renderShotEffects();
@@ -557,9 +611,22 @@ export class Weapon {
     this.targets = targets;
   }
 
-  public setEnvironmentalLighting(brightness: number, warmth: number): void {
+  public setEnvironmentalLighting(brightness: number, warmth: number, stormFlash = 0): void {
     this.targetBrightness = weaponAmbientBrightness(brightness);
     this.targetWarmth = warmth;
+    this.stormFlash = THREE.MathUtils.clamp(stormFlash, 0, 1);
+  }
+
+  public setEffectsVolume(volume: number): void {
+    if (!Number.isFinite(volume)) return;
+    const gain = THREE.MathUtils.clamp(volume, 0, 1);
+    this.effectsVolume = gain;
+    this.mechanicalAudio?.setVolume(gain);
+    this.shotSound.volume = 0.5 * gain;
+    this.shotgunSound.volume = 0.42 * gain;
+    this.metalImpactSound.volume = 0.3 * gain;
+    this.zombieImpactSound.volume = 0.35 * gain;
+    this.emptySound.volume = 0.3 * gain;
   }
 
   public addAmmo(count: number, weaponId: WeaponId = this.activeWeaponId): boolean {
@@ -571,6 +638,8 @@ export class Weapon {
   }
 
   public update(delta: number): void {
+    if (this.disposed) return;
+    if (!this.canPlayMechanicalAudio()) this.suspendMechanicalAudio();
     if (!this.canPlay()) {
       this.resetAim();
       this.cancelReload();
@@ -580,9 +649,15 @@ export class Weapon {
 
     // Gestion du rechargement
     if (this.isReloading) {
+      const previousReloadTimer = this.reloadTimer;
       this.reloadTimer += delta;
 
       if (this.activeWeaponId === 'pistol') {
+        if (this.reloadSoundActive) {
+          for (const event of crossedWeaponSoundEvents(pistolReloadSoundEvents, previousReloadTimer, this.reloadTimer)) {
+            this.playMechanicalSound(event.sound);
+          }
+        }
         let elapsed = this.reloadTimer;
         let frame = this.reloadPoses[this.reloadPoses.length - 1].frame;
         for (const pose of this.reloadPoses) {
@@ -635,7 +710,13 @@ export class Weapon {
 
     // Recul et animations
     if (this.shotAnimationTime < this.recoilDuration) {
+      const previousShotAnimationTime = this.shotAnimationTime;
       this.shotAnimationTime += delta;
+      if (this.pumpSoundActive) {
+        for (const event of crossedWeaponSoundEvents(shotgunPumpSoundEvents, previousShotAnimationTime, this.shotAnimationTime)) {
+          this.playMechanicalSound(event.sound);
+        }
+      }
 
       // Événement d'éjection unique de la douille de fusil à t = 0.19s
       if (this.activeWeaponId === 'shotgun' && !this.spentShellScheduled && this.shotAnimationTime >= shotgunPump.ejectAt) {
@@ -659,8 +740,9 @@ export class Weapon {
     this.currentBrightness = THREE.MathUtils.damp(this.currentBrightness, effectiveTargetBrightness, 5, delta);
     this.currentWarmth = THREE.MathUtils.damp(this.currentWarmth, this.targetWarmth, 5, delta);
 
-    this.weaponView?.style.setProperty('--weapon-brightness', this.currentBrightness.toFixed(2));
-    this.weaponView?.style.setProperty('--weapon-warmth', this.currentWarmth.toFixed(2));
+    // L'éclair est bref : le superposer à l'ambiance amortie évite de perdre son impulsion.
+    this.weaponView?.style.setProperty('--weapon-brightness', (this.currentBrightness + this.stormFlash * 0.55).toFixed(2));
+    this.weaponView?.style.setProperty('--weapon-warmth', (this.currentWarmth * (1 - this.stormFlash)).toFixed(2));
 
     this.renderShotEffects();
   }
@@ -680,7 +762,7 @@ export class Weapon {
     weapon.magazine++;
     weapon.reserve--;
     this.notifyAmmoChange();
-    this.playSound(this.emptySound);
+    if (this.reloadSoundActive) this.playMechanicalSound('shell-insert');
   }
 
   private renderShotEffects(): void {
@@ -761,5 +843,24 @@ export class Weapon {
       w.hipSpreadDeg = Number((w.hipSpreadDeg * multiplier).toFixed(2));
     }
     this.notifyAmmoChange();
+  }
+
+  public dispose(): void {
+    if (this.disposed) return;
+    this.cancelReload();
+    this.mechanicalAudio?.dispose();
+    this.mechanicalAudio = null;
+    this.mechanicalContext = null;
+    for (const removeListener of this.removeInputListeners) removeListener();
+    this.removeInputListeners.length = 0;
+    if (this.headMarkerTimer) clearTimeout(this.headMarkerTimer);
+    this.headMarkerTimer = null;
+    this.crosshair?.classList.remove?.('head-hit');
+    for (const sound of [this.emptySound, this.shotSound, this.shotgunSound, this.metalImpactSound, this.zombieImpactSound]) {
+      sound.pause?.();
+    }
+    this.muzzleLight.removeFromParent();
+    this.muzzleLight.dispose();
+    this.disposed = true;
   }
 }

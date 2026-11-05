@@ -1,0 +1,210 @@
+{
+  "documentType": "asset-pack",
+  "templateVersion": 1,
+  "id": "SALON_SURFACES_2026-11-05",
+  "updatedAt": "2026-11-05",
+  "request": "Harmonisation des textures du Salon autorisée : calmer damas et grain du bois.",
+  "scope": {
+    "prepare": true,
+    "generate": true,
+    "integrate": true,
+    "authorizedDecisions": [
+      "Oui je te laisse choisir adéquat",
+      "Délégation Sol medium déjà autorisée"
+    ],
+    "assumptions": [
+      "Salon seulement, éclairage et gameplay inchangés"
+    ],
+    "pendingDecisions": []
+  },
+  "style": {
+    "workflow": "docs/PIPELINE_ASSETS.md",
+    "references": [
+      {
+        "path": "public/assets/textures/mansion_wall_v2.png",
+        "role": "composition et style",
+        "inspected": true
+      },
+      {
+        "path": "public/assets/textures/mansion/wood-structure-v1.png",
+        "role": "palette et grain",
+        "inspected": true
+      }
+    ],
+    "sharedPromptBlock": "Asset de jeu pour DEAD SECTOR, FPS rétro dans un manoir victorien hanté. Formes lisibles, groupes de pixels perceptibles, contours en marches d'escalier, détails hiérarchisés qui survivent à une petite taille. Palette sourde bois brun et bordeaux. Usure sobre. Aucune lumière de pièce peinte, pas de photo, texte, signature ni filigrane.",
+    "lockedIdentity": [
+      "Damas bordeaux, trois panneaux bruns, rail à 61%",
+      "Bois horizontal, palette brune"
+    ],
+    "humanApproval": "not_requested",
+    "acceptedBaseFile": "public/assets/textures/mansion/salon-wall-v1.png"
+  },
+  "technicalContract": {
+    "usage": "Surfaces opaques statiques MeshStandardMaterial, éclairage existant",
+    "exportDimensions": {
+      "wall": [
+        384,
+        768
+      ],
+      "wood": [
+        512,
+        512
+      ]
+    },
+    "format": "PNG opaque",
+    "tileAxes": {
+      "wall": [
+        "X"
+      ],
+      "wood": [
+        "X",
+        "Y"
+      ]
+    },
+    "phases": [],
+    "movingParts": [],
+    "budget": {
+      "files": 2,
+      "rgbaBytes": 2228224,
+      "withMipmapsApproxBytes": 2970965,
+      "extraTrianglesMax": 16,
+      "extraDrawCallsMainMax": 7,
+      "diskBytes": 617088,
+      "caveat": "Appels supplémentaires aussi possibles dans les ombres existantes ; pas de mesure GPU."
+    }
+  },
+  "assets": [
+    {
+      "id": "wall",
+      "required": true,
+      "productionStatus": "generated",
+      "plannedFile": "public/assets/textures/mansion/salon-wall-v1.png",
+      "promptExact": "Asset de jeu pour DEAD SECTOR, FPS rétro dans un manoir victorien hanté. Formes lisibles, groupes de pixels perceptibles, contours en marches d'escalier, détails hiérarchisés qui survivent à une petite taille. Palette sourde bois brun et bordeaux. Usure sobre. Aucune lumière de pièce peinte, pas de photo, texte, signature ni filigrane. EDIT the FIRST attached image (the complete wallpaper and wooden wainscoting texture), using the second only as existing wood palette reference. Preserve exact flat orthographic composition and 1:2 canvas proportions: wallpaper top 61 percent, horizontal chair rail at the same height, exactly three recessed wooden panels below, bottom skirting same height. Preserve the burgundy damask design, scale, repetition phase and dark brown wood identity. Make the gold damask much more muted, low contrast ochre close in value to burgundy, readable broad shapes without tiny speckles. Simplify wainscot grain drastically into broad quiet dark brown pixels; preserve panel edges and molding readability but no bright rim. No new objects or architectural elements. Uniform albedo, no vignette or cast shadows. Seamless horizontal repeat: left/right edges must match for all horizontal bands. No vertical repeat needed. Output a single opaque texture, 384x768 requested; preserve composition even if generated larger.",
+      "referencesActuallyAttached": [
+        "public/assets/textures/mansion_wall_v2.png",
+        "public/assets/textures/mansion/wood-structure-v1.png"
+      ],
+      "acceptanceCriteria": [
+        "Composition conservée",
+        "Damas moins contrasté",
+        "Raccord horizontal",
+        "Lisibilité en salle avec zombie"
+      ],
+      "sourceFile": "C:/Users/Administrateur/.codex/generated_images/01a1ace9-b608-7983-8706-92d9bf693f5a/exec-bd805490-080f-4fa3-903d-cca158eafacb.png",
+      "exportFile": "public/assets/textures/mansion/salon-wall-v1.png",
+      "runtimeUrl": "/assets/textures/mansion/salon-wall-v1.png",
+      "measuredDimensions": {
+        "source": [
+          887,
+          1774
+        ],
+        "export": [
+          384,
+          768
+        ]
+      },
+      "diskBytes": 377338,
+      "toolAndModelActuallyUsed": {
+        "tool": "image_gen.imagegen",
+        "model": "non exposé"
+      },
+      "transformations": [
+        "Redimensionnement nearest-neighbor du canevas complet, export-salon-surfaces.ps1"
+      ],
+      "validation": {
+        "file": "pass",
+        "art": "not_checked",
+        "continuity": "not_checked",
+        "integration": "not_checked",
+        "gameplay": "not_checked"
+      },
+      "evidence": [
+        "Source et export inspectés séparément ; simplification retenue par assistant.",
+        "Code, géométrie et dimensions testés ; comparaison à taille de jeu non effectuée."
+      ],
+      "knownDefects": [
+        "Pavage et résultat WebGL non observés : accès navigateur refusé."
+      ],
+      "humanApproval": "not_requested"
+    },
+    {
+      "id": "wood",
+      "required": true,
+      "productionStatus": "generated",
+      "plannedFile": "public/assets/textures/mansion/salon-wood-v1.png",
+      "acceptanceCriteria": [
+        "Grain calme",
+        "Palette brune conservée",
+        "Raccord X/Y"
+      ],
+      "sourceFile": "C:/Users/Administrateur/.codex/generated_images/01a1ace9-b608-7983-8706-92d9bf693f5a/exec-ace11b62-8d72-4136-8f58-484c8596e836.png",
+      "exportFile": "public/assets/textures/mansion/salon-wood-v1.png",
+      "runtimeUrl": "/assets/textures/mansion/salon-wood-v1.png",
+      "measuredDimensions": {
+        "source": [
+          1254,
+          1254
+        ],
+        "export": [
+          512,
+          512
+        ]
+      },
+      "diskBytes": 239750,
+      "promptExact": "Asset de jeu pour DEAD SECTOR, FPS rétro dans un manoir victorien hanté. Formes lisibles, groupes de pixels perceptibles, contours en marches d'escalier, détails hiérarchisés qui survivent à une petite taille. Palette sourde bois brun et bordeaux. Usure sobre. Aucune lumière de pièce peinte, pas de photo, texte, signature ni filigrane. EDIT the FIRST image, the square horizontal wood grain texture. SECOND image is accepted simplified wallpaper/wainscoting base for matching dark wood values and low detail density. Create a quiet medium-dark warm brown structural wood tile for small door frames in a retro FPS. Preserve original horizontal grain direction and square composition. Reduce contrast and grain frequency substantially: a few broad subtle horizontal bands, very sparse short broken pixel streaks, no prominent knot, no black stripe or bright line. Flat texture albedo with evenly distributed values, no light gradient, no perspective, no planks borders, no frame. Pixel art detail designed to remain calm when tiled on thin beams. Seamless on BOTH axes: every band must flow from left to right and top/bottom connect; no directional shading. Single opaque square texture, requested512x512.",
+      "referencesActuallyAttached": [
+        "public/assets/textures/mansion/wood-structure-v1.png",
+        "C:/Users/Administrateur/.codex/generated_images/01a1ace9-b608-7983-8706-92d9bf693f5a/exec-bd805490-080f-4fa3-903d-cca158eafacb.png"
+      ],
+      "toolAndModelActuallyUsed": {
+        "tool": "image_gen.imagegen",
+        "model": "non exposé"
+      },
+      "transformations": [
+        "Redimensionnement nearest-neighbor du canevas complet, export-salon-surfaces.ps1"
+      ],
+      "validation": {
+        "file": "pass",
+        "art": "not_checked",
+        "continuity": "not_checked",
+        "integration": "not_checked",
+        "gameplay": "not_checked"
+      },
+      "evidence": [
+        "Source et export inspectés séparément ; simplification retenue par assistant.",
+        "Code, géométrie et dimensions testés ; comparaison à taille de jeu non effectuée."
+      ],
+      "knownDefects": [
+        "Pavage et résultat WebGL non observés : accès navigateur refusé."
+      ],
+      "humanApproval": "not_requested"
+    },
+    {
+      "id": "lighting_geometry_sound_animation",
+      "required": false,
+      "productionStatus": "reused",
+      "reason": "Éclairage, supports et sons existants ; aucune animation nouvelle."
+    }
+  ],
+  "handoff": {
+    "previewCommand": "node scripts/make-salon-preview.mjs --textures",
+    "previewLocation": "http://127.0.0.1:5180/tmp/salon-textures-preview/index.html",
+    "checksActuallyRun": [
+      "check-salon-surfaces",
+      "check-audiovisual-pass",
+      "check-visual-room-f3",
+      "check-decor-surfaces",
+      "check-mansion-dressing",
+      "check-tiers",
+      "Revue indépendante 2058 rayons"
+    ],
+    "buildActuallyRun": true,
+    "browserActuallyObserved": false,
+    "missingRequiredAssets": [],
+    "remainingWork": [
+      "Observer pavage et A/B avec zombie et lampe",
+      "Mesurer performances en combat"
+    ],
+    "lastSpecificDefect": "Capture Chrome impossible (crop outside captured monitor) puis ouverture IAB localhost5180 refusée par gate. Pas de contournement."
+  }
+}

@@ -134,6 +134,10 @@ export class Player {
     this.onInteract = callback;
   }
 
+  public setEffectsVolume(volume: number): void {
+    this.flashlightClick.volume = 0.35 * THREE.MathUtils.clamp(volume, 0, 1);
+  }
+
   public toggleFlashlight(): boolean {
     this.flashlightOn = !this.flashlightOn;
     // Garder le nombre de lumières stable évite de recompiler les shaders au premier arrêt.

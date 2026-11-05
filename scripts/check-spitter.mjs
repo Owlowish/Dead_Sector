@@ -154,11 +154,12 @@ assert.equal(game.zombies[0].getKind(), 'spitter', 'Le premier spawn P3 réserv�
 assert.equal(game.zombies[1].getKind(), 'agile', 'Le cracheur arrive avec un coureur');
 assert(game.zombies[0].getPosition().y >= 3.4, 'Le cracheur apparaît sur le demi-niveau supérieur');
 game.spawnQueue--;
-for (const zombie of game.zombies) zombie.takeDamage(10000);
+// Ces scénarios testent les quotas, sans laisser une relève aléatoire occuper le budget d'escorte.
+for (const zombie of game.zombies) zombie.takeDamage(10000, true);
 while (game.spawnQueue > 0) {
   assert.equal(game.trySpawnZombie(), true);
   game.spawnQueue--;
-  game.zombies.at(-1).takeDamage(10000);
+  game.zombies.at(-1).takeDamage(10000, true);
 }
 assert.equal(game.zombies.filter((zombie) => zombie.getKind() === 'spitter').length, 1, 'Exactement un cracheur pour les six ennemis du P3');
 for (const zombie of game.zombies) zombie.dispose(spawnScene);
@@ -174,7 +175,7 @@ for (const tier of [4, 5, 6, 7]) {
   while (game.spawnQueue > 0) {
     assert.equal(game.trySpawnZombie(), true, `Apparition du palier ${tier}`);
     game.spawnQueue--;
-    for (const zombie of game.zombies) if (zombie.isAlive()) zombie.takeDamage(10000);
+    for (const zombie of game.zombies) if (zombie.isAlive()) zombie.takeDamage(10000, true);
   }
   assert.equal(game.zombies.filter((zombie) => zombie.getKind() === 'spitter').length, config.maxSpitter, `Quota de Cracheurs P${tier}`);
   assert.equal(game.zombies.filter((zombie) => zombie.getKind() === 'agile').length, config.maxAgile, `Quota de Coureurs P${tier}`);

@@ -13,6 +13,7 @@ THREE.TextureLoader.prototype.load = function(url) {
 };
 const { Level } = await import('../src/Level.ts');
 const { mansionMaterial, mansionSurfaceAssets } = await import('../src/MansionMaterials.ts');
+const { MANSION_BUDGET } = await import('../src/MansionConfig.ts');
 const scene = new THREE.Scene(), level = new Level(scene);
 scene.updateMatrixWorld(true);
 const meshes = [];
@@ -56,8 +57,9 @@ for (const mesh of carpets) {
 const fixtures = meshes.filter(mesh => mesh.name.startsWith('mansion-light-fixture') || mesh.name === 'mansion-chandelier');
 assert.equal(fixtures.length, 6);
 assert.ok(fixtures.every(mesh => !mesh.castShadow && !level.getSolidMeshes().includes(mesh)));
-let lights = 0, shadows = 0;
-scene.traverse(obj => { if (obj.isLight) { lights++; if (obj.castShadow) shadows++; } });
-assert.equal(lights, 10); // Neuf lumières existantes + une lumière d'orage sans ombre.
+let lights = 0, shadows = 0, pointLights = 0;
+scene.traverse(obj => { if (obj.isLight) { lights++; if (obj.castShadow) shadows++; if (obj.isPointLight) pointLights++; } });
+assert.equal(lights, 12); // Ambiance, lune et dix lumières ponctuelles, dont deux appoints du Salon.
+assert.ok(pointLights <= MANSION_BUDGET.maxPointLights, 'Le nombre réel de lumières ponctuelles respecte le budget');
 assert.equal(shadows, 2);
-console.log('PASS : 8 surfaces utilisées, façades séparées, tapis raccordés, ressources partagées et une lumière d’orage sans ombre.');
+console.log('PASS : 8 surfaces utilisées, façades séparées, tapis raccordés, ressources partagées et budget des lumières/ombres.');
