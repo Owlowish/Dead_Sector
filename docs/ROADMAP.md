@@ -1,24 +1,22 @@
 # DEAD SECTOR — Travaux restants
 
-Plan actualisé le 6 novembre 2026 depuis la version fusionnée et contrôlée. État et vérifications dans `ETAT_PROJET.md` ; conception gameplay, compositions chiffrées et boss dans `ORIENTATION_JEU.md`. UI1–UI3 sont implémentés ; G1–G4 et UI4–UI6 restent des propositions à réaliser.
+Plan actualisé le 6 novembre 2026. État et vérifications dans `ETAT_PROJET.md` ; règles et réglages dans `ORIENTATION_JEU.md`. G1–G3 et UI1–UI3 sont implémentés en prototype ; calage en partie, habillage du Gardien et UI4–UI6 restent ouverts.
 
 ## Socle présent
 
-Manoir progressif et décor des six pièces (lambris/relief/feu/poussières), deux armes avec manipulations et balancement, quatre types d'ennemis, relèves, drops, transitions automatiques, rendu rétro, orage et diagnostics. Les quatre volumes audio sont déjà persistants. Le travail local ajoute P8 avec élite, victoire libre, bilan B, nouvelle tentative sans rechargement de page et impacts bois/pierre/métal. Leur présence dans le code ne vaut pas validation en partie.
+Manoir progressif et décor des six pièces (lambris/relief/feu/poussières), deux armes avec manipulations et balancement, quatre types d'ennemis, relèves, drops, transitions automatiques, rendu rétro, orage et diagnostics. Les quatre volumes audio sont déjà persistants. P8 propose le duel du Gardien, victoire libre, bilan B et nouvelle tentative sans rechargement de page. Leur présence dans le code ne vaut pas validation en partie.
 
-## Priorité gameplay — lots proposés
+## Priorité gameplay — validation et finition
 
-**G1 — Équité et mesures fiables.** Corriger obstacle/altitude des attaques de Rampeuse ; conserver les reliquats de munitions ; distinguer relève et élimination dans les quotas de drops. Différer une paire Cracheur/escorte bloquée sans empêcher les autres apparitions ni consommer son quota réservé. Mesurer temps actif, tirs par arme, stocks et gains réels. **Acceptation :** pas de dégâts entre étages ou derrière porte ; collecte partielle exacte ; pause exclue des durées ; quotas/relèves et file d'apparition conservés.
-
-**G2 — Rythme et choix d'armes.** Appliquer les compositions P1–P7 proposées, introduire les spécialistes dans l'ordre prévu et donner à P6 deux poussées finies ; comparer fusil 12/13 dégâts corps par plomb et préparation Rampeuse 0,18/0,35 s. Associer UI1–UI3 à ce lot pour lire combat, gains et transitions. **Acceptation :** jouer l'enchaînement et les deux circuits, relever ressources/dégâts/durée active ; garder dix secondes entre paliers, aucun nouveau contrôle obligatoire ni changement du recul de deux secondes.
-
-**G3 — Duel final du Gardien.** Après G1 et vérification ciblée de l'élite actuelle, remplacer sa composition P8 par le duel décrit dans la direction : deux attaques, deux phases, budget fini et poursuite dans le manoir ouvert. Prototyper les comportements avant les assets dédiés. **Acceptation :** esquives et couvert observés, aucune annulation systématique par le pistolet, victoire possible sans fusil ni stock hérité, mort et changement de phase sûrs, exploration/bilan/redémarrage conservés.
+G1–G3 livrés : équité et ressources, introductions/groupes, deux phases du Gardien et jauge finale. Contrôles et limites dans l'état ; les plans exécutés sont remplacés par les règles de la direction. Lecture en combat, contournement des deux circuits et économie réelle restent à valider.
 
 **G4 — Calage de la tentative.** Comparer une découverte et un joueur connaissant les circuits, puis ajuster un axe à la fois. Documenter écarts à la cible de 10–15 minutes ; ne pas les masquer par attentes ou PV artificiels. Conserver les valeurs expérimentales seulement si les parties les justifient. UI4–UI6 restent le lot de confort et de finition.
 
+**Habillage du boss.** Après essai du duel : silhouette d'intendant et sons de préparation distincts via `PIPELINE_ASSETS.md`, base/action pilote avant extension. Les sprites standards et signes temporaires suffisent au prototype actuel ; aucune génération de lot final n'a été réalisée.
+
 ## Plan UI — direction et règles
 
-**Carnet d'incident victorien** : anthracite, ivoire, laiton patiné ; rouge réservé au danger, sauge à la réussite. Conserver la palette existante, des cadres fins et des ornements sobres dans les menus. Monde pixelisé, textes nets ; chiffres dominants, libellés secondaires, icônes accompagnées d'un sens explicite.
+Direction gothique pixel art sobre définie dans `ORIENTATION_JEU.md` : V2 compacte et cœur animé intégrés après allègement de la référence initiale. Valeurs et libellés conservés en DOM, indépendants du sprite.
 
 - Bas gauche : vie et lampe ; bas droite : arme et munitions ; haut gauche : progression et annonces ; centre : visée et courte interaction seulement.
 - Vie, munitions et progression toujours disponibles. Deux notifications simultanées maximum, proches du bloc concerné, fusionnées si répétées et effacées après environ deux secondes actives.
@@ -27,7 +25,7 @@ Manoir progressif et décor des six pièces (lambris/relief/feu/poussières), de
 
 ### UI1–UI3 — Socle livré ; validation en partie restante
 
-Fonctionnalités et contrôles dans `ETAT_PROJET.md`, responsabilité de présentation dans `ARCHITECTURE.md`. Avant extension : éprouver lecture vie/munitions/menaces, notifications, invites et transitions en combat hanche/ADS, puis comparer les temps d'image dans les mêmes conditions. Avec G3 seulement, ajouter la jauge compacte du Gardien prévue dans la direction ; aucune barre sur les ennemis ordinaires.
+Fonctionnalités et contrôles dans `ETAT_PROJET.md`, responsabilité de présentation dans `ARCHITECTURE.md`. Avant extension : éprouver lecture vie/munitions/menaces, jauge finale, notifications, invites et transitions en combat hanche/ADS, puis comparer les temps d'image dans les mêmes conditions. Aucune barre sur les ennemis ordinaires.
 
 ### UI4 — Accueil, pause et commandes · priorité moyenne
 
@@ -49,7 +47,7 @@ Habiller le bilan existant comme un rapport : résultat/paliers d'abord, durée 
 
 ## Ordre d'implémentation et vérification
 
-Ordre gameplay : G1 → G2 avec le HUD UI1–UI3 livré → G3 → G4. Dans l'UI, valider ce socle en partie avant UI4 → UI5 pour le confort ; UI6 termine la cohérence des écrans. Valider chaque lot avant extension, sans tout livrer d'un coup.
+Priorité : G4 sur le prototype livré, puis habillage du Gardien. Dans l'UI, valider le socle en partie avant UI4 → UI5 pour le confort ; UI6 termine la cohérence des écrans. Valider chaque lot avant extension, sans tout livrer d'un coup.
 
 Points d'entrée UI : `index.html` / `src/style.css`, `GameHud.ts` et callbacks de `Game.ts`. Garder la progression dans `Game`, sans bus ni framework. Les futurs réglages visuels et de contrôle demandent de vrais points d'application dans le joueur et le rendu ; les niveaux audio passent déjà par `AudioMix`. Préserver les sélecteurs/calques d'armes consommés par le jeu et les scripts d'aperçu.
 
@@ -58,5 +56,5 @@ Après code : `npm.cmd run build`, contrôles ciblés des états/transferts/paus
 ## Autres travaux encore ouverts
 
 - Observer les six pièces et le HUD réunis, feu/poussières ; écouter horreur/impacts/pas/manipulations ; vérifier reprise après K et performances en partie, sans déduire un gain des seuls budgets techniques.
-- Actualiser les anciens tests attachés aux caisses/carillon/piédestaux lorsqu'ils sont concernés ; adapter les tests P8 au duel lors de G3.
+- Actualiser les anciens tests attachés aux caisses/carillon/piédestaux lorsqu'ils sont concernés. Les contrôles P8, Cracheur, cadavres et HUD ont été adaptés au duel et aux collectes partielles.
 - Plus tard : silhouette d'horreur contextuelle, variantes reproductibles et démo ; objectif spatial facultatif seulement après petit prototype utile.

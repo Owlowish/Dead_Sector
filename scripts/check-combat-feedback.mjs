@@ -73,7 +73,7 @@ medkit.update(0.05, new THREE.Vector3(2, 1.7, 0));
 assert(Math.abs(medGroup.rotation.y - Math.PI / 2) < 1e-9, 'Billboard vertical vers le joueur');
 let full = true;
 let healing = 0;
-const player = { camera: { position: new THREE.Vector3() }, heal: amount => { if (full) return false; healing += amount; return true; } };
+const player = { camera: { position: new THREE.Vector3(0, 1.7, 0) }, heal: amount => { if (full) return false; healing += amount; return true; } };
 assert.equal(medkit.tryPickup(player), false, 'Soin conservé si santé pleine');
 full = false;
 assert.equal(medkit.tryPickup(player), true);
@@ -83,8 +83,10 @@ medkit.respawn();
 medkit.respawn();
 assert.equal(pickupScene.children.length, 2, 'Respawn sans duplication');
 let added = 0;
-assert.equal(ammo.tryPickup(new THREE.Vector3(), { addAmmo: () => true }), false, 'Hors rayon');
-assert.equal(ammo.tryPickup(new THREE.Vector3(3, 0, 0), { addAmmo: () => false }), false, 'Réserve pleine');
-assert.equal(ammo.tryPickup(new THREE.Vector3(3, 0, 0), { addAmmo: amount => { added += amount; return true; } }), true);
+assert.equal(ammo.tryPickup(new THREE.Vector3(0, 1.7, 0), { addAmmo: () => true, getReserveAmmoFor: () => added }), false, 'Hors rayon');
+assert.equal(ammo.tryPickup(new THREE.Vector3(3, 1.7, 0), { addAmmo: () => false, getReserveAmmoFor: () => added }), false, 'Réserve pleine');
+assert.equal(ammo.tryPickup(new THREE.Vector3(3, 1.7, 0), {
+  addAmmo: amount => { added += amount; return true; }, getReserveAmmoFor: () => added,
+}), true);
 assert.equal(added, 8);
 console.log('OK : cône/ADS/projection viseur, impacts et portes mobiles, plafonds/nettoyage/pause, pickups et ramassage.');

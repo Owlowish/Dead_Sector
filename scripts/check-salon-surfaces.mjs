@@ -25,7 +25,7 @@ scene.traverse(object => {
       assert.equal(object.geometry.groups.length, 0, 'Aucun groupe additionnel');
       assert.ok(level.getSolidMeshes().includes(object), 'Le mur conserve sa responsabilité physique');
     }
-    if (!material.name.startsWith('salon-')) continue;
+    if (material.name !== 'salon-wall' && material.name !== 'salon-wood') continue;
     assert.equal(material.name, 'salon-wood', 'Le damas du Salon est remplacé par l’atlas commun');
     const original = material.userData.salonOriginalMap;
     assert.ok(original?.isTexture, 'Texture originale disponible pour A/B');

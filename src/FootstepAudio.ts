@@ -1,12 +1,12 @@
 import { MANSION_RAMPS } from './MansionConfig.ts';
-import { SALON_RUNNERS } from './MansionFloorSurfaces.ts';
+import { MANSION_CARPETS } from './MansionFloorSurfaces.ts';
 
 export type FootstepSurface = 'wood' | 'carpet' | 'stairs';
 interface FootstepPosition { x: number; z: number }
 
 export function getFootstepSurfaceAt(x: number, z: number): FootstepSurface {
   if (MANSION_RAMPS.some(ramp => x >= ramp.minX && x <= ramp.maxX && z >= ramp.minZ && z <= ramp.maxZ)) return 'stairs';
-  if (SALON_RUNNERS.some(runner => Math.abs(x - runner.x) <= runner.width / 2 && Math.abs(z - runner.z) <= runner.depth / 2)) return 'carpet';
+  if (MANSION_CARPETS.some(runner => Math.abs(x - runner.x) <= runner.width / 2 && Math.abs(z - runner.z) <= runner.depth / 2)) return 'carpet';
   return 'wood';
 }
 

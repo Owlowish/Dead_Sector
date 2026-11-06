@@ -57,39 +57,43 @@
         </div>
       </div>
     </div>
-    <div id="objective" class="objective" data-phase="combat" role="group" aria-label="Progression de la tentative">
-      <div class="objective-heading">
+    <div id="objective" class="objective hud-panel" data-phase="combat" role="group" aria-label="Progression de la tentative">
+      <div class="objective-line">
         <span class="hud-eyebrow" data-hud-phase>PALIER 1 / 8</span>
-        <span class="objective-mark" aria-hidden="true">DS</span>
+        <span class="objective-progress" data-hud-progress>4 MENACES</span>
       </div>
       <div class="objective-sector" data-hud-sector>VESTIBULE</div>
-      <div class="objective-progress" data-hud-progress>4 MENACES</div>
       <div class="respite-track" data-hud-respite-bar style="--fill: 100%" aria-hidden="true" hidden></div>
+      <div class="guardian-status" data-hud-boss hidden role="group" aria-label="Le Gardien du manoir">
+        <div class="guardian-heading"><strong>LE GARDIEN</strong><span data-hud-boss-phase>I · LE GARDIEN</span></div>
+        <div class="guardian-track" data-hud-boss-bar role="progressbar" aria-label="Vitalité du Gardien" aria-valuemin="0" aria-valuemax="800" aria-valuenow="800" style="--fill: 100%"></div>
+        <div class="guardian-attack" data-hud-boss-attack>GARDEZ UNE ISSUE</div>
+      </div>
       <div class="objective-announcement" data-hud-announcement hidden></div>
     </div>
-    <div id="health" class="health" role="group" aria-label="Santé">
-      <div class="hud-panel-heading">
-        <span class="hud-eyebrow">VIE</span>
-        <span class="health-state" data-hud-health-state>STABLE</span>
+    <div id="health" class="health hud-panel" role="group" aria-label="Santé">
+      <div class="health-emblem" aria-hidden="true"></div>
+      <div class="health-card">
+        <div class="health-reading"><strong data-hud-health-value>100</strong><span class="hud-value-limit visually-hidden">/ <span data-hud-health-max>100</span></span></div>
+        <span class="health-state" data-hud-health-state></span>
+        <div class="health-track visually-hidden" data-hud-health-bar style="--fill: 100%" role="meter" aria-label="Vitalité" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"></div>
       </div>
-      <div class="health-reading"><strong data-hud-health-value>100</strong><span class="hud-value-limit">/ <span data-hud-health-max>100</span></span></div>
-      <div class="health-track" data-hud-health-bar style="--fill: 100%" aria-hidden="true"></div>
     </div>
     <div id="flashlight-status" class="flashlight-status" role="group" aria-label="Lampe torche">
-      <kbd class="hud-key">F</kbd><span class="lamp-icon" aria-hidden="true"></span><span>LAMPE</span><span class="lamp-state" data-hud-lamp-state>ALLUMÉE</span>
+      <kbd class="hud-key">F</kbd><span class="lamp-icon" aria-hidden="true"></span><span class="lamp-state" data-hud-lamp-state>ALLUMÉE</span>
     </div>
-    <div id="ammo" class="ammo" role="group" aria-label="Arme et munitions">
-      <div class="hud-panel-heading">
+    <div id="ammo" class="ammo hud-panel" role="group" aria-label="Arme et munitions">
+      <div class="ammo-heading">
         <span class="hud-eyebrow" data-hud-weapon-name>PISTOLET</span>
-        <div class="weapon-slots" aria-label="Armes disponibles"><span class="weapon-slot is-active" data-hud-slot="pistol"><kbd>1</kbd> PIST.</span><span class="weapon-slot" data-hud-slot="shotgun" hidden><kbd>2</kbd> FUSIL</span></div>
+        <div class="weapon-slots visually-hidden" aria-label="Armes disponibles"><span class="weapon-slot is-active" data-hud-slot="pistol"><kbd>1</kbd> PIST.</span><span class="weapon-slot" data-hud-slot="shotgun" hidden><kbd>2</kbd> FUSIL</span></div>
       </div>
       <div class="ammo-readings">
         <div class="magazine-reading"><strong data-hud-magazine>10</strong><span class="hud-value-limit">/ <span data-hud-capacity>15</span></span></div>
         <div class="reserve-reading"><span class="hud-eyebrow">RÉSERVE</span><span data-hud-reserve>30</span></div>
       </div>
-      <div class="ammo-state" data-hud-ammo-state>PRÊT</div>
+      <div class="ammo-state" data-hud-ammo-state></div>
     </div>
-    <div id="prompt" class="prompt" hidden>
+    <div id="prompt" class="prompt hud-panel" hidden>
       <kbd class="hud-key" data-hud-prompt-key>E</kbd>
       <span class="prompt-copy"><strong data-hud-prompt-action>OUVRIR</strong><span data-hud-prompt-object>LA PORTE</span></span>
     </div>
@@ -102,6 +106,7 @@
         <label class="audio-volume"><span>Musique</span><input id="music-volume" type="range" min="0" max="1" step="0.01" value="0.4" aria-label="Volume de la musique"><output id="music-volume-value" for="music-volume">40 %</output></label>
         <label class="audio-volume"><span>Craquement lointain <small>Suit aussi le volume Ambiance</small></span><input id="horror-volume" type="range" min="0" max="1" step="0.01" value="0.18" aria-label="Volume des craquements lointains"><output id="horror-volume-value" for="horror-volume">18 %</output></label>
       </fieldset>
+      <label class="motion-setting"><input id="reduce-heart-motion" type="checkbox">Réduire l’animation du cœur</label>
       <button id="run-summary-open" class="restart-button" type="button" hidden>Consulter le bilan · B</button>
     </div>
     <section id="debug-menu" class="debug-menu" role="dialog" aria-modal="true" aria-labelledby="debug-title" aria-describedby="debug-description" hidden>

@@ -292,8 +292,7 @@ export class CrawlerZombie {
         this.hurtTimer = 0.16;
         this.isHurt = true;
 
-        const landDist = Math.hypot(dx, dz);
-        if (landDist < 1.8) {
+        if (this.canReachPlayer(playerPosition, 1.8)) {
           onAttackPlayer?.(crawlerConfig.attackDamage, true);
         }
       }
@@ -415,7 +414,7 @@ export class CrawlerZombie {
     if (this.isAttacking) {
       this.attackTimer += delta;
       if (this.attackTimer >= crawlerConfig.attackWindup && this.attackTimer - delta < crawlerConfig.attackWindup) {
-        if (distToPlayer <= crawlerConfig.attackRange + 0.35) {
+        if (this.canReachPlayer(playerPosition, crawlerConfig.attackRange + 0.35)) {
           // Attaque avec agrippement (isAnkleGrab = true)
           onAttackPlayer?.(crawlerConfig.attackDamage, true);
           if (this.hissAudio && !this.hissAudio.isPlaying) {
@@ -430,7 +429,8 @@ export class CrawlerZombie {
       return;
     }
 
-    if (!this.isCeilingAmbush && !this.isFleeing && distToPlayer <= crawlerConfig.attackRange && this.attackCooldownTimer <= 0) {
+    if (!this.isCeilingAmbush && !this.isFleeing && this.attackCooldownTimer <= 0
+      && this.canReachPlayer(playerPosition, crawlerConfig.attackRange)) {
       this.isAttacking = true;
       this.attackTimer = 0;
       this.setPose('attack');
@@ -627,6 +627,41 @@ export class CrawlerZombie {
         this.mesh.scale.y = -1;
       }
     }
+  }
+
+  private canReachPlayer(playerPosition: THREE.Vector3, reach: number): boolean {
+    const origin = new THREE.Vector3(
+      this.mesh.position.x,
+      this.mesh.position.y - crawlerGroundOffsetY + 0.3,
+      this.mesh.position.z,
+    );
+    // La caméra du joueur est à 1,7 m ; viser son volume bas plutôt que son regard.
+    const target = new THREE.Vector3(playerPosition.x, playerPosition.y - 1.7 + 0.3, playerPosition.z);
+    const floorAt = (x: number, z: number, fallback: number): number =>
+      typeof this.level.getFloorHeightAt === 'function' ? this.level.getFloorHeightAt(x, z) : fallback;
+    const ownFloor = floorAt(origin.x, origin.z, origin.y - 0.3);
+    const playerFloor = floorAt(target.x, target.z, target.y - 0.3);
+    // Tolérer la pente d'une rampe, jamais une attaque entre les deux étages.
+    if (Math.abs(ownFloor - playerFloor) > 0.65 || Math.abs(origin.y - target.y) > 0.65) return false;
+    const direction = target.clone().sub(origin);
+    const horizontalDistance = Math.hypot(direction.x, direction.z);
+    if (horizontalDistance > reach) return false;
+
+    // Le segment physique interdit aussi les passages sous un meuble plein ou
+    // entre les ornements d'une porte dont le collider reste fermé.
+    const steps = Math.max(1, Math.ceil(horizontalDistance / 0.1));
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      if (this.level.isColliding(origin.x + direction.x * t, origin.z + direction.z * t, 0.05)) return false;
+    }
+    const distance = direction.length();
+    if (distance < 0.001) return true;
+    this.sightRay.set(origin, direction.multiplyScalar(1 / distance));
+    this.sightRay.near = 0;
+    this.sightRay.far = distance;
+    const blockers = this.level.getSolidMeshes();
+    for (const blocker of blockers) blocker.updateWorldMatrix(true, false);
+    return this.sightRay.intersectObjects(blockers, false).length === 0;
   }
 
   public dispose(scene: THREE.Scene): void {

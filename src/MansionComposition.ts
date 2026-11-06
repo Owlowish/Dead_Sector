@@ -21,9 +21,9 @@ export interface ComposedPortrait {
 export const roomCompositions: readonly RoomComposition[] = [
   {
     roomId: 'vestibule',
-    focus: { label: 'Pendule de l’entrée', x: 12, z: 19.405, y: 2.06 },
-    secondary: 'Portrait et tapisserie sur le mur du départ ; un miroir sur le retour est.',
-    calmWall: { axis: 'z', plane: 6.5, low: 7, high: 21.5 },
+    focus: { label: 'Piano à queue et fenêtre d’orage', x: 10.5, z: 11.5, y: 1.15 },
+    secondary: 'Rideaux bordeaux, lustre de laiton et portrait près de la fenêtre ; pendule au sud et console fleurie en retrait.',
+    calmWall: { axis: 'z', plane: 6.5, low: 17.8, high: 21.5 },
   },
   {
     roomId: 'salon',
@@ -58,7 +58,7 @@ export const roomCompositions: readonly RoomComposition[] = [
 ];
 
 export const composedPortraits: readonly ComposedPortrait[] = [
-  { id: 'entrance-portrait', roomId: 'vestibule', x: 14, z: 19.405, centerY: 2.05, rotationY: Math.PI, width: 1.125, height: 1.5 },
+  { id: 'entrance-portrait', roomId: 'vestibule', x: 15.5, z: 6.595, centerY: 2.05, rotationY: 0, width: 1.125, height: 1.5 },
   { id: 'salon-portrait', roomId: 'salon', x: -23.405, z: 13, centerY: 2.08, rotationY: Math.PI / 2, width: 1.125, height: 1.5 },
   { id: 'gallery-west-portrait', roomId: 'galerie', x: -23.405, z: 0, centerY: 2.15, rotationY: Math.PI / 2, width: 1.125, height: 1.5 },
   { id: 'gallery-south-left', roomId: 'galerie', x: -20.8, z: 5.405, centerY: 2.15, rotationY: Math.PI, width: 1.125, height: 1.5 },

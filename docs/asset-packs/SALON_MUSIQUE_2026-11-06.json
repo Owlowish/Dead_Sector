@@ -1,0 +1,85 @@
+{
+  "documentType": "asset-pack",
+  "templateVersion": 1,
+  "id": "SALON_MUSIQUE_2026-11-06",
+  "updatedAt": "2026-11-06",
+  "request": "Transformer la salle de spawn en salle de piano inspirée du concept utilisateur ; plan présenté puis implémentation explicitement autorisée.",
+  "scope": {
+    "prepare": true, "generate": true, "integrate": true,
+    "authorizedDecisions": ["Plan validé par : ok lance l'implémentation", "Géométrie 3D native, textures existantes, réglages réversibles d'implantation et d'éclairage"],
+    "assumptions": ["Vestibule technique conservé, libellé Salon de Musique", "Piano décoratif sans interaction ni nouveau son", "Grand Salon et cheminée voisins conservés"],
+    "pendingDecisions": []
+  },
+  "style": {
+    "workflow": "docs/PIPELINE_ASSETS.md",
+    "references": [
+      {
+        "path": "docs/asset-packs/references/piano-room-reference.png",
+        "role": "Composition et ambiance : piano noir, velours bordeaux, bougies, laiton, fenêtre froide",
+        "inspected": true, "attachedToGenerator": false,
+        "bytes": 2824930, "dimensions": [1672, 941],
+        "sha256": "5d384fa98a4fbcd63c770be2397bd7a09f71e1043b2358cb67fd361321d04902",
+        "provenance": "Pièce jointe utilisateur, copiée à l'identique ; origine antérieure non établie"
+      },
+      { "path": "public/assets/textures/mansion/carpet-damask-v1.png", "role": "Style et motif du tapis existant", "inspected": true, "attachedToGenerator": false },
+      { "path": "public/assets/textures/mansion/wood-structure-v1.png", "role": "Palette et matière de la console", "inspected": true, "attachedToGenerator": false }
+    ],
+    "lockedIdentity": ["Piano noir courbe avec couvercle relevé, clavier ivoire, partition ouverte", "Banquette bordeaux et laiton patiné", "Baie d'orage et rideaux bordeaux en fond, lustre devant le clavier", "Contraste rétro et obscurité lisible"],
+    "humanApproval": "Plan approuvé ; rendu implémenté non encore évalué par l'utilisateur"
+  },
+  "technicalContract": {
+    "usage": "Décor statique du niveau réel ; trois colliders XZ indépendants des surfaces visibles de tir",
+    "format": "Géométries Three.js TypeScript, aucun bitmap généré",
+    "coordinateSpace": "Mètres du manoir ; sol Y=0, plafond Y=4. Piano local : clavier +Z, queue -Z ; rotation Y=PI/8.",
+    "anchors": ["Implantation unique : PIANO_ROOM_LAYOUT dans src/MansionConfig.ts", "Spawn conservé : x8,z16, regard nord", "Clavier autour de y1.05 ; lustre entièrement au-dessus de y2.6", "Tapis partagé avec FootstepAudio via MANSION_CARPETS"],
+    "fixedParts": ["Piano, partition, banquette, tapis, console, livres, vase, fleurs, chandeliers, lustre et rideaux"],
+    "movingParts": ["Orage et poussières préexistants, sans nouvelle animation d'asset"],
+    "phases": [],
+    "budgetMeasured": {
+      "pianoRoomMeshes": 13, "pianoRoomShotBlockers": 9, "pianoRoomTriangles": 12276,
+      "pianoRoomGeometryBufferBytes": 1620432, "pianoRoomMaterials": 11,
+      "draperyMeshes": 2, "draperyTriangles": 1528, "draperyGeometryBufferBytes": 44112, "draperyMaterials": 2,
+      "totalExtraMainDrawCallsMax": 15, "totalTriangles": 13804, "totalGeometryBufferBytes": 1664544,
+      "newRuntimeTextures": 0, "newLights": 0, "newShadowCasters": 0,
+      "measurement": "Level réel dans Node, TextureLoader simulé ; buffers CPU seuls, aucun temps GPU mesuré"
+    }
+  },
+  "assets": [
+    {
+      "id": "piano-room-meshes", "required": true, "productionStatus": "generated",
+      "sourceFile": "src/PianoRoomDecor.ts", "exportFile": "src/PianoRoomDecor.ts",
+      "purpose": "Piano et mobilier du salon de musique, matériaux regroupés par surface et statut d'occlusion",
+      "toolAndModelActuallyUsed": "Code Three.js natif par assistant et sous-agent ; aucun générateur d'image",
+      "promptExact": null, "referencesActuallyAttached": [],
+      "transformations": ["Contour dissymétrique extrudé, intérieur creux et cordes", "Couvercle fin incliné de 0.5 rad autour de la charnière gauche", "Clavier de 28 touches blanches et touches noires en volumes distincts", "Pupitre avancé devant le couvercle après inspection navigateur", "Géométries fusionnées par matériau ; tapis, franges et flammes exclus des raycasts", "Lustre déplacé devant le clavier pour éclairer la partition sans la lampe du joueur", "Textures communes réutilisées, clones de matériaux possédés seuls libérés"],
+      "validation": { "file": "pass", "art": "pass", "continuity": "not_applicable", "integration": "pass", "gameplay": "not_checked" },
+      "humanApproval": "not_requested"
+    },
+    {
+      "id": "music-window-drapery", "required": true, "productionStatus": "generated",
+      "sourceFile": "src/StormWindow.ts", "purpose": "Plis en relief, lambrequin, embrasses et galon de la seule baie du salon de musique",
+      "toolAndModelActuallyUsed": "Code Three.js natif", "promptExact": null,
+      "transformations": ["Baie décorative déplacée du mur sud au mur nord, x10.5,y2.3,z6.54, largeur4m hauteur3.2m", "Échelle locale existante appliquée aux plis ; deux meshes fusionnés sans texture", "Bornes mondiales contrôlées : min[7.95,0.092,6.623], max[13.05,3.9928,6.778]", "Matériaux et géométries libérés une fois par disposeDrapery"],
+      "validation": { "file": "pass", "art": "pass", "continuity": "not_applicable", "integration": "pass", "gameplay": "not_checked" },
+      "humanApproval": "not_requested"
+    },
+    {
+      "id": "existing-surfaces", "required": true, "productionStatus": "reused",
+      "files": ["public/assets/textures/mansion/carpet-damask-v1.png", "public/assets/textures/mansion/wood-structure-v1.png", "public/assets/textures/mansion/storm-exterior-v1.png", "public/assets/textures/portrait_v2.png"],
+      "purpose": "Tapis, console, paysage d'orage et portrait existants",
+      "transformations": ["Motif du tapis répété 2x2 sur 5x4.8m", "Portrait déplacé sur le mur nord à droite des rideaux", "Nuage de poussière du vestibule rapproché de la baie nord"],
+      "provenance": "Lots existants DECOR_MANOIR, SALON_SURFACES et MANOIR_RELIEF_AMBIANCE du 5 novembre ; sources et provenance inchangées",
+      "validation": { "file": "pass", "integration": "pass" }
+    }
+  ],
+  "handoff": {
+    "previewCommand": "node scripts/make-composition-preview.mjs",
+    "previewLocation": "/tmp/composition-preview/index.html",
+    "checksActuallyRun": ["npm.cmd run build", "check-piano-room", "check-room-composition", "check-storm", "check-decor-surfaces", "check-mansion-audio", "check-mansion-atmosphere", "check-encounters-f4", "check-salon-fireplace"],
+    "buildActuallyRun": true, "browserActuallyObserved": true,
+    "observations": ["Vue d'ensemble à l'arrivée et piano de près", "Vues depuis les deux arches et console fleurie", "Piano avec lampe allumée puis éteinte", "Vue initiale du jeu avec HUD ; aucun combat joué", "Aucune erreur JS ; avertissements Three.js de textures au démarrage déjà présents"],
+    "missingRequiredAssets": [],
+    "remainingWork": ["Éprouver la circulation et la lecture des ennemis en combat réel", "Mesurer le coût GPU et le temps d'image sous charge", "Écouter les pas bois/tapis dans le mix réel"],
+    "lastSpecificDefect": null
+  }
+}

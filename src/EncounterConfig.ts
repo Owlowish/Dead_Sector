@@ -7,6 +7,16 @@
 import type { Point2D } from './MansionConfig.ts';
 import { MANSION_SPAWNS } from './MansionConfig.ts';
 
+export interface EncounterSpawnGroup {
+  standard: number;
+  /** Les escortes des Cracheurs sont comprises dans ce quota. */
+  agile: number;
+  spitter: number;
+  crawler: number;
+  /** Délai actif après élimination définitive du groupe, avant le suivant. */
+  pauseAfterSeconds?: number;
+}
+
 export interface EncounterSpec {
   /** Numéro du palier / rencontre (1-indexé) */
   tierNumber: number;
@@ -30,7 +40,11 @@ export interface EncounterSpec {
   maxSimultaneousCrawler?: number;
   /** Nombre d'ennemis envoyés lors de la salve d'ouverture initiale */
   openingSpawns?: number;
-  /** Rencontre de clôture : un standard est remplacé par l'élite finale. */
+  /** Éliminations définitives requises avant d'introduire un type. */
+  spawnUnlocks?: { agile?: number; spitter?: number; crawler?: number };
+  /** Groupes successifs ; leur somme respecte les quotas totaux du palier. */
+  spawnGroups?: EncounterSpawnGroup[];
+  /** Rencontre de clôture, ici un duel sans renfort contre le Gardien. */
   finalEncounter?: boolean;
   /** Secteur déverrouillé à l'issue de cette rencontre (null si le manoir est déjà complètement ouvert) */
   unlockSectorTier: number | null;
@@ -107,7 +121,7 @@ export const ENCOUNTER_CONFIGS: EncounterSpec[] = [
   {
     tierNumber: 1,
     name: 'Incursion Initiale',
-    sectorName: 'VESTIBULE, SALON & GALERIE',
+    sectorName: 'MUSIQUE, SALON & GALERIE',
     totalZombies: 4,
     maxActiveZombies: 3,
     maxAgile: 0,
@@ -127,7 +141,7 @@ export const ENCOUNTER_CONFIGS: EncounterSpec[] = [
     name: 'Assaut du Grand Hall',
     sectorName: 'GRAND HALL NORD',
     totalZombies: 5,
-    maxActiveZombies: 4,
+    maxActiveZombies: 3,
     maxAgile: 2,
     maxSimultaneousAgile: 1,
     maxSpitter: 0,
@@ -146,14 +160,15 @@ export const ENCOUNTER_CONFIGS: EncounterSpec[] = [
     sectorName: 'BIBLIOTHÈQUE & ATELIER (+2,4M)',
     totalZombies: 6,
     maxActiveZombies: 4,
-    maxAgile: 3,
+    maxAgile: 2,
     maxSimultaneousAgile: 2,
     maxSpitter: 1,
     maxSimultaneousSpitter: 1,
     openingSpawns: 1,
+    spawnUnlocks: { agile: 2, spitter: 2 },
     unlockSectorTier: null, // Manoir entièrement accessible
     activationType: 'wing_gate',
-    explorationPrompt: 'MANOIR TOTALEMENT SÉCURISÉ · ACTIVEZ LE CARILLON DU GRAND HALL',
+    explorationPrompt: 'MANOIR OUVERT · PROCHAIN COMBAT APRÈS L’ACCALMIE',
     sectorBounds: MANSION_SPAWNS[2].sectorBounds,
     spawnPool: MANSION_SPAWNS[2].pool,
   },
@@ -163,17 +178,18 @@ export const ENCOUNTER_CONFIGS: EncounterSpec[] = [
     name: 'Patrouille Combinée',
     sectorName: 'MANOIR OUVERT (TOUS SECTEURS)',
     totalZombies: 8,
-    maxActiveZombies: 5,
-    maxAgile: 4,
+    maxActiveZombies: 4,
+    maxAgile: 3,
     maxSimultaneousAgile: 2,
     maxSpitter: 1,
     maxSimultaneousSpitter: 1,
-    maxCrawler: 2,
-    maxSimultaneousCrawler: 2,
-    openingSpawns: 3,
+    maxCrawler: 1,
+    maxSimultaneousCrawler: 1,
+    openingSpawns: 2,
+    spawnUnlocks: { crawler: 2 },
     unlockSectorTier: null, // Pas de nouveau secteur, l'enceinte entière est libre
     activationType: 'arena_signal',
-    explorationPrompt: 'PALIER 4 PURGÉ · ACCALMIE · ACTIVEZ LE CARILLON POUR LE PALIER 5',
+    explorationPrompt: 'PALIER 4 PURGÉ · PROCHAIN COMBAT APRÈS L’ACCALMIE',
     sectorBounds: { minX: -23.5, maxX: 23.5, minZ: -19.5, maxZ: 19.5 },
     spawnPool: MANSION_OPEN_SPAWN_POOL,
   },
@@ -183,17 +199,17 @@ export const ENCOUNTER_CONFIGS: EncounterSpec[] = [
     name: 'Pression & Mobilité',
     sectorName: 'MANOIR OUVERT (TOUS SECTEURS)',
     totalZombies: 10,
-    maxActiveZombies: 6,
-    maxAgile: 5,
+    maxActiveZombies: 5,
+    maxAgile: 4,
     maxSimultaneousAgile: 2,
     maxSpitter: 2,
     maxSimultaneousSpitter: 1,
-    maxCrawler: 2,
-    maxSimultaneousCrawler: 2,
-    openingSpawns: 4,
+    maxCrawler: 1,
+    maxSimultaneousCrawler: 1,
+    openingSpawns: 3,
     unlockSectorTier: null,
     activationType: 'arena_signal',
-    explorationPrompt: 'PALIER 5 PURGÉ · ACCALMIE · ACTIVEZ LE CARILLON POUR LE PALIER 6',
+    explorationPrompt: 'PALIER 5 PURGÉ · PROCHAIN COMBAT APRÈS L’ACCALMIE',
     sectorBounds: { minX: -23.5, maxX: 23.5, minZ: -19.5, maxZ: 19.5 },
     spawnPool: MANSION_OPEN_SPAWN_POOL,
   },
@@ -203,17 +219,21 @@ export const ENCOUNTER_CONFIGS: EncounterSpec[] = [
     name: 'Embuscade Échelonnée',
     sectorName: 'MANOIR OUVERT (TOUS SECTEURS)',
     totalZombies: 12,
-    maxActiveZombies: 7,
-    maxAgile: 6,
-    maxSimultaneousAgile: 4,
-    maxSpitter: 3,
-    maxSimultaneousSpitter: 3,
+    maxActiveZombies: 6,
+    maxAgile: 4,
+    maxSimultaneousAgile: 2,
+    maxSpitter: 2,
+    maxSimultaneousSpitter: 1,
     maxCrawler: 2,
     maxSimultaneousCrawler: 2,
-    openingSpawns: 5,
+    openingSpawns: 3,
+    spawnGroups: [
+      { standard: 3, agile: 2, spitter: 1, crawler: 0, pauseAfterSeconds: 3 },
+      { standard: 1, agile: 2, spitter: 1, crawler: 2 },
+    ],
     unlockSectorTier: null,
     activationType: 'arena_signal',
-    explorationPrompt: 'PALIER 6 PURGÉ · ACCALMIE · ACTIVEZ LE CARILLON POUR LE PALIER 7',
+    explorationPrompt: 'PALIER 6 PURGÉ · PROCHAIN COMBAT APRÈS L’ACCALMIE',
     sectorBounds: { minX: -23.5, maxX: 23.5, minZ: -19.5, maxZ: 19.5 },
     spawnPool: MANSION_OPEN_SPAWN_POOL,
   },
@@ -223,14 +243,14 @@ export const ENCOUNTER_CONFIGS: EncounterSpec[] = [
     name: "L'Épreuve d'Avant-Garde",
     sectorName: 'MANOIR OUVERT (TOUS SECTEURS)',
     totalZombies: 14,
-    maxActiveZombies: 8,
-    maxAgile: 7,
-    maxSimultaneousAgile: 4,
-    maxSpitter: 3,
-    maxSimultaneousSpitter: 3,
+    maxActiveZombies: 7,
+    maxAgile: 5,
+    maxSimultaneousAgile: 3,
+    maxSpitter: 2,
+    maxSimultaneousSpitter: 2,
     maxCrawler: 2,
     maxSimultaneousCrawler: 2,
-    openingSpawns: 6,
+    openingSpawns: 4,
     unlockSectorTier: null,
     activationType: 'arena_signal',
     explorationPrompt: 'PALIER 7 PURGÉ · PRÉPAREZ-VOUS À LA RENCONTRE FINALE',
@@ -242,15 +262,15 @@ export const ENCOUNTER_CONFIGS: EncounterSpec[] = [
     name: 'Le Gardien du Manoir',
     sectorName: 'RENCONTRE FINALE · MANOIR OUVERT',
     finalEncounter: true,
-    totalZombies: 6,
-    maxActiveZombies: 4,
-    maxAgile: 3,
-    maxSimultaneousAgile: 2,
-    maxSpitter: 1,
-    maxSimultaneousSpitter: 1,
+    totalZombies: 1,
+    maxActiveZombies: 1,
+    maxAgile: 0,
+    maxSimultaneousAgile: 0,
+    maxSpitter: 0,
+    maxSimultaneousSpitter: 0,
     maxCrawler: 0,
     maxSimultaneousCrawler: 0,
-    openingSpawns: 3,
+    openingSpawns: 1,
     unlockSectorTier: null,
     activationType: 'arena_signal',
     explorationPrompt: 'MANOIR LIBÉRÉ · TENTATIVE TERMINÉE',

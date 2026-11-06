@@ -24,6 +24,7 @@ const { Player } = await import('../src/Player.ts');
 const { Weapon } = await import('../src/Weapon.ts');
 const { Level } = await import('../src/Level.ts');
 const { Zombie } = await import('../src/Zombie.ts');
+const { GuardianProjectile } = await import('../src/GuardianProjectile.ts');
 const { ShotgunPickup } = await import('../src/ShotgunPickup.ts');
 const { TierDiagnosticsTracker } = await import('../src/TierDiagnostics.ts');
 const { ENCOUNTER_CONFIGS } = await import('../src/EncounterConfig.ts');
@@ -155,8 +156,38 @@ assert.equal(game.summaryOpenButton.hidden, true); assert.equal(summaryDisplay.h
 assert.equal(game.pauseDisplay.hidden, false);
 
 document.pointerLockElement = canvas;
-player.takeDamage(100);
-game.endGame('lost');
+// Une touche fatale nettoie aussi les projectiles déjà retenus dans la nouvelle file,
+// sans avancer ceux qui restaient dans la file parcourue.
+player.health = 10;
+const projectileOrigin = player.camera.position.clone();
+const projectileSceneSize = scene.children.length;
+const survivor = new GuardianProjectile(scene, projectileOrigin.clone().add(new THREE.Vector3(4, 0, 0)),
+  projectileOrigin.clone().add(new THREE.Vector3(4, 0, -10)));
+const fatal = new GuardianProjectile(scene, projectileOrigin.clone().add(new THREE.Vector3(0, 0, 1)), projectileOrigin);
+const pending = new GuardianProjectile(scene, projectileOrigin.clone().add(new THREE.Vector3(0, 0, -5)), projectileOrigin);
+const updates = [0, 0, 0];
+const disposals = [0, 0, 0];
+for (const [index, projectile] of [survivor, fatal, pending].entries()) {
+  const update = projectile.update.bind(projectile);
+  const dispose = projectile.dispose.bind(projectile);
+  projectile.update = (...args) => { updates[index]++; return update(...args); };
+  projectile.dispose = (...args) => { disposals[index]++; return dispose(...args); };
+}
+const previousLevel = game.level;
+game.level = { getSolidMeshes: () => [] };
+game.spitProjectiles = [survivor, fatal, pending];
+try {
+  game.updateProjectiles(0.1);
+  assert.deepEqual(updates, [1, 1, 0], 'aucun projectile avancé après la touche fatale');
+  assert.deepEqual(disposals, [1, 1, 1], 'les deux files de projectiles sont intégralement nettoyées');
+  assert.equal(game.spitProjectiles.length, 0, 'aucun survivant réintroduit après endGame');
+  assert.equal(scene.children.length, projectileSceneSize, 'les objets de tous les projectiles quittent la scène');
+  assert.equal(player.getHealth(), 0);
+  game.updateProjectiles(0.1);
+  assert.deepEqual(updates, [1, 1, 0], 'aucune touche tardive après défaite');
+} finally {
+  game.level = previousLevel;
+}
 assert.equal(game.state, 'lost'); assert.equal(game.isSimulationActive(), false);
 assert.equal(game.gameOverDisplay.hidden, false); assert.equal(summaryDisplay.hidden, true);
 assert.equal(document.pointerLockElement, null, 'La défaite conserve sa pause existante');

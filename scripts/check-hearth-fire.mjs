@@ -103,7 +103,15 @@ assert.ok(existsSync(path), 'Atlas du feu présent pour son intégration');
     const left = frame % animation.columns * animation.frameWidth, top = Math.floor(frame / animation.columns) * animation.frameHeight;
     const bounds = alphaBounds(image, {x:left,y:top,width:128,height:128});
     assert.ok(bounds.x > left && bounds.x + bounds.width < left + 128, 'Marge transparente entre les poses');
-    assert.equal(bounds.y - top + bounds.height - 1, 114, 'Racine stable sur les huit poses');
+    const opaqueRoot = bounds.y - top + bounds.height - 1;
+    let visibleRoot = -1;
+    for (let y = top; y < top + animation.frameHeight; y++) {
+      for (let x = left; x < left + animation.frameWidth; x++) {
+        if (image.data[(y * image.width + x) * 4 + 3] >= 13) visibleRoot = y - top;
+      }
+    }
+    assert.equal(visibleRoot, 114, 'Racine stable au seuil alpha reel du rendu (0,05)');
+    assert.ok(opaqueRoot <= 114 && visibleRoot - opaqueRoot <= 1, 'La racine opaque reste a un pixel au plus de la racine visible');
     const pixels = [];
     for (let y = top; y < top + 128; y++) pixels.push(image.data.subarray((y * image.width + left) * 4, (y * image.width + left + 128) * 4));
     poses.add(Buffer.concat(pixels).toString('base64'));
@@ -119,10 +127,12 @@ levelScene.updateMatrixWorld(true);
 const integrated = levelScene.getObjectByName('hearth-fire');
 assert.ok(integrated && !level.getSolidMeshes().includes(integrated), 'Le feu ne devient pas un obstacle');
 const fireBounds = new THREE.Box3().setFromObject(integrated);
-assert.ok(integrated.position.x > -13.35 && integrated.position.x < -13.25, 'Devant la brique et au-dessus des braises');
+assert.ok(integrated.position.x > -13.70 && integrated.position.x < -13.60, 'Feu en profondeur, devant la brique et derrière la grille');
 assert.ok(fireBounds.min.z > 11.65 && fireBounds.max.z < 14.35, 'Feu contenu entre les deux jambages');
-const rootY = integrated.position.y + 1.28 / 2 - 114.5 / 128 * 1.28;
-assert.ok(Math.abs(rootY - 0.14) < 1e-6, 'Racine sur le haut du lit de braises');
+const fireHeight = integrated.geometry.parameters.height;
+assert.ok(Math.abs(fireHeight - 1.90) < 1e-6, 'Flammes agrandies pour le foyer sculpté');
+const rootY = integrated.position.y + fireHeight / 2 - 114.5 / 128 * fireHeight;
+assert.ok(Math.abs(rootY - 0.23) < 1e-6, 'Racine au niveau des braises du nouveau foyer');
 const frozenOffset = integrated.material.map.offset.clone();
 level.update(0.1, 0);
 assert.ok(integrated.material.map.offset.equals(frozenOffset), 'Pause du feu reçue depuis Level');

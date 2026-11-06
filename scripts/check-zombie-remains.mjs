@@ -25,7 +25,7 @@ THREE.TextureLoader.prototype.load = function (url) {
   textures.push(texture);
   return texture;
 };
-const level = { isColliding: () => false, getSolidMeshes: () => [], findNextWaypoint: (_start, target) => target, getDoors: () => [] };
+const level = { isColliding: () => false, getFloorHeightAt: () => 0, getSolidMeshes: () => [], findNextWaypoint: (_start, target) => target, getDoors: () => [] };
 function remains(zombie) { return zombie.remains.mesh; }
 function makeSession(scene, zombies) {
   const game = Object.create(Game.prototype);
@@ -35,7 +35,10 @@ function makeSession(scene, zombies) {
     scene, zombies, level, state: 'playing', renderer: { domElement: canvas },
     player: { camera: { position: new THREE.Vector3(0, 1.7, 4) } },
     medkits: [], ammoBoxes: [], encounterConfigs: ENCOUNTER_CONFIGS, spawnQueue: 0,
-    weapon: { setTargets: targets => targetUpdates.push(targets) },
+    currentTier: 1, killsThisTier: 0, defeatedZombies: new WeakSet(),
+    // Ce harnais de rendu suit les morts mais ne distribue aucune ressource.
+    ammoDrops: [], dropBudget: 0, dropsMade: 0,
+    weapon: { setTargets: targets => targetUpdates.push(targets), isWeaponUnlocked: () => false },
   });
   return { game, canvas, targetUpdates };
 }
@@ -101,6 +104,7 @@ assert.equal(corpseA.geometry, firstFrameGeometry, 'Échap en combat suspend la 
 document.pointerLockElement = session.canvas;
 session.game.updateZombieRemains(0.14);
 assert.notEqual(corpseA.geometry, firstFrameGeometry, 'La chute avance avec le contrôle actif');
+assert.equal(session.game.killsThisTier, 1, 'La mort définitive est comptée par la vraie orchestration');
 assert.equal(corpseB.geometry, firstFrameGeometry, 'Autre instance indépendante');
 b.takeDamage(100);
 assert.equal(corpseB.geometry, firstFrameGeometry, 'Deuxième mort démarre à la première pose');
@@ -120,6 +124,7 @@ assert.equal(corpseA.geometry, pausedGeometry, 'Le bilan ouvert suspend aussi le
 session.game.runSummaryOpen = false;
 session.game.state = 'won';
 session.game.updateZombieRemains(zombieDeathDuration + 0.1);
+assert.equal(session.game.killsThisTier, 2, 'Les callbacks des cadavres ne doublent pas les deux morts');
 assert.equal(corpseA.material.map.userData.url, '/assets/zombies/zombie_death.png');
 assert.equal(corpseB.material, corpseA.material, 'Matériau du corps partagé');
 const finalPose = config.frames.at(-1);

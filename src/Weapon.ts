@@ -19,7 +19,9 @@ import { crossedWeaponSoundEvents, pistolReloadSoundEvents, shotgunPumpSoundEven
 import type { WeaponMechanicalSoundId } from './WeaponSoundEvents.ts';
 
 export type WeaponId = 'pistol' | 'shotgun';
-export interface ShotDamage { headHits: number; bodyHits: number; impactForce: number }
+export interface ShotDamage { headHits: number; bodyHits: number; impactForce: number; weaponId: WeaponId }
+
+export type AmmoStocks = Record<WeaponId, { magazine: number; reserve: number; unlocked: boolean }>;
 
 export interface WeaponState {
   id: WeaponId;
@@ -525,7 +527,7 @@ export class Weapon {
         if (isZombie) {
           const targetMesh = hit.object as THREE.Mesh;
           const head = isHeadSpriteHit(targetMesh, hit.uv);
-          const damage = this.activeWeaponId === 'pistol' ? (head ? 80 : 28) : (head ? 24 : 12);
+          const damage = this.activeWeaponId === 'pistol' ? (head ? 80 : 28) : (head ? 24 : 13);
           const current = zombieHits.get(targetMesh);
           if (current) {
             current.damage += damage;
@@ -568,7 +570,7 @@ export class Weapon {
           normal,
           direction: new THREE.Vector3(0, 0, -1).applyQuaternion(camQuat),
         });
-        this.onHit(targetMesh, damage, { headHits, bodyHits, impactForce: config.damagePerPellet * (headHits + bodyHits) });
+        this.onHit(targetMesh, damage, { headHits, bodyHits, impactForce: config.damagePerPellet * (headHits + bodyHits), weaponId: config.id });
         if (headHits > 0) {
           this.crosshair?.classList.add('head-hit');
           if (this.headMarkerTimer) clearTimeout(this.headMarkerTimer);
@@ -610,6 +612,14 @@ export class Weapon {
 
   public getReserveAmmoFor(id: WeaponId): number {
     return this.weapons[id].reserve;
+  }
+
+  public getAmmoStocks(): AmmoStocks {
+    const stock = (id: WeaponId) => {
+      const { magazine, reserve, unlocked } = this.weapons[id];
+      return { magazine, reserve, unlocked };
+    };
+    return { pistol: stock('pistol'), shotgun: stock('shotgun') };
   }
 
   public getMaxReserve(): number {
@@ -683,9 +693,10 @@ export class Weapon {
   }
 
   public addAmmo(count: number, weaponId: WeaponId = this.activeWeaponId): boolean {
+    if (!Number.isFinite(count) || Math.floor(count) <= 0) return false;
     const target = this.weapons[weaponId];
     if (target.reserve >= target.maxReserve) return false;
-    target.reserve = Math.min(target.maxReserve, target.reserve + count);
+    target.reserve = Math.min(target.maxReserve, target.reserve + Math.floor(count));
     this.notifyAmmoChange();
     return true;
   }

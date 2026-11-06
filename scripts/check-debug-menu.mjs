@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { registerHooks } from 'node:module';
 import * as THREE from 'three';
+THREE.TextureLoader.prototype.load = () => new THREE.Texture();
 
 registerHooks({ resolve(specifier, context, next) {
   return next(specifier.startsWith('.') && !/\.[a-z0-9]+$/i.test(specifier) ? `${specifier}.ts` : specifier, context);
@@ -30,7 +31,7 @@ let disposedEnemies=0, disposedProjectiles=0, disposedDrops=0, disposedShells=0,
 const enemies=()=>[{dispose(){disposedEnemies++;}}];
 Object.assign(game, {
   scene:new THREE.Scene(), player,
-  level:{getDoors:()=>[]}, encounterConfigs:ENCOUNTER_CONFIGS,
+  level:{getDoors:()=>[],getFloorHeightAt:()=>0,isColliding:()=>false,findNextWaypoint:(_start,target)=>target}, encounterConfigs:ENCOUNTER_CONFIGS,
   zombies:enemies(), spitProjectiles:[{dispose(){disposedProjectiles++;}}],
   ammoDrops:[{dispose(){disposedDrops++;}}], shellCasings:[{dispose(){disposedShells++;}}],
   hitEffects:{clear(){clearedEffects++;}},
@@ -55,6 +56,7 @@ for(const tier of [4,7,8,1,4]){
   assert.equal(game.debugMenuOpen,false);
   assert.equal(game.gameOverDisplay.hidden,true);
   assert.equal(game.victoryDisplay.hidden,true);
+  assert.equal(game.ammoDrops.length,tier===8?3:0,'trois lots finis en finale, nettoyés au saut suivant');
 }
 assert.equal(disposedEnemies,1);assert.equal(disposedProjectiles,1);
 assert.equal(disposedDrops,1);assert.equal(disposedShells,1);

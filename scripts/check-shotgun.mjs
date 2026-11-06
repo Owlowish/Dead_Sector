@@ -93,13 +93,13 @@ weapon.switchWeapon('pistol');
 assert.equal(weapon.getReserveAmmo(), 30, 'Réserve pistolet restée intacte à 30');
 weapon.switchWeapon('shotgun');
 
-// 4. Tir à bout portant et cumul des 8 plombs au corps (12 dégâts x 8 = 96 dégâts)
+// 4. Tir à bout portant et cumul des 8 plombs au corps (13 dégâts x 8 = 104 dégâts)
 const target = new THREE.Mesh(new THREE.BoxGeometry(4, 4, 1));
 target.position.set(0, 0, -2); // À 2m devant, couvre tout le cône
 weapon.setTargets([target]);
 
 let hits = [];
-weapon.onHit = (mesh, dmg) => hits.push({ mesh, dmg });
+weapon.onHit = (mesh, dmg, shot) => hits.push({ mesh, dmg, shot });
 
 weapon.lastShot = -Infinity;
 shotEvents = [];
@@ -113,7 +113,8 @@ assert.equal(lastCasing, null, 'Aucune douille éjectée à t=0 pour le fusil à
 
 // Vérification de l'accumulation des 8 plombs en un seul impact cumulé
 assert.equal(hits.length, 1, 'Un seul événement d impact consolidé pour le zombie');
-assert.equal(hits[0].dmg, 96, 'Tous les 8 plombs au corps ont touché (8 x 12 = 96 dégâts)');
+assert.equal(hits[0].dmg, 104, 'Un tir complet au corps suffit aux 100 PV du standard (8 x 13 = 104 dégâts)');
+assert.equal(hits[0].shot.weaponId, 'shotgun', 'L’origine des impacts est conservée pour les diagnostics');
 
 // 5. Éjection de douille calibre 12 au moment de la pompe (t >= 0.19s)
 weapon.update(0.10); // t = 0.10s
@@ -196,7 +197,7 @@ smallTarget.geometry.dispose();
 console.log('TOUS LES TESTS DU FUSIL À POMPE SONT VALIDES :');
 console.log('✓ Verrouillage initial et déverrouillage propre');
 console.log('✓ Commutation pistolet / fusil avec stocks indépendants');
-console.log('✓ Balistique conique 8 plombs (96 au corps, jusqu’à 192 à la tête)');
+console.log('✓ Balistique conique 8 plombs (104 au corps, jusqu’à 192 à la tête)');
 console.log('✓ Dispersion balistique avec la distance');
 console.log('✓ Éjection différée calibre 12 synchronisée sur la pompe à 0.19s');
 console.log('✓ Rechargement cartouche par cartouche interruptible');

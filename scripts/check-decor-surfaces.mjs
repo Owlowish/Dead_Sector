@@ -41,8 +41,9 @@ for (const shelf of shelves) {
 const bench = meshes.find(mesh => materials(mesh).some(mat => mat.map?.name === 'mansion-workbench'));
 assert.deepEqual(bench.geometry.groups.map(g => [g.start, g.count, g.materialIndex]), [[0, 24, 0], [24, 6, 1], [30, 6, 0]]);
 
-// Les jonctions des tapis utilisent le même repère mondial, sans étirer le motif.
-const carpets = meshes.filter(mesh => mesh.material.map?.name === 'mansion-carpet');
+// Les trois tapis raccordés du Salon utilisent le même repère mondial.
+// Le tapis indépendant du piano est fusionné dans son groupe et contrôlé séparément.
+const carpets = meshes.filter(mesh => mesh.parent === scene && mesh.material.map?.name === 'mansion-carpet');
 assert.equal(carpets.length, 3);
 for (const mesh of carpets) {
   const position = mesh.geometry.getAttribute('position'), uv = mesh.geometry.getAttribute('uv');

@@ -8,7 +8,8 @@ import { mansionWallMaterial } from './MansionWallMaterial.ts';
 import { MansionDressing } from './MansionDressing.ts';
 import { MansionAtmosphere } from './MansionAtmosphere.ts';
 import { MansionFurnishings } from './MansionFurnishings.ts';
-import { HearthFire } from './HearthFire.ts';
+import { SalonFireplace } from './SalonFireplace.ts';
+import { PianoRoomDecor } from './PianoRoomDecor.ts';
 import { MansionPortraits } from './MansionPortraits.ts';
 import { SALON_RUNNERS } from './MansionFloorSurfaces.ts';
 import { setImpactSurface } from './ImpactSurface.ts';
@@ -20,6 +21,8 @@ import {
   MANSION_RAMPS,
   MANSION_HORROR_POINTS,
   MANSION_STORM_WINDOWS,
+  PIANO_ROOM_LAYOUT,
+  PIANO_ROOM_COLLIDERS,
   getMansionFloorHeight,
 } from './MansionConfig.ts';
 
@@ -29,7 +32,8 @@ export class Level {
   private readonly atmosphere: MansionAtmosphere;
   private readonly furnishings: MansionFurnishings;
   private readonly portraits: MansionPortraits;
-  private hearthFire: HearthFire | null = null;
+  private fireplace: SalonFireplace | null = null;
+  private readonly pianoRoom: PianoRoomDecor;
 
   // Collisions physiques du joueur et du zombie.
   private colliders: THREE.Box3[] = [];
@@ -53,6 +57,13 @@ export class Level {
   constructor(scene: THREE.Scene) {
     this.scene = scene;
     this.createEnvironment();
+    for (const box of PIANO_ROOM_COLLIDERS) {
+      this.colliders.push(new THREE.Box3().setFromCenterAndSize(
+        new THREE.Vector3(box.x, box.y, box.z), new THREE.Vector3(box.width, box.height, box.depth),
+      ));
+    }
+    this.pianoRoom = new PianoRoomDecor(scene);
+    this.solidMeshes.push(...this.pianoRoom.getSolidMeshes());
     this.dressing = new MansionDressing(scene);
     this.portraits = new MansionPortraits(scene);
     this.furnishings = new MansionFurnishings(scene);
@@ -62,6 +73,12 @@ export class Level {
   }
 
   public disposeDecor(): void {
+    for (const mesh of this.pianoRoom.getSolidMeshes()) {
+      const index = this.solidMeshes.indexOf(mesh);
+      if (index >= 0) this.solidMeshes.splice(index, 1);
+    }
+    this.pianoRoom.dispose();
+    this.stormWindowVisuals?.disposeDrapery();
     this.dressing.dispose();
     this.portraits.dispose();
     for (const mesh of this.furnishings.getShotBlockers()) {
@@ -70,7 +87,11 @@ export class Level {
     }
     this.furnishings.dispose();
     this.atmosphere.dispose();
-    this.hearthFire?.dispose();
+    for (const mesh of this.fireplace?.getShotBlockers() ?? []) {
+      const index = this.solidMeshes.indexOf(mesh);
+      if (index >= 0) this.solidMeshes.splice(index, 1);
+    }
+    this.fireplace?.dispose();
   }
 
   private createEnvironment(): void {
@@ -262,8 +283,8 @@ export class Level {
     this.scene.add(exitMarker);
 
     // 7. Ambiance lumineuse d'horreur victorienne
-    // Lumière d'ambiance tamisée
-    this.scene.add(new THREE.AmbientLight(0x687285, 0.22));
+    // Ombres neutres chaudes : les bois et le damas restent lisibles, la lune porte le froid.
+    this.scene.add(new THREE.AmbientLight(0x747069, 0.22));
 
     // Lumière 1 avec ombre : Clair de lune directionnel couvrant l'enveloppe 48 x 40m
     const moonLight = new THREE.DirectionalLight(0x6a8eb8, 0.95);
@@ -303,7 +324,8 @@ export class Level {
       this.candles.push({ light: candle, baseIntensity: intensity, phase });
     };
 
-    addSoftCandle(8, 2.6, 13, 2.4, 12, 0.0);   // Vestibule
+    const musicLustre = PIANO_ROOM_LAYOUT.chandelier;
+    addSoftCandle(musicLustre.x, musicLustre.y, musicLustre.z, 8.5, 17, 0.0, 1.25, 'music-room-chandelier');
     // Devant l'ouverture de l'âtre : la source rejoint sa lanterne et éclaire les jambages.
     const hearth = salonLighting.hearthPosition;
     addSoftCandle(hearth.x, hearth.y, hearth.z, salonLighting.hearthIntensity, salonLighting.hearthRadius, 1.5, salonLighting.hearthDecay, 'salon-hearth');
@@ -322,8 +344,8 @@ export class Level {
 
     this.createLightFixtures();
 
-    // Brume atmosphérique victorienne
-    this.scene.fog = new THREE.FogExp2(0x1a1e24, 0.022);
+    // Même densité : brun fumé discret, accordé aux bougies et aux boiseries.
+    this.scene.fog = new THREE.FogExp2(0x231c1a, 0.022);
   }
 
   private createStormWindows(): void {
@@ -372,71 +394,12 @@ export class Level {
     height: number,
     depth: number
   ): void {
-    // 1. Collider physique strict invisible (conserve les dimensions exactes 2.4 x 3.0 x 4.0m)
-    const colliderMesh = new THREE.Mesh(
-      new THREE.BoxGeometry(width, height, depth),
-      new THREE.MeshBasicMaterial({ visible: false })
-    );
-    colliderMesh.position.set(x, y, z);
-    colliderMesh.userData.impactSurface = 'stone';
-    this.colliders.push(new THREE.Box3().setFromObject(colliderMesh));
-    this.solidMeshes.push(colliderMesh);
-
-    // 2. Manteau supérieur et linteau en pierre de taille sculptée
-    const mantle = new THREE.Mesh(
-      mansionBoxGeometry(width + 0.3, 0.45, depth + 0.3),
-      mansionMaterial('stone')
-    );
-    mantle.position.set(x, y + height / 2 - 0.22, z);
-    mantle.castShadow = true;
-    mantle.receiveShadow = true;
-    this.scene.add(mantle);
-    this.solidMeshes.push(mantle);
-
-    // 3. Jambages / piliers latéraux en pierre taillée encadrant l'âtre
-    const pillarWidth = 0.55;
-    const pillarDepth = 0.65;
-    const pillarHeight = height - 0.45;
-    for (const offsetZ of [-depth / 2 + pillarDepth / 2, depth / 2 - pillarDepth / 2]) {
-      const pillar = new THREE.Mesh(
-        mansionBoxGeometry(pillarWidth, pillarHeight, pillarDepth),
-        mansionMaterial('stone')
-      );
-      pillar.position.set(x + width / 2 - pillarWidth / 2, y - 0.22, z + offsetZ);
-      pillar.castShadow = true;
-      pillar.receiveShadow = true;
-      this.scene.add(pillar);
-      this.solidMeshes.push(pillar);
-    }
-
-    // 4. Paroi de fond et âtre en brique réfractaire noircie par la suie
-    const hearthBack = new THREE.Mesh(
-      mansionBoxGeometry(width - pillarWidth, pillarHeight, depth - pillarDepth * 2, 1.5),
-      mansionMaterial('brick')
-    );
-    hearthBack.position.set(x - pillarWidth / 2, y - 0.22, z);
-    hearthBack.castShadow = true;
-    hearthBack.receiveShadow = true;
-    this.scene.add(hearthBack);
-    this.solidMeshes.push(hearthBack);
-
-    // 5. Lit de braises mourantes rougeoyantes au sol de l'âtre
-    const emberMat = new THREE.MeshStandardMaterial({
-      color: 0x2e0c06,
-      emissive: visualColors.ember,
-      emissiveIntensity: 0.75,
-      roughness: 0.9,
-    });
-    const embers = new THREE.Mesh(
-      new THREE.BoxGeometry(1.0, 0.14, depth - 1.8),
-      emberMat
-    );
-    embers.position.set(x + 0.25, 0.07, z);
-    embers.receiveShadow = true;
-    this.scene.add(embers);
-    // À l'intérieur de la bouche, devant la brique et derrière les jambages.
-    // La racine commune des huit poses (ligne114) rejoint le haut du lit de braises à0,14m.
-    this.hearthFire = new HearthFire(this.scene, new THREE.Vector3(x + width / 2 - 0.5, 0.645, z), depth - 1.8, 1.28);
+    // L'emprise de déplacement reste pleine ; seuls les reliefs visibles arrêtent les tirs.
+    this.colliders.push(new THREE.Box3().setFromCenterAndSize(
+      new THREE.Vector3(x, y, z), new THREE.Vector3(width, height, depth),
+    ));
+    this.fireplace = new SalonFireplace(this.scene, { x, y, z, width, height, depth });
+    this.solidMeshes.push(...this.fireplace.getShotBlockers());
   }
 
   private createSalonCarpetAndFrames(): void {
@@ -501,6 +464,8 @@ export class Level {
     const glow = new THREE.MeshBasicMaterial({ color: 0xe9aa58 });
     const positions: THREE.Vector3[] = [];
     for (let i = 0; i < this.candles.length; i++) {
+      // Le salon de musique possède son propre lustre à bougies en géométrie fusionnée.
+      if (this.candles[i].light.name === 'music-room-chandelier') continue;
       const position = this.candles[i].light.position;
       if (i === 0) {
         for (const [x, z] of [[0.75, 0], [-0.75, 0], [0, 0.75], [0, -0.75]]) {
@@ -545,7 +510,7 @@ export class Level {
 
   public update(delta: number, atmosphereDelta = delta): void {
     this.atmosphere.update(atmosphereDelta);
-    this.hearthFire?.update(atmosphereDelta);
+    this.fireplace?.update(atmosphereDelta);
     this.candleTimer += delta;
     for (const candle of this.candles) {
       const flicker =
@@ -887,17 +852,23 @@ export class Level {
       return null;
     }
 
-    // Remonter pour trouver le premier pas après startIndex
+    // Remonter jusqu'au premier pas utile : un départ exactement sur un nœud
+    // ne doit pas renvoyer ce même nœud et immobiliser la poursuite.
     let step = targetIndex;
-    while (previous[step] !== startIndex && previous[step] !== -1) {
+    let firstStep = targetIndex;
+    while (previous[step] !== -1) {
+      if (step < numWaypoints) {
+        const waypoint = MANSION_WAYPOINTS[step];
+        if (Math.hypot(waypoint.x - start.x, waypoint.z - start.z) > 0.02) firstStep = step;
+      }
       step = previous[step];
     }
 
-    if (step === targetIndex) {
+    if (firstStep === targetIndex) {
       return target;
     }
 
-    const nextWp = MANSION_WAYPOINTS[step];
+    const nextWp = MANSION_WAYPOINTS[firstStep];
     return new THREE.Vector3(nextWp.x, nextWp.y, nextWp.z);
   }
 

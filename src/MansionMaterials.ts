@@ -14,13 +14,42 @@ const materials = new Map<string, THREE.MeshStandardMaterial>();
 const salonTextures = new Map<'wall' | 'wood', THREE.Texture>();
 const salonMaterials = new Map<string, THREE.MeshStandardMaterial>();
 
+// Réduit seulement les variations de quelques texels, une fois au chargement.
+// Dimensions, UV, palette moyenne et filtrage rétro restent ceux de la source.
+export function softenMansionTextureDetail(texture: THREE.Texture): void {
+  if (typeof document === 'undefined') return;
+  const image = texture.image as HTMLImageElement;
+  const width = image.naturalWidth || image.width;
+  const height = image.naturalHeight || image.height;
+  if (!width || !height) return;
+  const coarse = document.createElement('canvas');
+  coarse.width = Math.max(1, Math.ceil(width / 4));
+  coarse.height = Math.max(1, Math.ceil(height / 4));
+  const coarseContext = coarse.getContext('2d');
+  if (!coarseContext) return;
+  coarseContext.imageSmoothingEnabled = true;
+  coarseContext.imageSmoothingQuality = 'high';
+  coarseContext.drawImage(image, 0, 0, coarse.width, coarse.height);
+  const result = document.createElement('canvas');
+  result.width = width;
+  result.height = height;
+  const context = result.getContext('2d');
+  if (!context) return;
+  context.drawImage(image, 0, 0);
+  context.globalAlpha = 0.3;
+  context.imageSmoothingEnabled = false;
+  context.drawImage(coarse, 0, 0, width, height);
+  texture.image = result;
+  texture.needsUpdate = true;
+}
+
 export function salonMaterial(kind: 'wall' | 'wood', original: THREE.MeshStandardMaterial): THREE.MeshStandardMaterial {
   const key = `${kind}:${original.map!.repeat.x}:${original.map!.repeat.y}`;
   const cached = salonMaterials.get(key);
   if (cached) return cached;
   let texture = salonTextures.get(kind);
   if (!texture) {
-    texture = new THREE.TextureLoader().load(`/assets/textures/mansion/salon-${kind}-v1.png`);
+    texture = new THREE.TextureLoader().load(`/assets/textures/mansion/salon-${kind}-v1.png`, softenMansionTextureDetail);
     texture.name = `salon-${kind}`;
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = kind === 'wall' ? THREE.ClampToEdgeWrapping : THREE.RepeatWrapping;
@@ -46,7 +75,10 @@ export function mansionMaterial(surface: MansionSurface, repeatX = 1, repeatY = 
   if (cached) return cached;
   let base = textures.get(surface);
   if (!base) {
-    base = new THREE.TextureLoader().load(`/assets/textures/mansion/${mansionSurfaceAssets[surface]}`);
+    const soften = surface === 'wood' || surface === 'door' || surface === 'ceiling'
+      || surface === 'carpet' || surface === 'workbench';
+    base = new THREE.TextureLoader().load(`/assets/textures/mansion/${mansionSurfaceAssets[surface]}`,
+      soften ? softenMansionTextureDetail : undefined);
     base.name = `mansion-${surface}`;
     base.wrapS = surface === 'door' || surface === 'workbench' ? THREE.ClampToEdgeWrapping : THREE.RepeatWrapping;
     base.wrapT = surface === 'door' || surface === 'workbench' || surface === 'books' ? THREE.ClampToEdgeWrapping : THREE.RepeatWrapping;

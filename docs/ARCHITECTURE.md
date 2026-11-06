@@ -1,17 +1,18 @@
 # DEAD SECTOR — Architecture
 
-Architecture réunissant `5dc4288` (travaux locaux) et `5a65ff3` (`origin/main`), le 6 novembre 2026 ; fusion vérifiée par compilation et contrôles ciblés. Le code fait foi ; validations et limites dans `ETAT_PROJET.md`.
+Architecture du prototype au 6 novembre 2026. Le code fait foi ; validations et limites dans `ETAT_PROJET.md`, historique dans Git.
 
 ## Responsabilités
 
 | Modules | Rôle |
 | --- | --- |
 | `main.ts`, `Game.ts` | Démarrage, scène/rendu, instances, orchestration, progression, valeurs du HUD et nettoyage. |
-| `GameHud.ts` | Présentation DOM : santé/armes/progression, invites, annonces et deux notifications bornées. Durées sur temps actif, sans logique de combat. |
+| `GameHud.ts`, `HeartAnimation.ts` | HUD compact, cœur en quatre poses partagées avec l'aperçu, secteur temporaire, mouvement réduit, invites et deux notifications bornées. Durées sur temps actif, sans logique de combat. |
 | `Player.ts` | Caméra, entrées, Pointer Lock, déplacement, collision, santé et lampe. |
 | `MansionConfig.ts`, `Level.ts` | Données du manoir ; géométrie, solides de tir, collisions, altitude, navigation et éclairage. |
 | `Door.ts` | Interaction E, ouverture, verrouillage, collision mobile et sécurité anti-pincement. |
-| `EncounterConfig.ts`, `FinaleConfig.ts` | Huit rencontres dont finale avec élite : quotas, plafonds, salves, zones, apparitions et paramètres du Gardien. |
+| `EncounterConfig.ts`, `FinaleConfig.ts` | Huit rencontres : quotas, plafonds, seuils d'introduction, groupes, apparitions et paramètres du duel final. |
+| `GuardianZombie.ts`, `GuardianProjectile.ts` | Gardien dérivé de Zombie : deux attaques, cible engagée, phases, navigation, santé propre et projectile de clé ; sprites/chute partagés. |
 | `Zombie.ts` | Standard/Coureur et option élite : perception, recherche de chemin, poursuite, attaque, blessure et relève hors élite. |
 | `SpitterZombie.ts`, `SpitProjectile.ts` | Préparation du crachat, récupération et projectile mobile avec collisions décor/joueur. |
 | `CrawlerZombie.ts`, `CrawlerAnimation.ts` | Rampeuse : saccades, lampe furie/fuite, saisie, esquive en fuite et plafond debug ; six poses, appui et zones de tête. |
@@ -21,14 +22,14 @@ Architecture réunissant `5dc4288` (travaux locaux) et `5a65ff3` (`origin/main`)
 | `WeaponSoundEvents.ts`, `WeaponMechanicalAudio.ts`, `WeaponMotion.ts` | Seuils des sons mécaniques, voix synthétisées bornées et balancement DOM selon distance réelle. |
 | `HitEffects.ts`, `ImpactSurface.ts`, `ShellCasing.ts` | Surfaces bois/pierre/métal, particules et marques bornées, douilles et libération des ressources. |
 | `Medkit.ts`, `AmmoBox.ts`, `ShotgunPickup.ts`, `PickupSprite.ts` | Soins, drops de munitions, fusil et billboards partagés. |
-| `MansionMaterials.ts`, `MansionWallGeometry.ts`, `MansionWallMaterial.ts` | Matériaux/UV et murs à lambris référencés au sol local. |
+| `MansionMaterials.ts`, `MansionWallGeometry.ts`, `MansionWallMaterial.ts` | Matériaux/UV et murs à lambris au sol local ; détails atténués une fois au chargement par mélange de 30 % de blocs de quatre texels, sans changer les PNG/UV/filtres. |
 | `MansionComposition.ts`, `MansionDressing.ts`, `MansionPortraits.ts`, `MansionFurnishings.ts` | Intentions/placements des six pièces ; panneaux, portraits et mobilier fusionnés. |
-| `MansionAtmosphere.ts`, `HearthFire.ts`, `HearthFireAnimation.ts` | Poussière bornée et feu par atlas ; pause et destruction via Level. |
+| `MansionAtmosphere.ts`, `PianoRoomDecor.ts`, `SalonFireplace.ts`, `HearthFire.ts`, `HearthFireAnimation.ts` | Poussière bornée, salon de musique et cheminée fusionnés, feu par atlas ; pause et destruction via Level. Colliders de déplacement distincts des surfaces de tir. |
 | `StormWindow.ts`, `StormController.ts`, `VisualStyle.ts` | Lumières, fenêtres, pluie, éclairs et continuité de scène vers l'arme DOM. |
 | `AudioMix.ts`, `FootstepAudio.ts`, `MansionFloorSurfaces.ts` | Quatre canaux/fondus et stockage versionné ; pas selon distance et surface partagée avec le décor. |
 | `HorrorDirector.ts` | Source sonore rare, sélection hors regard, délai et suspension. |
 | `PerfTracker.ts`, `TierDiagnostics.ts` | Temps d'image, coûts de transitions/apparitions, tirs, contacts, dégâts, relèves et ressources par palier. |
-| `index.html`, `style.css`, `public/assets/` | Interface, couches visuelles des armes et ressources chargées par URL. |
+| `index.html`, `style.css`, `public/assets/` | HUD gothique sobre, sprite cœur 128 × 32 sous `ui/gothic/`, textes dynamiques, calques d'armes et ressources par URL. |
 
 `EncounterBell`, `UpgradePedestal` et `UpgradeConfig` restent présents. Le carillon est instancié mais inactif ; aucun piédestal n'est instancié dans le cycle normal. Le code d'offres et d'application des améliorations est donc dormant.
 
@@ -49,11 +50,11 @@ K ouvre une pause de debug distincte de l'état de rencontre, annule le recharge
 
 `Weapon` actualise les matrices mondiales, projette un rayon par plomb depuis la caméra et trie les intersections entre cibles visibles et solides du décor. `SpriteHitMask.isOpaqueSpriteHit` ignore les pixels transparents ; `isHeadSpriteHit` utilise les UV et les zones de tête de la pose courante. Le masque alpha partagé est plafonné à 512 px.
 
-- Dégâts calculés par `Weapon` : pistolet 80 tête / 28 corps ; fusil 24 tête / 12 corps par plomb. Les impacts sont cumulés par cible.
+- Dégâts calculés par `Weapon` : pistolet 80 tête / 28 corps ; fusil 24 tête / 13 corps par plomb. Les impacts sont cumulés par cible ; `ShotDamage.weaponId` conserve leur arme d'origine.
 - `onHit(mesh, damage, shot) → Game → takeDamage(damage, headHits > 0, impactForce)` applique une seule notification par cible. `impactForce` reste distinct des dégâts pour l'interruption du Cracheur. La Rampeuse applique en plus son multiplicateur tête de 1,5.
 - `setOnImpact → Game → HitEffects.emit` produit particules et traces selon la surface bois/pierre/métal de la face touchée ; `Weapon` sélectionne aussi le son correspondant.
 - `setOnShoot` déclenche recul caméra, diagnostic et alerte des ennemis ; `setOnCasingEject` crée la douille. `setOnAmmoChange` synchronise le HUD.
-- `GameHud` conserve les références des champs `data-hud-*` ; les callbacks transmettent les valeurs sans remplacer les blocs DOM. `update(delta, controlActive)` suspend/cache les notifications et annonces hors contrôle ; `clear` les retire aux sauts debug, nouveaux paliers, fins et redémarrages. Les calques DOM des armes restent dans `Weapon`.
+- `GameHud` conserve les champs `data-hud-*`. `update(delta, controlActive)` gèle cœur et durée du secteur hors contrôle, cache/suspend les notifications. Le secteur dure trois secondes actives par palier ; compteurs sans réarmement. `clear` réinitialise ces retours aux transitions/resets. Préférence système et option du cœur persistante, listeners retirés par `dispose`. Les calques d'armes restent dans `Weapon`.
 - `onAttack` des ennemis et le callback du projectile passent par `Game → Player.takeDamage`, HUD et voile rouge ; une vie nulle appelle `endGame('lost')`.
 
 Les armes du joueur sont hitscan ; les crachats sont des projectiles mobiles à 9 m/s, sans guidage. Le fusil engage une cartouche à 0,50 s d'un cycle de 0,65 s ; `commitShotgunShell` garantit un transfert unique, y compris à grand delta. Annuler avant cet instant ne consomme rien ; annuler après conserve la cartouche engagée. Recul, cycle de pompe et rechargement restent distincts. Le recul utilisateur de deux secondes est conservé.
@@ -66,13 +67,15 @@ Les armes FPS utilisent des calques DOM/CSS et des `clip-path` calibrés sur les
 
 - `trySpawnZombie` distingue quotas totaux par type et plafonds simultanés. La limite active est le minimum du budget global et de celui du palier.
 - Les points retenus respectent secteur, collision, distance minimale de 6 m, visibilité et chemin praticable ; le score privilégie les points sûrs proches et plusieurs directions.
-- Un Cracheur réserve aussi un Coureur d'escorte : deux places, deux unités de quota et deux points sûrs proches avec ligne de vue mutuelle sont nécessaires.
+- Un Cracheur réserve aussi un Coureur d'escorte : deux places, deux unités de quota et deux points sûrs proches avec ligne de vue mutuelle sont nécessaires. Si sa paire est bloquée, un autre type éligible est essayé sans consommer son escorte réservée.
+- `spawnUnlocks` compare les éliminations définitives ; `spawnGroups` borne les quotas cumulés. `advanceSpawnGroup` attend la fin définitive du premier groupe P6 puis trois secondes actives ; la file du second groupe reste une menace.
 - `Zombie.isThreat()` inclut `alive || revivalPending` : un corps susceptible de se relever occupe encore une place et empêche la fin du combat. Première mort sans impact tête fatal : 20 % de relève standard, 12 % Coureur ; une seule relève, à 40 PV.
 - `checkTierCompletion()` appelle `enterRespite()` seulement quand la file et les menaces sont vides. Les accès débloqués s'ouvrent, les soins sont réarmés et dix secondes d'exploration libre précèdent le prochain palier.
-- Après P7, l'accalmie mène à P8 avec élite. Finir P8 appelle `endGame('won')` sans libérer la souris : exploration conservée et bilan volontaire par B. Le bilan suspend le contrôle ; `restartRun` réinitialise joueur/armes/portes/ressources/diagnostics et effets sans reconstruire les instances ni ajouter d'écouteurs. Les sauts debug conservent l'équipement et sont signalés au bilan.
-- Les munitions proviennent des morts via un budget par palier ; `AmmoBox` alimente la réserve de `Weapon` puis est libérée après consommation. Les caisses fixes ne sont plus instanciées.
+- Après P7, trois lots de vingt balles sont placés sur des points accessibles ; `finaleSupplyLots` interdit leur duplication, même après collecte partielle. P8 direct/debug les initialise aussi ; le duel ne produit aucun drop supplémentaire.
+- Finir P8 appelle `endGame('won')` sans libérer la souris : exploration et bilan volontaire B conservés. `restartRun` réinitialise joueur/armes/portes/ressources/diagnostics et effets ; les sauts debug conservent l'équipement et sont signalés au bilan.
+- `onZombieKilled` traite chaque ennemi une seule fois, à sa mort définitive ; les relèves et restes sont suspendus hors focus. `AmmoBox` conserve les reliquats et compare les hauteurs réelles du lot et du joueur, rampes comprises.
 
-`getRunSummary` agrège diagnostics clôturés, paliers réellement terminés et durée active réelle hors pause ; tirs et impacts restent des comptes distincts. P8 contient deux standards dont un Gardien, trois Coureurs et un Cracheur, sans Rampeuse. `Zombie(..., random, { elite: true })` garde le type standard et les sprites existants ; `FinaleConfig` règle charge immobile, impact évitable et récupération, sans relève.
+`getRunSummary` agrège diagnostics clôturés, paliers terminés et durée active hors pause. `TierDiagnostics.advance` reçoit le temps actif réel ; stocks, gains, soins et tirs/impacts par arme sont distincts. `getTierDiagnostics` inclut la rencontre courante. P8 contient un `GuardianZombie` de 800 PV : balayage, jet, phase à 50 %, blessures non interruptives ; mort/chute/audio du socle Zombie conservés. `GameHud.setBoss` affiche jauge et préparation/récupération. `updateProjectiles` interdit dégâts tardifs et réintroduction d'un projectile après la fin.
 
 ## Monde, animation et audio
 
@@ -80,7 +83,7 @@ Les armes FPS utilisent des calques DOM/CSS et des `clip-path` calibrés sur les
 
 Les ennemis restent des billboards verticaux. Les modules d'animation définissent poses/UV et chronologies partagées avec les aperçus ; la Rampeuse conserve un support carré et un offset calculé sur l'appui dessiné. `ZombieRemains` sélectionne des géométries UV propres aux poses sans modifier l'offset d'une texture commune : deux cadavres peuvent afficher des étapes différentes en partageant textures et matériaux. Les instances quittent la scène à chaque palier ; les ressources partagées restent en cache jusqu'à leur libération globale, notamment dans `Game.dispose`.
 
-`MansionComposition` définit points focaux et murs calmes. Level possède les lots statiques, fusionnés par pièce/matériau : douze panneaux, six portraits épais et six meshes de mobilier. `MansionConfig` définit les supports solides. Le batch Galerie bloque aussi les tirs sur le buste ; `disposeDecor` le retire du tableau partagé `solidMeshes` avant destruction, sans remplacer ce tableau. Reliefs contenus dans les emprises existantes.
+`MansionComposition` définit points focaux et murs calmes. Level possède panneaux, portraits et mobilier statiques fusionnés. `PianoRoomDecor` ajoute piano, banquette, tapis, console et lustre au vestibule devenu Salon de Musique, sans changer son identifiant technique. `PIANO_ROOM_LAYOUT` partage l'implantation avec les enveloppes XZ `PIANO_ROOM_COLLIDERS` et les tapis de `MansionFloorSurfaces` utilisés par les pas. Les tirs suivent les surfaces réelles, y compris sous le piano ; tapis/franges/flammes sont exclus. Le batch Galerie bloque aussi les tirs sur le buste ; `disposeDecor` retire tous les solides décoratifs possédés du tableau partagé avant destruction, sans remplacer ce tableau ni libérer les textures communes. La baie nord du Salon de Musique réutilise l'orage, avec deux meshes de rideaux en relief ; sa lumière de lustre remplace celle du vestibule.
 
 `MansionWallGeometry` conserve faces/volumes des boîtes, subdivise à 1,05 m du sol local et au changement d'étage `z=-7` ; papier répété tous les 2,10 m, phase horizontale mondiale, atlas/matériau communs. `SalonWallGeometry` reste inutilisé par Level ; les encadrements du Salon conservent leur bois spécifique.
 
@@ -108,7 +111,7 @@ Lancer `npm.cmd run dev` pour servir les aperçus générés sous `/tmp/` ; leur
 | `node scripts/make-zombie-death-preview.mjs` | Vraie classe de cadavre, cycle isolé et vue latérale : `/tmp/zombie-death-preview/index.html`. |
 | `node scripts/make-spitter-preview.mjs` | Poses du Cracheur : `/tmp/spitter-preview/index.html`. |
 | `node scripts/make-crawler-preview.mjs` | Rampeuse, cycles normal/lent et comparaison 3D des proportions : `/tmp/crawler-preview/index.html`. |
-| `node scripts/make-composition-preview.mjs` | Vrai Level : six pièces × trois vues, `/tmp/composition-preview/index.html`. |
+| `node scripts/make-composition-preview.mjs` | Vrai Level : trois vues par pièce ; départ réel, deux arches et console en plus pour le Salon de Musique. `/tmp/composition-preview/index.html`. |
 | `node scripts/make-dressing-preview.mjs --relief` | Mobilier/atmosphère, `/tmp/mansion-relief-preview/index.html`. |
 | `node scripts/make-salon-preview.mjs` | Comparaison des lumières du Salon ; ancien `--textures` refusé. |
 | `node scripts/make-weapon-feedback-preview.mjs` | Manipulations/balancement, `/tmp/weapon-feedback-preview/index.html`. |

@@ -2,18 +2,19 @@
   "documentType": "asset-pack",
   "templateVersion": 1,
   "id": "FEU_CHEMINEE_2026-11-05",
-  "request": "Feu animé dans l'âtre indiqué par capture utilisateur, effet de GIF intégré au jeu.",
+  "request": "Cheminée et feu inspirés du concept utilisateur : façade sculptée intégrée, sprite de feu remplacé par une masse jaune-orange dense et irrégulière, avec langues hautes et huit poses animées.",
   "scope": {
     "prepare": true,
     "generate": true,
     "integrate": true,
     "authorizedDecisions": [
-      "Demande directe feu animé",
-      "Autonomie et délégation déjà reçues"
+      "Refonte de la cheminée puis remplacement explicite du sprite de feu depuis le concept utilisateur",
+      "Export, intégration et contrôles autonomes des choix réversibles"
     ],
     "assumptions": [
-      "Atlas animé Three.js pour rendu stable ; GIF d'aperçu possible",
-      "Pas de lumière ou son supplémentaire, collisions inchangées"
+      "Cheminée autonome adaptée au concept mural ; décor actuel conservé lors du remplacement du feu",
+      "Emprise de déplacement inchangée ; impacts sur les surfaces visibles, suppression du volume de tir invisible",
+      "Aucune nouvelle lumière ni ombre projetée ; même atlas de feu huit poses à 10 Hz"
     ],
     "pendingDecisions": []
   },
@@ -21,25 +22,26 @@
     "workflow": "docs/PIPELINE_ASSETS.md",
     "references": [
       {
-        "path": "C:/Users/ADMINI~1/AppData/Local/Temp/codex-clipboard-3aed5d06-f700-49ad-b53d-fb186fdca6d1.png",
-        "role": "composition/contexte de l'âtre",
+        "path": "docs/asset-packs/references/fireplace-concept-user-2026-11-06.png",
+        "role": "Direction du feu et de la cheminée",
         "inspected": true
       },
       {
         "path": "public/assets/textures/mansion/hearth-brick-v1.png",
-        "role": "style/pixelart",
+        "role": "Style pixel et palette réellement chargés",
         "inspected": true
       }
     ],
     "lockedIdentity": [
-      "Feu large et bas, racine stable, 5langues asymétriques",
-      "Palette rouge/orange/ambre/jaune, sansblancpur"
+      "Racine large et fixe, langues hautes irrégulières et déchirées, cœur jaune chaud dense",
+      "Rouge vermillon, orange, ambre et ivoire jaune ; aucun blanc pur",
+      "Échelle commune à toutes les poses, animation conservée à huit poses/10 Hz"
     ],
     "humanApproval": "not_requested",
     "acceptedBaseFile": "docs/asset-packs/hearth-fire-v1/base.png"
   },
   "technicalContract": {
-    "usage": "Plan fixe dansl'âtre,normal+X,2triangles,MeshBasicMaterial transparent",
+    "usage": "Plan fixe dans l'âtre, normal +X, deux triangles, MeshBasicMaterial transparent",
     "exportDimensions": {
       "base": [
         128,
@@ -54,31 +56,35 @@
         128
       ]
     },
-    "format": "PNG RGBA,alpha réel",
+    "format": "PNG RGBA8, alpha réel",
     "anchors": [
       {
-        "canvas": "Chaque cellule128×128 de l'atlas",
+        "canvas": "Chaque cellule 128 × 128 de l'atlas",
         "name": "racine",
         "x": 64,
         "y": 114.5,
-        "measuredAlphaThreshold": 102
+        "measuredAlphaThreshold": 13,
+        "opaqueRootRows": [
+          113,
+          114
+        ]
       }
     ],
     "fixedParts": [
       "Position/baseline de la racine"
     ],
     "movingParts": [
-      "Langues deflamme, fentes et pointes"
+      "Langues, pointes et rubans lumineux ; quelques étincelles incluses dans le sprite"
     ],
     "phases": [
-      "8poses enboucle 0.8s,10images/s ; racine stable etlangues oscillantes"
+      "Huit poses distinctes sur 0,8 s à 10 images/s ; racine fixe et variations de silhouette"
     ],
     "tileAxes": [],
     "budget": {
       "textures": 1,
       "rgbaBytes": 524288,
       "mipmaps": false,
-      "atlasDiskBytes": 169697,
+      "atlasDiskBytes": 145576,
       "meshes": 1,
       "triangles": 2,
       "maxMainDrawCalls": 1,
@@ -94,12 +100,12 @@
       "required": true,
       "productionStatus": "generated",
       "plannedFile": "docs/asset-packs/hearth-fire-v1/base.png",
-      "promptExact": "Create ONE base sprite for a looping fireplace fire in DEAD SECTOR, a retro horror FPS in a Victorian mansion. Attached image1 is CONTEXT ONLY: the actual dark stone fireplace and scale where the fire will sit; do NOT redraw the room, bricks, lantern, gun, HUD or fireplace. Attached image2 is STYLE ONLY: the game's coarse pixel texture language. Output ONLY the orange fire itself on genuinely transparent alpha, no logs or coals (already present in game). A low broad cluster of five interlocking flame tongues, front view orthographic, centered, broad red-orange root along y=88% of canvas, flame tips reach y=18%, margins left/right 12%, bottom12%. Keep the whole flame cluster inside a square canvas. Use clear stepped pixel clusters readable after downscale to128x128; limited burnt red, orange, amber, pale warm yellow cores, no pure white. Lower root stable, middle tongues curling upward with asymmetric gaps between, outer edges dark red, yellow confined to cores. No glow haze outside alpha silhouette, no smoke or flying particles, no text, no borders, no grid, no checkerboard painted in. Matte retro pixel art sprite with crisp contours, no photorealism or smooth vector gradient. This is the identity base before making8animation poses. Requested512x512 opaque flame silhouette on transparent background.",
+      "promptExact": "Use case: stylized-concept. Asset type: identity BASE sprite for an animated fireplace fire in DEAD SECTOR, a retro horror FPS. Input image 1 is the user's CONCEPT reference: take the FIRE inside the ornate hearth as the specific visual target, especially its tall jagged asymmetrical tongues and intensely yellow lower body. Do not redraw any architecture or objects. Image 2 is the ACTUAL GAME soot-dark brick texture, reference only for visible blocky painted pixel clusters and subdued warm surroundings.\nGenerate ONE frontal orthographic FIRE FLAME MASS ONLY on genuine transparent alpha. Broad low hot root, lively tall narrow flame tips, a dense pale warm golden-yellow core rising from the lower middle, amber streaks, vermilion-orange outer tongues fading to deep red tips. Match a natural vigorous wood fire from the concept, with irregular torn triangular tongues and split tips. Highest narrow tongue a little right of center, two secondary tall peaks, short side flickers, uneven gaps. Tiny detached orange embers above are allowed only within the same controlled silhouette bounds. Less than 6 detached sparks. It is NOT a bonfire cone, NOT five identical smooth S-shaped curls, NOT a vector flame icon.\nComposition / animation invariants: square canvas, left and right margins at least 9%, root extends horizontally from x14% to x86%, brightest solid bottom edge planted at y89% (the root ANCHOR), absolutely nothing below y90%; tallest tips around y9%, side tongues around y35-55%. Flame body should occupy most of the height above the root. Flat front view with no camera tilt, identity base before making 8 frames. Keep flame root and total scale fixed for later animation. NO logs, coals, floor line, grille, stone, room, border, labels, text, smoke, checkerboard paint, or opaque dark background. Existing 3D logs and coals are already present in the game.\nArt: crisp jagged stepped pixel shapes with larger readable color clusters, late 1990s / early 2000s painted game VFX, 8-12 warm color families, warm ivory-yellow highlights #ffe4a0 but no pure white. No rounded cartoon, no glossy 3D, no blurry photograph, no broad airbrushed glow haze beyond alpha. Keep luminosity inside the silhouette; a thin translucent amber edge is fine. Requested1024x1024 RGBA transparent. Should still read as vigorous detailed fire when reduced to128x128.",
       "referencesActuallyAttached": [
-        "C:/Users/ADMINI~1/AppData/Local/Temp/codex-clipboard-3aed5d06-f700-49ad-b53d-fb186fdca6d1.png",
+        "docs/asset-packs/references/fireplace-concept-user-2026-11-06.png",
         "public/assets/textures/mansion/hearth-brick-v1.png"
       ],
-      "sourceFile": "C:/Users/Administrateur/.codex/generated_images/01a1ace9-b608-7983-8706-92d9bf693f5a/exec-f499ff9a-3e4a-4856-b151-45fabf71e25c.png",
+      "sourceFile": "docs/asset-packs/hearth-fire-v1/base-source.png",
       "exportFile": "docs/asset-packs/hearth-fire-v1/base.png",
       "measuredDimensions": {
         "source": [
@@ -116,7 +122,8 @@
         "model": "non exposé"
       },
       "transformations": [
-        "Redimensionnement nearest-neighbor du canevas entier, alpha conservé"
+        "Réduction nearest-neighbor du canevas entier 1254 × 1254 vers 128 × 128, alpha conservé ; aucun recadrage ni recalage individuel",
+        "Commande : ./scripts/export-hearth-fire.ps1 -Source docs/asset-packs/hearth-fire-v1/base-source.png -Mode base"
       ],
       "validation": {
         "file": "pass",
@@ -126,8 +133,29 @@
         "gameplay": "not_applicable"
       },
       "evidence": [
-        "Base inspectée après export à128×128 ; identité retenue par assistant"
-      ]
+        "Source et base à taille cible inspectées ; alpha ≥13 : bounds 98 × 101, bas ligne114 ; alpha >102 : bas ligne113"
+      ],
+      "previousGeneration": {
+        "status": "superseded",
+        "note": "Prompts et entrées du 5 novembre conservés pour provenance ; anciens exports remplacés sur les mêmes chemins à la demande de l'utilisateur.",
+        "promptExact": "Create ONE base sprite for a looping fireplace fire in DEAD SECTOR, a retro horror FPS in a Victorian mansion. Attached image1 is CONTEXT ONLY: the actual dark stone fireplace and scale where the fire will sit; do NOT redraw the room, bricks, lantern, gun, HUD or fireplace. Attached image2 is STYLE ONLY: the game's coarse pixel texture language. Output ONLY the orange fire itself on genuinely transparent alpha, no logs or coals (already present in game). A low broad cluster of five interlocking flame tongues, front view orthographic, centered, broad red-orange root along y=88% of canvas, flame tips reach y=18%, margins left/right 12%, bottom12%. Keep the whole flame cluster inside a square canvas. Use clear stepped pixel clusters readable after downscale to128x128; limited burnt red, orange, amber, pale warm yellow cores, no pure white. Lower root stable, middle tongues curling upward with asymmetric gaps between, outer edges dark red, yellow confined to cores. No glow haze outside alpha silhouette, no smoke or flying particles, no text, no borders, no grid, no checkerboard painted in. Matte retro pixel art sprite with crisp contours, no photorealism or smooth vector gradient. This is the identity base before making8animation poses. Requested512x512 opaque flame silhouette on transparent background.",
+        "referencesActuallyAttached": [
+          "C:/Users/ADMINI~1/AppData/Local/Temp/codex-clipboard-3aed5d06-f700-49ad-b53d-fb186fdca6d1.png",
+          "public/assets/textures/mansion/hearth-brick-v1.png"
+        ],
+        "toolAndModelActuallyUsed": {
+          "tool": "image_gen.imagegen",
+          "model": "non exposé"
+        }
+      },
+      "artRevision": "concept-fire-2026-11-06",
+      "humanApproval": "not_requested",
+      "diskBytes": 15957,
+      "sourceDiskBytes": 693842,
+      "sha256": {
+        "source": "1af63be84ea1a8f08f3d31f8050291c62b3b7acccec4640fc9336bb68f66d189",
+        "export": "0c01ed57fd11e3d814e18fd1749c9e9add430cb469cae8ac38d9c06720046160"
+      }
     },
     {
       "id": "cycle",
@@ -135,22 +163,21 @@
       "required": true,
       "productionStatus": "generated",
       "plannedFile": "public/assets/effects/hearth-fire-v1.png",
-      "cellsAndOrder": "4colonnes×2rangées ; gaucheàdroite puis rangée suivante,8cellules",
+      "cellsAndOrder": "Quatre colonnes × deux rangées carrées ; gauche à droite puis rangée suivante",
       "durationSeconds": 0.8,
-      "promptExact": "Create an animation sprite sheet for DEAD SECTOR fireplace fire. FIRST attached image is the exact identity BASE sprite to animate. SECOND is STYLE ONLY, coarse dark brick texture, do not include bricks. Produce ONE transparent PNG atlas with EXACTLY FOUR equal square columns and TWO equal square rows, eight animation cells, no gutters, labels, borders or checkerboard paint. Output aspect ratio2:1. Reading order left to right then next row is time0..7 of a seamless0.8second loop (10fps). In EVERY cell, same broad low fire cluster, same scale, same colors, same baseline y88% of that cell, root centered at x50%, same root breadth, tips within y12..30%, left/right margins at least10%. Keep the root planted and stable; ONLY the flame tongues and inner yellow streaks move. The eight successive poses should show gentle continuous upward curling, splitting and merging: small new curls emerge low, rise through middle, the highest thin tips vanish as lower curls take over. Pose7 should lead naturally back to pose0. Avoid alternating giant/small silhouettes or flashing intensity. Maintain five main asymmetrical red/orange/amber tongues with modest pale warm yellow cores, large clean stepped pixel clusters. Render each pose front orthographic like the base; no perspective. Genuinely transparent alpha outside flames including gaps. No hearth, coals, wood, groundline, lantern, scenery, smoke, floating sparks, glow halo, white background, purewhite hotspots, text or decorations. All eight cells must be occupied by distinct consecutive poses, not copies of a static flame. Requested atlas1024x512, exact4x2 square grid; must remain readable when exported512x256(cell128x128).",
+      "promptExact": "Use case: stylized-concept. Asset type: animated VFX texture atlas for DEAD SECTOR fireplace, PNG with genuine transparent background.\nImage 1 is the EXACT identity BASE to animate; keep this new jagged vigorous fire's colors and overall broad silhouette. Image 2 is the user's CONCEPT reference, specifically the intense yellow-orange fire inside the stone hearth; do not include its room or props.\nProduce exactly EIGHT DISTINCT CONSECUTIVE FRAMES in a FOUR COLUMN by TWO ROW atlas (4x2), landscape aspect 2:1, all cells square with identical size and no gutters. Output requested2048x1024 (or1024x512), precisely4columns2rows, no panels/labels/numbers/borders/background. Reading order left to right, first row then second row, time0..7 of a seamless0.8second loop at10fps.\nLOCKED IN EVERY CELL: same front orthographic view; same scale; same planted broad hot root centered x50%, root breadth x14%-86%; root lower edge exactly y89.5% of cell and no visible pixels below90%; left/right alpha margins at least8%; a tall central group plus shorter irregular side tongues; tips stay within y8%-25%. Keep flame root shape and overall occupied width STABLE. Do NOT individually zoom, shift, tilt or scale any frame. No giant/small alternation. Pale warm golden-yellow lower core, amber internal streaks, vermilion outer layers and jagged dark-red tips. Source base's yellow core must stay broad and strong, not reduce to an orange contour.\nONLY CHANGE upward FIRE FLOW: thin tongues stretch, split and taper, bright ribbons rise from root and break into sharp tiny embers, tips disappear as new tongues emerge below. Create small continuous deformation between neighboring frames. Frame0 like base, frames1-3 tongues lean gently left and split at tips, frames4-6 new middle-right tongues rise while previous tips disappear, frame7 returns naturally toward0. Keep root attached, stable luminous intensity, at most four detached sparks in upper third inside cell margins.\nArt direction: painted pixel VFX with hard stepped irregular flame edges and readable clustered patches, natural FIRE with angular forked tips as concept. NOT smooth vector, NOT repeated S-curves, NOT eight unrelated fire icons, NOT blurry photoreal noise. No pure white; hot core warm ivory-yellow #ffe4a0. Tiny partial-alpha edge pixels allowed, no glow haze/smoke outside silhouette. No logs, coals, grille, floor, shadows, fireplace structure, walls, scene, letters, checkerboard paint. TRUE transparent alpha between every flame and around all8cells. Designed to downsample whole atlas to512x256 / cells128 while keeping all8frames distinguishable and rooted at pixel114.",
       "acceptanceCriteria": [
-        "Contours pixelart",
-        "Pasdedébordementcellules",
-        "Racine stable",
-        "Cycle partagé10fps",
-        "Alpha etpavagenonapplicable"
+        "Langues irrégulières et cœur jaune proches du concept",
+        "Huit poses distinctes sans débordement ni changement d'échelle individuel",
+        "Racine visible fixe au seuil alpha réel du rendu",
+        "Cadence, UV, pause et destruction conservés"
       ],
-      "sourceFile": "C:/Users/Administrateur/.codex/generated_images/01a1ace9-b608-7983-8706-92d9bf693f5a/exec-5434cdf7-20b0-4d53-a6b8-9bfcdb5ff315.png",
+      "sourceFile": "docs/asset-packs/hearth-fire-v1/cycle-source.png",
       "exportFile": "public/assets/effects/hearth-fire-v1.png",
       "runtimeUrl": "/assets/effects/hearth-fire-v1.png",
       "referencesActuallyAttached": [
-        "C:/Users/Administrateur/.codex/generated_images/01a1ace9-b608-7983-8706-92d9bf693f5a/exec-f499ff9a-3e4a-4856-b151-45fabf71e25c.png",
-        "public/assets/textures/mansion/hearth-brick-v1.png"
+        "docs/asset-packs/hearth-fire-v1/base-source.png",
+        "docs/asset-packs/references/fireplace-concept-user-2026-11-06.png"
       ],
       "measuredDimensions": {
         "source": [
@@ -171,30 +198,68 @@
         "model": "non exposé"
       },
       "transformations": [
-        "Redimensionnement nearest-neighbor du canevas complet vers512×256, alpha conservé ; export-hearth-fire.ps1"
+        "Source 1774 × 887 : huit cellules carrées de 443,5 px, mêmes rectangles de cadrage",
+        "Rééchantillonnage nearest-neighbor vers cellules128 avec UNE échelle commune de0,88 et centrage commun, aucune normalisation par bounding box",
+        "Translations Y entières [0,0,0,0,2,2,2,2] pour placer le bas alpha≥13 à la ligne114 ; aucun pixel alpha tronqué ni déformation par pose",
+        "Commande : ./scripts/export-hearth-fire.ps1 -Source docs/asset-packs/hearth-fire-v1/cycle-source.png -Mode cycle -CycleScale 0.88 -RootRow 114"
       ],
       "validation": {
         "file": "pass",
-        "art": "not_checked",
+        "art": "pass",
         "continuity": "not_checked",
         "integration": "pass",
         "gameplay": "not_checked"
       },
       "evidence": [
-        "Atlas et ses8poses inspectés àtailleexport",
-        "8poses distinctes ; marges etracine stable ligne114 contrôlées",
-        "Cycle logique etUV contrôlés30/144Hz, pause etdispose",
-        "Observation du mouvement en scène non effectuée"
+        "Atlas et huit poses inspectés à512×256 ; largeur alpha≥13 de99–100 px, hauteur98–101 px, bas114 sur les huit poses",
+        "Marges et racines contrôlées à alpha≥13 et >102 ; alpha opaque bas113 pour poses0–3,114 pour4–7",
+        "Animation et plusieurs poses observées dans le vrai Level par un harnais sans combat : vues Face/Proche et commandes normal/ralenti ; 16textures reçues sur16, aucune erreur JS dans les logs",
+        "Comparaison visuelle ancien/nouveau sur fond sombre et pierre ; aucun nouveau rectangle opaque"
       ],
       "knownDefects": [
-        "Boucle visuelle non observée en temps réel ; GIF livré pour consultation, aucune validation WebGL prétendue"
-      ]
+        "Fluidité perçue et confort en combat non établis ; raccords3→4 et7→0 plus marqués dans les mesures de silhouette"
+      ],
+      "previousGeneration": {
+        "status": "superseded",
+        "note": "Prompts et entrées du 5 novembre conservés pour provenance ; anciens exports remplacés sur les mêmes chemins à la demande de l'utilisateur.",
+        "promptExact": "Create an animation sprite sheet for DEAD SECTOR fireplace fire. FIRST attached image is the exact identity BASE sprite to animate. SECOND is STYLE ONLY, coarse dark brick texture, do not include bricks. Produce ONE transparent PNG atlas with EXACTLY FOUR equal square columns and TWO equal square rows, eight animation cells, no gutters, labels, borders or checkerboard paint. Output aspect ratio2:1. Reading order left to right then next row is time0..7 of a seamless0.8second loop (10fps). In EVERY cell, same broad low fire cluster, same scale, same colors, same baseline y88% of that cell, root centered at x50%, same root breadth, tips within y12..30%, left/right margins at least10%. Keep the root planted and stable; ONLY the flame tongues and inner yellow streaks move. The eight successive poses should show gentle continuous upward curling, splitting and merging: small new curls emerge low, rise through middle, the highest thin tips vanish as lower curls take over. Pose7 should lead naturally back to pose0. Avoid alternating giant/small silhouettes or flashing intensity. Maintain five main asymmetrical red/orange/amber tongues with modest pale warm yellow cores, large clean stepped pixel clusters. Render each pose front orthographic like the base; no perspective. Genuinely transparent alpha outside flames including gaps. No hearth, coals, wood, groundline, lantern, scenery, smoke, floating sparks, glow halo, white background, purewhite hotspots, text or decorations. All eight cells must be occupied by distinct consecutive poses, not copies of a static flame. Requested atlas1024x512, exact4x2 square grid; must remain readable when exported512x256(cell128x128).",
+        "referencesActuallyAttached": [
+          "C:/Users/Administrateur/.codex/generated_images/01a1ace9-b608-7983-8706-92d9bf693f5a/exec-f499ff9a-3e4a-4856-b151-45fabf71e25c.png",
+          "public/assets/textures/mansion/hearth-brick-v1.png"
+        ],
+        "toolAndModelActuallyUsed": {
+          "tool": "image_gen.imagegen",
+          "model": "non exposé"
+        }
+      },
+      "artRevision": "concept-fire-2026-11-06",
+      "humanApproval": "not_requested",
+      "diskBytes": 145576,
+      "sourceDiskBytes": 1375482,
+      "sha256": {
+        "source": "f81e4f61ea5452ac7d3bd2f5dbf30ab155f7cc9734adcbe4ebecefedc41dc55b",
+        "export": "7aa60b8486b8ba3f63f927995341b1ab1d661987019805a42b78eb3e91b9ea0b"
+      },
+      "continuityMeasures": {
+        "silhouetteIoU": [
+          0.7455,
+          0.7463,
+          0.732,
+          0.6482,
+          0.8145,
+          0.8011,
+          0.8542,
+          0.6742
+        ],
+        "maxLuminanceVariationPercent": 7.3,
+        "interpretation": "Les transitions3→4 et7→0 sont les plus marquées ; ces mesures et captures ne prouvent pas une fluidité parfaite."
+      }
     },
     {
       "id": "existing-scene",
       "required": false,
       "productionStatus": "reused",
-      "reason": "Cheminée,braises,lumière chaude,sons etcolliders existants"
+      "reason": "Lumière chaude, sons, atlas de feu et emprise physique réutilisés ; géométrie remplacée par SalonFireplace."
     },
     {
       "id": "preview-gif",
@@ -219,8 +284,147 @@
         "continuity": "not_checked"
       },
       "evidence": [
-        "Décodeur System.Drawing :8poses128×128 décodées",
-        "Image du GIF inspectée, sans affirmer lecture temporelle"
+        "GIF régénéré depuis le nouvel atlas et HearthFireAnimation ; la palette RGB332 de consultation simplifie les jaunes du PNG"
+      ],
+      "sha256": "31b6e85a6c11d266a1ffa765546bfcfb2dd6c9903c965270a1dd205d320015c8"
+    },
+    {
+      "id": "fireplace-reliefs",
+      "purpose": "Trois ornements de la cheminée : cartouche d'acanthes, masque de lion réutilisé sur les deux jambages, pendule",
+      "required": true,
+      "productionStatus": "generated",
+      "sourceFile": "docs/asset-packs/hearth-fire-v1/reliefs-source.png",
+      "exportFile": "public/assets/textures/mansion/hearth-reliefs-v1.png",
+      "runtimeUrl": "/assets/textures/mansion/hearth-reliefs-v1.png",
+      "measuredDimensions": [
+        512,
+        512
+      ],
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "format": "PNG RGBA8, alpha réel",
+      "diskBytes": 303552,
+      "toolAndModelActuallyUsed": "Outil intégré image_gen.imagegen ; modèle non exposé",
+      "referencesActuallyAttached": [
+        "docs/asset-packs/references/fireplace-concept-user-2026-11-06.png",
+        "public/assets/textures/mansion/stone-ashlar-v1.png",
+        "public/assets/textures/mansion/hearth-brick-v1.png"
+      ],
+      "referenceRoles": [
+        "Concept utilisateur : motifs et composition",
+        "Pierre et brique réellement chargées : palette et groupes de pixels"
+      ],
+      "promptExact": "Use case: stylized-concept. Asset type: ONE game texture atlas of three rigid carved fireplace details for DEAD SECTOR, a retro horror FPS in a Victorian mansion. Reference image 1 is COMPOSITION / carved fireplace motif only (lion masks, acanthus scrolls, small antique mantel clock). References 2 and 3 are the ACTUAL GAME stone and soot-dark brick for coarse pixel art style and subdued material colors, not shapes to copy.\nOutput a square 1024 x 1024 genuinely transparent PNG, three completely separate elements with exact cell allocation and generous transparent margin. TOP HALF cell x0..1023 y0..511: one wide horizontal shallow STONE relief, a central small pointed heraldic shield with symmetrical curling acanthus leaves, 2:1 overall motif, isolated and front orthographic. The relief is dark warm limestone #71685b with muted lighter #9d917c facets, charcoal crevices, restrained chips, broad readable ornamental forms. NO architectural frame behind it. BOTTOM LEFT cell x0..511 y512..1023: one carved STONE LION HEAD mask, majestic worn expression, mane flowing down, small ring held in mouth, straight-on symmetrical view, matching EXACTLY the dark warm stone of top relief. BOTTOM RIGHT cell x512..1023 y512..1023: one small ornate Victorian brass mantel CLOCK, domed pediment, aged ivory dial with twelve short tick marks and two black hands, dark brass casing, broad plinth; front orthographic, no legible letters or numerals necessary.\nAll 3 independent objects centered within their assigned cell, fully contained with at least 8% transparent margin on all sides. NO overlaps between cells, no grid, no labels, no backdrop, no floor, no cast shadow outside silhouettes, no fire, no candles, no room, no portrait. NO repeating whole fireplace. Each is a shallow front-facing bas-relief sprite to put over 3D stone or on top of a mantel. Keep crisp stepped pixel clusters and large shapes that read when the entire atlas is downsampled to 512x512. Matte late-1990s game texture / painted pixel art, NOT photographic, NOT polished metal, no smooth vector edges, no glossy 3D render. Diffuse neutral ambient shading ONLY within carving crevices, no orange firelight painted in, no directional room lighting, no glow. True alpha transparency outside the three elements including gaps, no checkerboard paint.",
+      "transformations": [
+        "Source conservée intégralement ; export reproductible scripts/export-hearth-reliefs.ps1",
+        "Régions sources cartouche [0,0,1254,540], lion [0,540,627,714], pendule [627,540,627,714]",
+        "Bornes alpha non nulles recadrées séparément ; redimensionnement nearest-neighbor sans déformation, centrage dans les trois cellules avec marge minimale de huit pixels",
+        "Pas de changement de fournisseur, pas de nouvelle animation : ornements rigides ; action pilote non applicable"
+      ],
+      "cellsAndOrder": [
+        {
+          "id": "cartouche",
+          "rect": [
+            0,
+            0,
+            512,
+            256
+          ],
+          "alphaBounds": [
+            18,
+            41,
+            475,
+            181
+          ],
+          "displaySize": [
+            2.12,
+            1.06
+          ]
+        },
+        {
+          "id": "lion",
+          "rect": [
+            0,
+            256,
+            256,
+            256
+          ],
+          "alphaBounds": [
+            43,
+            272,
+            170,
+            220
+          ],
+          "displaySize": [
+            0.58,
+            0.58
+          ]
+        },
+        {
+          "id": "clock",
+          "rect": [
+            256,
+            256,
+            256,
+            256
+          ],
+          "alphaBounds": [
+            289,
+            282,
+            189,
+            188
+          ],
+          "displaySize": [
+            0.54,
+            0.54
+          ]
+        }
+      ],
+      "anchors": [
+        {
+          "id": "clock-support",
+          "space": "repère local cheminée",
+          "y": 3.005,
+          "centerY": 3.18640625,
+          "alphaBottomExclusive": 470
+        }
+      ],
+      "textureContract": "Atlas SRGB, nearest, aucun mipmap, UV demi-texel ; MeshStandardMaterial alphaTest 0.4. Proportions des cellules conservées. Masque alpha partagé préparé une seule fois au chargement ; raycast des reliefs filtré localement, ignoré avant chargement et après destruction.",
+      "budget": {
+        "additionalGpuRGBABytes": 1048576,
+        "additionalTextures": 1,
+        "newLights": 0,
+        "castsShadows": false,
+        "staticMeshes": 7,
+        "staticTriangles": 3192
+      },
+      "sha256": {
+        "source": "C729F88D6BE77B28C2D228A80780EAD1AEEC69C3143B3802016DA5927605153A",
+        "export": "8AEBBBCFDC6B44F668C84313073DB5406B117AA7AA3F8192C8513A9CB99E376E",
+        "userReference": "C27275D3F5C93F3A8BB3494BB7B0AB1413FA9D0EF78E9D413D212252A28823B8"
+      },
+      "provenance": "Concept fourni par l'utilisateur, conservé uniquement dans la documentation ; atlas de détails généré pour le jeu.",
+      "validation": {
+        "file": "pass",
+        "art": "pass",
+        "continuity": "not_applicable",
+        "integration": "pass",
+        "gameplay": "not_checked"
+      },
+      "evidence": [
+        "Source et atlas exporté inspectés séparément ; alpha et cellules mesurés",
+        "Intégration logique raycasts/alpha/ancrage/nettoyage contrôlée ; nouveau feu observé dans le Level réel sans combat."
+      ],
+      "knownDefects": [
+        "Reliefs sur plans éclairés ; profondeur réelle portée par la structure 3D, pas par chaque détail sculpté"
+      ],
+      "humanApproval": "not_requested",
+      "generatorInputPaths": [
+        "C:/Users/a038335/AppData/Local/Temp/codex-clipboard-aee53920-8b52-403f-83f6-07f444b5260e.png",
+        "C:/Users/a038335/source/Nouveau dossier/Dead_Sector/public/assets/textures/mansion/stone-ashlar-v1.png",
+        "C:/Users/a038335/source/Nouveau dossier/Dead_Sector/public/assets/textures/mansion/hearth-brick-v1.png"
       ]
     }
   ],
@@ -235,22 +439,7 @@
         "exit": 0
       },
       {
-        "name": "check-visual-room-f3",
-        "status": "fulfilled",
-        "exit": 0
-      },
-      {
-        "name": "check-audiovisual-pass",
-        "status": "fulfilled",
-        "exit": 0
-      },
-      {
-        "name": "check-mansion-furnishings",
-        "status": "fulfilled",
-        "exit": 0
-      },
-      {
-        "name": "check-mansion-atmosphere",
+        "name": "check-salon-fireplace",
         "status": "fulfilled",
         "exit": 0
       },
@@ -261,27 +450,59 @@
       }
     ],
     "buildActuallyRun": true,
-    "browserActuallyObserved": false,
-    "buildBundle": {
-      "jsKB": 767.61,
-      "gzipKB": 197.57
-    },
+    "browserActuallyObserved": true,
     "integrationPlacement": {
       "center": [
-        -13.3,
-        0.645,
+        -13.65,
+        0.979609375,
         13
       ],
       "size": [
-        2.2,
-        1.28
+        2.35,
+        1.9
       ],
       "normal": "+X",
-      "rootHeight": 0.14
+      "rootHeight": 0.23,
+      "physicalCenter": [
+        -14,
+        1.5,
+        13
+      ],
+      "physicalSize": [
+        2.4,
+        3,
+        4
+      ],
+      "mantelTop": 3.005
     },
     "remainingWork": [
-      "Observation en partie et continuité visuelle du cycle non effectuées ; non bloquantes selon demande d'autonomie"
+      "Contrôler la fluidité perçue du raccord et le confort en combat réel"
     ],
-    "lastSpecificDefect": "Revue : forceSinglePass activé pour tenir1draw ; ancrage ajusté surlesbraises. Aucun défaut bloquant restant."
-  }
+    "lastSpecificDefect": null,
+    "integrationModule": "src/SalonFireplace.ts",
+    "scenePreviewCommand": "node scripts/make-composition-preview.mjs",
+    "scenePreviewLocation": "/tmp/composition-preview/index.html via Vite, Grand Salon / Point focal",
+    "browserEvidence": {
+      "url": "http://localhost:5173/tmp/hearth-review/",
+      "scene": "Level et éclairage réels, harnais local ignoré par Git, sans combat",
+      "views": [
+        "Face",
+        "Proche"
+      ],
+      "modes": [
+        "normal",
+        "ralenti ×0,2"
+      ],
+      "loadedTextures": 16,
+      "jsErrors": 0,
+      "screenshot": "C:/Users/a038335/.codex/visualizations/2026/11/06/01a1b0ac-d2ca-7ab1-b2b1-b8e72ff1cef3/hearth-fire-review.jpg"
+    },
+    "buildStatus": "pass",
+    "buildCommand": "npm.cmd run build -- --outDir tmp/hearth-build",
+    "buildOutput": "tmp/hearth-build (ignoré par Git ; évite les builds concurrents dans dist)",
+    "buildWarnings": [
+      "Bundle JavaScript supérieur à 500 ko, avertissement existant"
+    ]
+  },
+  "updatedAt": "2026-11-06"
 }

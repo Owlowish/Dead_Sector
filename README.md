@@ -2,7 +2,7 @@
 
 FPS d'horreur rétro dans le navigateur, développé en TypeScript avec Three.js et Vite.
 
-Manoir-arène ouvert progressivement, pistolet, fusil à pompe et lampe. Quatre types d'ennemis : standard, Coureur, Cracheur et Rampeuse. Les munitions tombent sur les ennemis ; les combats sont séparés par dix secondes d'accalmie libre. Le code local contient huit rencontres, dont une finale provisoire avec le Gardien ; après victoire, le manoir reste explorable et le bilan s'ouvre volontairement avec B. Équilibrage et durée complète restent à valider en partie.
+Manoir-arène ouvert progressivement, pistolet, fusil à pompe et lampe. Quatre types d'ennemis : standard, Coureur, Cracheur et Rampeuse. Sept rencontres aux compositions progressives, puis duel contre le Gardien : deux attaques et deux phases. Les munitions tombent sur les éliminations définitives ; trois lots finis préparent la finale et les collectes partielles conservent leur reliquat. Dix secondes d'accalmie libre entre paliers ; après victoire, exploration conservée et bilan volontaire avec B. Apparence du boss provisoire ; équilibrage et durée complète restent à valider en partie.
 
 ## Lancer le prototype
 

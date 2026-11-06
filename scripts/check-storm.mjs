@@ -89,7 +89,7 @@ assert.equal(scene.getObjectsByProperty('name', 'storm-window').length, 6, 'six 
 assert.equal(scene.getObjectsByProperty('name', 'storm-window-floor-light').length, 6, 'six projections au sol');
 for (const spec of MANSION_STORM_WINDOWS) {
   const floor = level.getFloorHeightAt(spec.x, spec.z);
-  assert.ok(spec.y - spec.height / 2 - floor >= 0.7, 'appui de fenêtre au-dessus du sol');
+  assert.ok(spec.y - spec.height / 2 - floor >= 0.7 - 1e-6, 'appui de fenêtre au-dessus du sol');
 }
 assert.equal(level.getStormLights().filter((light) => light.castShadow).length, 0);
 assert.equal(MANSION_STORM_WINDOWS.filter((window) => level.getFloorHeightAt(window.x, window.z) > 2).length, 2, 'deux fenêtres sont sur le plateau haut');

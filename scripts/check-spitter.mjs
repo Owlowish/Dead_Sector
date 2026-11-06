@@ -123,7 +123,7 @@ preparing.dispose(scene);
 spitter.dispose(scene);
 SpitterZombie.disposeSharedResources();
 
-// Le vrai sélecteur de Game réserve bien une seule apparition, sans augmenter le quota.
+// Le vrai sélecteur introduit P3 après deux éliminations, escorte comprise dans les quotas.
 const game = Object.create(Game.prototype);
 const spawnScene = new THREE.Scene();
 const spawnLevel = {
@@ -139,6 +139,7 @@ Object.assign(game, {
   level: spawnLevel,
   player: { camera: { position: new THREE.Vector3(0, 4.1, 0), getWorldDirection: (out) => out.set(0, 0, 1) }, audioListener: {} },
   currentTier: 3,
+  state: 'playing',
   spawnQueue: ENCOUNTER_CONFIGS[2].totalZombies,
   tierSpitterSpawned: 0,
   tierAgileSpawned: 0,
@@ -148,54 +149,84 @@ Object.assign(game, {
   maxSimultaneousZombies: 8,
   weapon: { setTargets() {} },
   zombieGroanBuffer: null,
+  killsThisTier: 0,
+  dropBudget: 0,
+  defeatedZombies: new WeakSet(),
 });
 assert.equal(game.trySpawnZombie(), true);
-assert.equal(game.zombies[0].getKind(), 'spitter', 'Le premier spawn P3 réservé est le cracheur');
-assert.equal(game.zombies[1].getKind(), 'agile', 'Le cracheur arrive avec un coureur');
-assert(game.zombies[0].getPosition().y >= 3.4, 'Le cracheur apparaît sur le demi-niveau supérieur');
+assert.equal(game.zombies[0].getKind(), 'standard', 'P3 présente d’abord un standard');
+game.spawnQueue--;
+const eliminate = (zombie) => {
+  zombie.takeDamage(10000, true);
+  game.onZombieKilled(zombie);
+};
+eliminate(game.zombies[0]);
+assert.equal(game.trySpawnZombie(), true);
+game.spawnQueue--;
+assert.equal(game.zombies[1].getKind(), 'standard', 'Une seule élimination ne suffit pas à introduire le Cracheur');
+assert.equal(game.tierSpitterSpawned, 0);
+eliminate(game.zombies[1]);
+assert.equal(game.killsThisTier, 2);
+assert.equal(game.trySpawnZombie(), true);
+assert.equal(game.zombies[2].getKind(), 'spitter', 'Deux éliminations définitives autorisent le Cracheur');
+assert.equal(game.zombies[3].getKind(), 'agile', 'Le Cracheur arrive avec un Coureur');
+assert(game.zombies[2].getPosition().y >= 3.4, 'Le Cracheur apparaît sur le demi-niveau supérieur');
 game.spawnQueue--;
 // Ces scénarios testent les quotas, sans laisser une relève aléatoire occuper le budget d'escorte.
-for (const zombie of game.zombies) zombie.takeDamage(10000, true);
+assert.equal(game.spawnQueue, 2, 'Les standards, le Cracheur et son escorte consomment quatre unités sur six');
+for (const zombie of game.zombies) if (zombie.isAlive()) eliminate(zombie);
 while (game.spawnQueue > 0) {
   assert.equal(game.trySpawnZombie(), true);
   game.spawnQueue--;
-  game.zombies.at(-1).takeDamage(10000, true);
+  for (const zombie of game.zombies) if (zombie.isAlive()) eliminate(zombie);
 }
 assert.equal(game.zombies.filter((zombie) => zombie.getKind() === 'spitter').length, 1, 'Exactement un cracheur pour les six ennemis du P3');
+assert.equal(game.zombies.length, 6, 'Aucune escorte ajoutée hors quota P3');
 for (const zombie of game.zombies) zombie.dispose(spawnScene);
+function resetTier(tier) {
+  Object.assign(game, {
+    currentTier: tier, tierSpitterSpawned: 0, tierAgileSpawned: 0,
+    tierCrawlerSpawned: 0, tierStandardSpawned: 0, zombies: [],
+    killsThisTier: 0, defeatedZombies: new WeakSet(),
+    spawnGroupIndex: 0, groupRespiteRemaining: null,
+    spawnQueue: ENCOUNTER_CONFIGS[tier - 1].totalZombies,
+  });
+}
 for (const tier of [4, 5, 6, 7]) {
-  game.currentTier = tier;
-  game.tierSpitterSpawned = 0;
-  game.tierAgileSpawned = 0;
-  game.tierCrawlerSpawned = 0;
-  game.tierStandardSpawned = 0;
-  game.zombies = [];
+  resetTier(tier);
   const config = ENCOUNTER_CONFIGS[tier - 1];
   game.spawnQueue = config.totalZombies;
   while (game.spawnQueue > 0) {
+    if (config.spawnGroups && game.killsThisTier === 6 && game.spawnGroupIndex === 0) {
+      assert.equal(game.trySpawnZombie(), false, 'Le second groupe P6 attend sa récupération');
+      game.advanceSpawnGroup(0.01);
+      game.advanceSpawnGroup(3);
+      assert.equal(game.spawnGroupIndex, 1);
+    }
     assert.equal(game.trySpawnZombie(), true, `Apparition du palier ${tier}`);
     game.spawnQueue--;
-    for (const zombie of game.zombies) if (zombie.isAlive()) zombie.takeDamage(10000, true);
+    for (const zombie of game.zombies) if (zombie.isAlive()) eliminate(zombie);
   }
   assert.equal(game.zombies.filter((zombie) => zombie.getKind() === 'spitter').length, config.maxSpitter, `Quota de Cracheurs P${tier}`);
   assert.equal(game.zombies.filter((zombie) => zombie.getKind() === 'agile').length, config.maxAgile, `Quota de Coureurs P${tier}`);
+  assert.equal(game.zombies.length, config.totalZombies, `Les escortes restent dans le budget P${tier}`);
   assert(game.zombies.some((zombie) => zombie.getKind() === 'standard'), `Zombies standards encore présents P${tier}`);
   for (const zombie of game.zombies) zombie.dispose(spawnScene);
 }
 for (const tier of [6, 7]) {
-  game.currentTier = tier;
-  game.zombies = [];
-  game.tierSpitterSpawned = 0;
-  game.tierAgileSpawned = 0;
-  game.tierStandardSpawned = 0;
+  resetTier(tier);
   const config = ENCOUNTER_CONFIGS[tier - 1];
   game.spawnQueue = config.totalZombies;
   while (game.zombies.length < config.maxActiveZombies) {
     assert.equal(game.trySpawnZombie(), true, `La salve P${tier} remplit le nouveau plafond`);
     game.spawnQueue--;
   }
-  assert.equal(game.zombies.filter((z) => z.getKind() === 'spitter').length, 3, `Trois Cracheurs peuvent coexister au P${tier}`);
-  assert.equal(game.zombies.filter((z) => z.getKind() === 'agile').length >= 3, true, 'Chaque Cracheur a son escorte');
+  const spitters = game.zombies.filter((z) => z.getKind() === 'spitter');
+  const runners = game.zombies.filter((z) => z.getKind() === 'agile');
+  assert.equal(spitters.length, config.maxSimultaneousSpitter, `Le plafond de Cracheurs P${tier} est respecté`);
+  assert.ok(runners.length >= spitters.length, 'Chaque Cracheur a une escorte comprise dans le groupe');
+  assert.ok(runners.length <= config.maxSimultaneousAgile, 'Les escortes respectent aussi le plafond des Coureurs');
+  assert.ok(spitters.every((enemy) => runners.some((runner) => runner.getPosition().distanceTo(enemy.getPosition()) <= 8)), 'Chaque Cracheur conserve un Coureur proche');
   for (const zombie of game.zombies) zombie.dispose(spawnScene);
 }
 disposeAllZombieResources();

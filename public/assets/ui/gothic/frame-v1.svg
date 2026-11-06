@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="96" y2="120" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#f0cf87"/><stop offset=".25" stop-color="#9d622d"/><stop offset=".5" stop-color="#e3b468"/><stop offset=".77" stop-color="#77421f"/><stop offset="1" stop-color="#e6bc75"/>
+    </linearGradient>
+    <g id="corner" stroke-linejoin="miter">
+      <path d="M6 33V20L20 6H33M11 32V21L21 11H32" stroke="#0c0704" stroke-width="5"/>
+      <path d="M6 33V20L20 6H33M11 32V21L21 11H32" stroke="url(#gold)" stroke-width="2"/>
+      <path d="M3 19L9 18L12 12L18 9L19 3L22 8L21 13L16 16L13 21L8 22ZM5 29L12 26L16 21L19 20L17 26L12 31L6 32ZM29 5L26 12L21 16L20 19L26 17L31 12L32 6Z" fill="#8d582a" stroke="#dca65c" stroke-width="1"/>
+      <path d="M7 18L11 18L15 14L18 11V7M9 28L14 25L16 22M28 9L25 14L22 16" stroke="#f0ca7c" stroke-width="1"/>
+      <path d="M7 33L11 37L7 41L3 37ZM33 7L37 11L41 7L37 3Z" fill="#b37b3c" stroke="#efc780" stroke-width="1"/>
+      <path d="M19 19L22 16L25 19L22 22Z" fill="#e8bc72"/>
+    </g>
+  </defs>
+  <path d="M27 7H101M121 27V101M101 121H27M7 101V27" stroke="#090503" stroke-width="5"/>
+  <path d="M27 7H101M121 27V101M101 121H27M7 101V27" stroke="url(#gold)" stroke-width="2"/>
+  <path d="M27 12H101M116 27V101M101 116H27M12 101V27" stroke="#9c6837" stroke-width="1"/>
+  <path d="M30 5H52M68 5H96M123 33V48M123 70V94M95 123H74M55 123H32M5 94V75M5 56V33" stroke="#eac68a" stroke-width="1"/>
+  <use href="#corner"/><use href="#corner" transform="translate(128 0) scale(-1 1)"/><use href="#corner" transform="translate(0 128) scale(1 -1)"/><use href="#corner" transform="translate(128 128) scale(-1 -1)"/>
+</svg>

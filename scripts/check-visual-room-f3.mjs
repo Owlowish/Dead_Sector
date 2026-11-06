@@ -70,6 +70,7 @@ console.log('1. Test de l\'architecture et des repères visuels du Grand Salon..
 
 const scene = new THREE.Scene();
 const level = new Level(scene);
+scene.updateMatrixWorld(true);
 
 // A. Vérification de la cheminée monumentale du Grand Salon (X = -14, Z = 13)
 const colliders = level['colliders'] || [];
@@ -88,36 +89,21 @@ assert.ok(Math.abs(fireplaceSize.y - 3.0) < 0.05, `Hauteur du collider cheminée
 // Vérifier que la collision physique joueur/ennemi est bien active en plein cœur de la cheminée
 assert.ok(level.isColliding(-14, 13, 0.45), 'La cheminée doit bloquer les déplacements du joueur et des zombies');
 
-// B. Vérification des éléments sculptés de la cheminée (manteau, jambages, âtre, braises emissive)
-let hasStoneMantle = false;
-let hasStonePillars = false;
-let hasHearthBack = false;
-let hasEmbers = false;
-
-scene.traverse((obj) => {
-  if (obj instanceof THREE.Mesh) {
-    const mat = obj.material;
-    if (mat && 'color' in mat) {
-      if (mat.map?.name === 'mansion-stone') {
-        if (obj.geometry.parameters?.height < 0.5) {
-          hasStoneMantle = true;
-        } else if (obj.geometry.parameters?.height > 2.0) {
-          hasStonePillars = true;
-        }
-      } else if (mat.map?.name === 'mansion-brick') {
-        hasHearthBack = true;
-      }
-      if ('emissive' in mat && mat.emissive.getHex() === visualColors.ember) {
-        hasEmbers = true;
-      }
-    }
-  }
-});
-
-assert.ok(hasStoneMantle, 'Le manteau supérieur en pierre taillée doit être présent');
-assert.ok(hasStonePillars, 'Les jambages/piliers latéraux en pierre taillée doivent être présents');
-assert.ok(hasHearthBack, 'Le fond d\'âtre noirci en briques réfractaires doit être présent');
-assert.ok(hasEmbers, 'Le lit de braises rougeoyantes avec matériau emissive doit être présent dans l\'âtre');
+// B. Les blocs sont fusionnés ; vérifier les vraies surfaces plutôt que BoxGeometry.parameters.
+const fireplaceStone = scene.getObjectByName('salon-fireplace-stone');
+assert.ok(fireplaceStone?.isMesh && fireplaceStone.material.map?.name === 'mansion-stone', 'Pierre taillée chargée sur la structure');
+const stoneBounds = new THREE.Box3().setFromObject(fireplaceStone);
+assert.ok(Math.abs(stoneBounds.max.y - 3.005) < 0.01, 'Le manteau conserve son sommet et le support des accessoires');
+const stoneAt = (y, z) => new THREE.Raycaster(new THREE.Vector3(-10, y, z), new THREE.Vector3(-1, 0, 0))
+  .intersectObject(fireplaceStone, false)[0];
+assert.ok(stoneAt(2.88, 13)?.point.x > -13, 'Le manteau supérieur en pierre taillée doit être présent');
+for (const z of [11.36, 14.64]) {
+  assert.ok(stoneAt(1.25, z)?.point.x > -13, 'Chaque jambage en pierre possède une vraie façade');
+}
+const fireplaceBrick = scene.getObjectByName('salon-fireplace-brick');
+assert.equal(fireplaceBrick?.material.map?.name, 'mansion-brick', 'Le fond d\'âtre conserve sa brique réfractaire');
+const fireplaceEmbers = scene.getObjectByName('salon-fireplace-embers');
+assert.equal(fireplaceEmbers?.material.emissive.getHex(), visualColors.ember, 'Les braises conservent leur émission chaude');
 
 // C. Vérification du tapis damassé d'apparat au sol matérialisant la boucle de circulation
 let hasCarpet = false;

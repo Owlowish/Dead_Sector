@@ -9,6 +9,7 @@ export class AmmoBox {
   private z: number;
   private baseY: number;
   private ammoCount: number;
+  private readonly initialAmmoCount: number;
   private weaponType: WeaponId;
   private consumed = false;
   private floatTimer = 0;
@@ -27,6 +28,7 @@ export class AmmoBox {
     this.z = z;
     this.baseY = floorY + 0.3;
     this.ammoCount = ammoCount;
+    this.initialAmmoCount = ammoCount;
     this.weaponType = weaponType;
 
     this.group = new THREE.Group();
@@ -56,16 +58,20 @@ export class AmmoBox {
     const dz = playerPosition.z - this.z;
     const hDist = Math.hypot(dx, dz);
 
-    const playerFloorY = playerPosition.y < 2.5 ? 0.0 : 2.4;
-    const itemFloorY = this.baseY >= 2.0 ? 2.4 : 0.0;
+    const playerFloorY = playerPosition.y - 1.7;
+    const itemFloorY = this.baseY - 0.3;
 
-    if (hDist <= this.pickupRadius && Math.abs(playerFloorY - itemFloorY) < 1.0) {
-      const added = weapon.addAmmo(this.ammoCount, this.weaponType);
-      if (added) {
+    if (hDist <= this.pickupRadius && Math.abs(playerFloorY - itemFloorY) < 0.8) {
+      const before = weapon.getReserveAmmoFor(this.weaponType);
+      if (!weapon.addAmmo(this.ammoCount, this.weaponType)) return false;
+      const gained = weapon.getReserveAmmoFor(this.weaponType) - before;
+      if (gained <= 0) return false;
+      this.ammoCount = Math.max(0, this.ammoCount - gained);
+      if (this.ammoCount === 0) {
         this.consumed = true;
         this.scene.remove(this.group);
-        return true;
       }
+      return true;
     }
 
     return false;
@@ -79,9 +85,14 @@ export class AmmoBox {
     return this.weaponType;
   }
 
+  public getRemainingAmmo(): number {
+    return this.ammoCount;
+  }
+
   public respawn(): void {
     if (!this.consumed) return;
     this.consumed = false;
+    this.ammoCount = this.initialAmmoCount;
     this.scene.add(this.group);
   }
 

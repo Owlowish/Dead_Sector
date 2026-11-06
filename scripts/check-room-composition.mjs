@@ -4,7 +4,7 @@ import { registerHooks } from 'node:module';
 import * as THREE from 'three';
 import { roomCompositions, composedPortraits } from '../src/MansionComposition.ts';
 import { mansionDressingPlacements, dressingReliefParts } from '../src/MansionDressing.ts';
-import { MANSION_ROOMS, MANSION_WALLS, MANSION_STORM_WINDOWS, getMansionFloorHeight } from '../src/MansionConfig.ts';
+import { MANSION_ROOMS, MANSION_WALLS, MANSION_STORM_WINDOWS, PIANO_ROOM_LAYOUT, getMansionFloorHeight } from '../src/MansionConfig.ts';
 
 registerHooks({ resolve(specifier, context, next) {
   return next(specifier.startsWith('.') && !/\.[a-z0-9]+$/i.test(specifier) ? `${specifier}.ts` : specifier, context);
@@ -101,8 +101,8 @@ for (const panel of panels) {
   }
 }
 
-const clockFocus = roomCompositions.find(item => item.roomId === 'vestibule').focus;
-assert.deepEqual([clockFocus.x, clockFocus.z, clockFocus.y], [clocks[0].x, clocks[0].z, clocks[0].centerY]);
+const musicFocus = roomCompositions.find(item => item.roomId === 'vestibule').focus;
+assert.deepEqual([musicFocus.x, musicFocus.z], [PIANO_ROOM_LAYOUT.piano.x, PIANO_ROOM_LAYOUT.piano.z], 'Le piano devient le repère du départ');
 for (const part of dressingReliefParts) {
   const item = mansionDressingPlacements[part.placementIndex];
   assert.ok(['clock', 'mirror', 'curios'].includes(item.asset), 'Draperies et outils restent des plans');
@@ -148,9 +148,16 @@ assert.equal(level.hasLineOfSight(new THREE.Vector3(12, 4.1, -12), new THREE.Vec
   'Le plateau reste sous le regard');
 assert.equal(level.hasLineOfSight(new THREE.Vector3(12, 3, -12), new THREE.Vector3(12, 3, -16)), false,
   'La géométrie de l’établi bloque toujours les tirs bas');
-const blockers = blockerArray.filter(mesh => mesh !== galleryBlocker).map(mesh => mesh.uuid);
+const isOwnedDecor = mesh => {
+  if (mesh === galleryBlocker) return true;
+  for (let object = mesh; object; object = object.parent) {
+    if (object.name === 'salon-fireplace' || object.name === 'piano-room-decor') return true;
+  }
+  return false;
+};
+const blockers = blockerArray.filter(mesh => !isOwnedDecor(mesh)).map(mesh => mesh.uuid);
 level.disposeDecor();
 assert.equal(level.getSolidMeshes(), blockerArray, 'Weapon conserve sa référence vers le tableau de solides');
-assert.deepEqual(level.getSolidMeshes().map(mesh => mesh.uuid), blockers, 'Seul le batch solide détruit de la Galerie est retiré');
+assert.deepEqual(level.getSolidMeshes().map(mesh => mesh.uuid), blockers, 'Les surfaces détruites du mobilier sont retirées, les murs et portes restent disponibles');
 assert.deepEqual(paths.map(([from, to]) => level.findNextWaypoint(from, to, 0.4)), before, 'Les itinéraires restent identiques sans habillage');
 console.log(`PASS : six intentions, six murs calmes, ${panels.length} panneaux/portraits, supports/fenêtres/marges/approches, relief limité et cinq itinéraires.`);

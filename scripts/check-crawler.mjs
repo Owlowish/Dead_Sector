@@ -44,6 +44,8 @@ console.log("2. Vérification des caractéristiques d'équilibrage du Rampeur...
 assert.equal(crawlerConfig.health, 40, 'Santé doit être de 40 PV (faible pour récompenser la précision au sol).');
 assert.equal(crawlerConfig.speed, 3.5, 'Vitesse doit être de 3.5 m/s (rapide, menaçant).');
 assert.equal(crawlerConfig.attackDamage, 12, 'Dégâts de morsure basse doivent être de 12.');
+assert.equal(crawlerConfig.attackWindup, 0.35, 'Une préparation lisible précède les dégâts.');
+assert.equal(crawlerAnimation.attackDuration, crawlerConfig.attackWindup + crawlerConfig.attackRecovery, 'Aperçu et jeu partagent toute la durée de l’attaque.');
 assert.equal(crawlerConfig.width / crawlerConfig.height, crawlerSprite.width / crawlerSprite.height, 'Le support doit conserver le rapport du canevas.');
 assert.deepEqual(crawlerAnimation.poses, ['idle', 'crawl-a', 'crawl-b', 'attack', 'hurt', 'death']);
 
@@ -55,11 +57,13 @@ THREE.TextureLoader.prototype.load = function (url) {
 };
 try {
   let floorY = 2.4;
+  let blockers = [];
+  let collision = () => false;
   const level = {
     getFloorHeightAt: () => floorY,
     findNextWaypoint: (_from, to) => to.clone(),
-    isColliding: () => false,
-    getSolidMeshes: () => [],
+    isColliding: (...args) => collision(...args),
+    getSolidMeshes: () => blockers,
   };
   const scene = new THREE.Scene();
 
@@ -169,6 +173,69 @@ try {
   assert.equal(grabbed, true, 'L’attaque transmet l’agrippement aux chevilles (isAnkleGrab = true)');
 
   attackCrawler.dispose(scene);
+  // Un coup préparé peut rater : porte fermée, changement d'étage ou sortie de portée.
+  const door = new THREE.Mesh(new THREE.BoxGeometry(2, 3, 0.1), new THREE.MeshBasicMaterial());
+  door.position.set(0, 1.5, 0.4);
+  const startAttack = () => {
+    const enemy = new CrawlerZombie(scene, level, 0, 0);
+    enemy.update(0.01, closePlayerPos, [enemy]);
+    assert.equal(enemy.getPose(), 'attack');
+    return enemy;
+  };
+  const assertMiss = (enemy, position, label) => {
+    let hits = 0;
+    enemy.update(crawlerConfig.attackWindup + 0.01, position, [enemy], () => hits++);
+    assert.equal(hits, 0, label);
+    enemy.dispose(scene);
+  };
+  const doorDuringWindup = startAttack();
+  blockers = [door];
+  assertMiss(doorDuringWindup, closePlayerPos, 'Une porte refermée pendant la préparation bloque dégâts et agrippement');
+  const blockedAtStart = new CrawlerZombie(scene, level, 0, 0);
+  blockedAtStart.update(0.01, closePlayerPos, [blockedAtStart]);
+  assert.notEqual(blockedAtStart.getPose(), 'attack', 'Aucune préparation engagée à travers une porte');
+  blockedAtStart.dispose(scene);
+  blockers = [];
+  const colliderDuringWindup = startAttack();
+  collision = (_x, z) => z > 0.3 && z < 0.5;
+  assertMiss(colliderDuringWindup, closePlayerPos, 'Un obstacle physique bloque aussi un ajour graphiquement transparent');
+  collision = () => false;
+  assertMiss(startAttack(), new THREE.Vector3(0, 4.1, 0.8), 'Le volume du joueur à un autre étage échappe au coup');
+  assertMiss(startAttack(), new THREE.Vector3(0, 1.7, 2), 'Le joueur sorti de portée évite le coup');
+  const changedFloor = startAttack();
+  level.getFloorHeightAt = (_x, z) => z > 0.5 ? 2.4 : 0;
+  assertMiss(changedFloor, closePlayerPos, 'Le sol réel bloque un changement d’étage même si la caméra est encore amortie');
+  const floorBlocked = new CrawlerZombie(scene, level, 0, 0);
+  floorBlocked.update(0.01, new THREE.Vector3(0, 4.1, 0.8), [floorBlocked]);
+  assert.notEqual(floorBlocked.getPose(), 'attack', 'Aucun début de saisie entre deux sols superposés');
+  floorBlocked.dispose(scene);
+  level.getFloorHeightAt = (_x, z) => z * 0.4;
+  const rampCrawler = new CrawlerZombie(scene, level, 0, 0);
+  const rampPlayer = new THREE.Vector3(0, 1.7 + 0.8 * 0.4, 0.8);
+  let rampHits = 0;
+  rampCrawler.update(0.01, rampPlayer, [rampCrawler]);
+  rampCrawler.update(crawlerConfig.attackWindup - 0.01, rampPlayer, [rampCrawler], () => rampHits++);
+  assert.equal(rampHits, 0, 'Les dégâts attendent la préparation complète même à courte distance');
+  rampCrawler.update(0.02, rampPlayer, [rampCrawler], () => rampHits++);
+  rampCrawler.update(0.05, rampPlayer, [rampCrawler], () => rampHits++);
+  assert.equal(rampHits, 1, 'Une pente praticable autorise un seul impact');
+  rampCrawler.dispose(scene);
+  level.getFloorHeightAt = () => floorY;
+
+  const blockedLanding = new CrawlerZombie(scene, level, 0, 0, true);
+  let landingHits = 0;
+  blockers = [door];
+  blockedLanding.update(0.01, closePlayerPos, [blockedLanding], () => landingHits++);
+  for (let i = 0; i < 20 && blockedLanding.isDroppingState(); i++) {
+    blockedLanding.update(0.05, closePlayerPos, [blockedLanding], () => landingHits++);
+  }
+  assert.equal(blockedLanding.isDroppingState(), false, 'Le plafond debug conserve son atterrissage');
+  assert.equal(landingHits, 0, 'L’atterrissage ne saisit pas à travers une porte');
+  blockedLanding.dispose(scene);
+  blockers = [];
+  door.geometry.dispose();
+  door.material.dispose();
+
   // Test 2.4 : Esquive latérale de visée réservée à la fuite (pas d'esquive en charge)
   const chargeCrawler = new CrawlerZombie(scene, level, 0, 5);
   chargeCrawler.update(
@@ -258,16 +325,16 @@ for (let t = 0; t < 3; t++) {
 }
 console.log('   -> Paliers 1 à 3 : 0 Rampeur (conforme).');
 
-const expectedCrawlers = [2, 2, 2, 2];
+const expectedCrawlers = [1, 1, 2, 2];
 for (let t = 3; t < 7; t++) {
   const cfg = ENCOUNTER_CONFIGS[t];
   const expected = expectedCrawlers[t - 3];
   assert.equal(cfg.maxCrawler, expected, `Palier ${t + 1} doit avoir exactement ${expected} Rampeurs.`);
-  assert.ok((cfg.maxSimultaneousCrawler ?? 0) >= 2, `Palier ${t + 1} doit autoriser au moins 2 Rampeurs simultanés.`);
+  assert.equal(cfg.maxSimultaneousCrawler, expected, `Palier ${t + 1} respecte le plafond de Rampeuses prévu.`);
   const std = cfg.totalZombies - cfg.maxAgile - cfg.maxSpitter - (cfg.maxCrawler ?? 0);
   assert.ok(std >= 0, `Le quota standard du palier ${t + 1} ne doit pas être négatif.`);
 }
-console.log('   -> Paliers 4 à 7 : quotas de Rampeurs [2, 2, 2, 2] rigoureusement respectés.\n');
+console.log('   -> Paliers 4 à 7 : quotas de Rampeuses [1, 1, 2, 2] respectés.\n');
 
 const finale = ENCOUNTER_CONFIGS[7];
 assert.equal(finale.finalEncounter, true, 'P8 porte bien le contrat de finale');

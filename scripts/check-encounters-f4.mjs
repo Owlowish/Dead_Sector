@@ -61,9 +61,10 @@ import { Level } from '../src/Level.ts';
 import { MANSION_ROOMS, MANSION_UPGRADE_PEDESTALS, PLAYER_START_POSITION } from '../src/MansionConfig.ts';
 import { UpgradePedestal } from '../src/UpgradePedestal.ts';
 import { UPGRADE_CATALOG } from '../src/UpgradeConfig.ts';
+import { GuardianZombie } from '../src/GuardianZombie.ts';
 const { Game } = await import('../src/Game.ts');
 
-console.log('=== SUITE DE TESTS COMPORTEMENTAUX : PROGRESSION COMPLÈTE & IMPRÉVISIBILITÉ F4 ===\n');
+console.log('=== CONTRÔLES LOGIQUES : PROGRESSION ET APPARITIONS SÛRES F4 ===\n');
 
 // ============================================================================
 // ÉPREUVE 1 : SEPT RENCONTRES ORDINAIRES PUIS FINALE
@@ -75,7 +76,7 @@ assert.equal(ENCOUNTER_CONFIGS.length, 8, 'La tentative comporte sept rencontres
 for (let i = 0; i < ENCOUNTER_CONFIGS.length; i++) {
   const enc = ENCOUNTER_CONFIGS[i];
   assert.equal(enc.tierNumber, i + 1, `La rencontre à l'index ${i} doit avoir tierNumber = ${i + 1}`);
-  assert.ok(enc.totalZombies >= 4, `La rencontre ${i + 1} doit proposer au moins 4 menaces`);
+  assert.ok(enc.totalZombies >= (enc.finalEncounter ? 1 : 4), `La rencontre ${i + 1} conserve ses menaces prévues`);
   assert.ok(enc.maxAgile <= enc.totalZombies, `Le quota d'agiles ne peut dépasser le total d'ennemis`);
   assert.ok(enc.maxSimultaneousAgile <= 4, `Plafond d'agiles simultanés borné à 4`);
   assert.ok(enc.maxSpitter + enc.maxAgile + (enc.maxCrawler ?? 0) <= enc.totalZombies, `Les quotas tiennent dans le total au palier ${enc.tierNumber}`);
@@ -97,7 +98,7 @@ assert.equal(e2.maxSimultaneousAgile, 1);
 
 // P3 : Verticalité et fin d'ouverture du manoir
 assert.equal(e3.unlockSectorTier, null);
-assert.equal(e3.maxAgile, 3);
+assert.equal(e3.maxAgile, 2);
 assert.equal(e3.maxSimultaneousAgile, 2);
 
 // Les dernières rencontres réutilisent le manoir ouvert ; le carillon reste inactif.
@@ -109,17 +110,17 @@ for (const e of [e4, e5, e6, e7, e8]) {
 
 // Quotas progressifs
 assert.deepEqual([e4, e5, e6, e7].map((e) => e.totalZombies), [8, 10, 12, 14]);
-assert.deepEqual([e4, e5, e6, e7].map((e) => e.maxSpitter), [1, 2, 3, 3]);
-assert.deepEqual([e4, e5, e6, e7].map((e) => e.maxAgile), [4, 5, 6, 7]);
+assert.deepEqual([e4, e5, e6, e7].map((e) => e.maxSpitter), [1, 2, 2, 2]);
+assert.deepEqual([e4, e5, e6, e7].map((e) => e.maxAgile), [3, 4, 4, 5]);
 assert.ok(ENCOUNTER_CONFIGS.slice(0, 7).every((e) => !e.finalEncounter), 'Aucune victoire prématurée avant P8');
 assert.equal(e8.finalEncounter, true);
-assert.equal(e8.totalZombies, 6);
-assert.equal(e8.maxAgile, 3);
-assert.equal(e8.maxSpitter, 1);
+assert.equal(e8.totalZombies, 1);
+assert.equal(e8.maxAgile, 0);
+assert.equal(e8.maxSpitter, 0);
 assert.equal(e8.maxCrawler ?? 0, 0);
-assert.equal(e8.maxActiveZombies, 4);
+assert.equal(e8.maxActiveZombies, 1);
 
-console.log('   -> PASS : Quotas P1–P7 préservés et finale P8 bornée.\n');
+console.log('   -> PASS : Compositions P1–P7 et duel P8 conformes.\n');
 
 // ============================================================================
 // ÉPREUVE 2 : POOL OUVERT MULTIDIRECTIONNEL ET COUVERTURE DES 4 POINTS CARDINAUX
@@ -197,6 +198,7 @@ Object.assign(game, {
   zombies: [],
   medkits: [],
   ammoBoxes: [],
+  ammoDrops: [],
   objectiveDisplay: objDisplay,
   victoryDisplay: Object.assign(new MockElement(), { hidden: true }),
   gameOverDisplay: Object.assign(new MockElement(), { hidden: true }),
@@ -330,6 +332,7 @@ const spawnedQuadrants = [];
 for (let i = 0; game['zombies'].length < 4; i++) {
   const success = game.trySpawnZombie();
   assert.equal(success, true, `L'apparition ${i + 1} doit réussir dans le manoir ouvert`);
+  game.spawnQueue--;
   const newestZombie = game['zombies'][game['zombies'].length - 1];
   const zPos = newestZombie.getPosition();
   assert.equal(game['level'].isColliding(zPos.x, zPos.z, 0.45), false, 'Le spawn respecte le filtre de collision');
@@ -371,12 +374,13 @@ game['zombies'] = [];
 game['lastSpawnQuadrant'] = -1;
 const secondPositionSpawned = game.trySpawnZombie();
 assert.equal(secondPositionSpawned, true, 'Au moins un point sûr doit rester accessible depuis le Salon');
+game.spawnQueue--;
 const secondSpawn = game['zombies'][0].getPosition();
 assert.equal(game['level'].isColliding(secondSpawn.x, secondSpawn.z, 0.45), false, 'La position représentative respecte aussi le filtre de collision');
 assert.ok(Math.hypot(secondSpawn.x + 19, secondSpawn.z - 14) >= 6, 'La position représentative respecte la distance de sécurité');
 Math.random = originalRandom;
 
-// Finale réelle : une élite unique et tous ses renforts consomment le même quota.
+// Finale réelle : le vrai Gardien arrive seul et doit mourir pour terminer.
 game.startTier(8);
 const finalSpawned = [];
 Math.random = () => 0.1;
@@ -390,10 +394,10 @@ try {
         finalSpawned.push(...game.zombies.slice(before));
       }
     }
-    assert.ok(active().length <= 4, 'Élite et escorte respectent les quatre places de la finale');
+    assert.ok(active().length <= 1, 'Le Gardien reste seul pendant le duel');
     if (game.spawnQueue > 0) {
       game.checkTierCompletion();
-      assert.equal(game.state, 'playing', 'Les renforts en attente empêchent la victoire');
+      assert.equal(game.state, 'playing', 'Le boss encore en attente empêche la victoire');
     }
     for (const zombie of active()) zombie.takeDamage(10000, true);
     game.checkTierCompletion();
@@ -401,17 +405,16 @@ try {
 } finally {
   Math.random = originalRandom;
 }
-assert.equal(finalSpawned.length, 6, 'Les six menaces de la finale apparaissent exactement une fois');
-assert.equal(finalSpawned.filter((z) => z.getKind() === 'standard').length, 2);
-assert.equal(finalSpawned.filter((z) => z.getKind() === 'agile').length, 3);
-assert.equal(finalSpawned.filter((z) => z.getKind() === 'spitter').length, 1);
-assert.equal(finalSpawned.filter((z) => z.isElite?.()).length, 1, 'Un seul standard devient le Gardien');
-assert.equal(game.state, 'won', 'La victoire attend aussi les derniers renforts');
+assert.equal(finalSpawned.length, 1, 'Le duel ne crée qu’une menace');
+assert.ok(finalSpawned[0] instanceof GuardianZombie, 'La vraie classe du boss est instanciée');
+assert.equal(finalSpawned[0].getMaxHealth(), 800, 'Le duel utilise le budget de PV prévu');
+assert.equal(finalSpawned[0].isThreat(), false, 'Le Gardien mort ne programme aucune relève');
+assert.equal(game.state, 'won', 'La mort du Gardien termine le duel');
 
 // Nettoyage final
 game.dispose();
 placementLevel.dispose?.();
 
 console.log('\n================================================================');
-console.log('TOUTES LES VALIDATIONS DE PROGRESSION F4 SONT 100% PASS !');
+console.log('CONTRÔLES LOGIQUES F4 RÉUSSIS. Gameplay non validé par ce script.');
 console.log('================================================================');

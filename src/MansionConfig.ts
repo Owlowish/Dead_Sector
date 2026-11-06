@@ -69,11 +69,12 @@ export interface StormWindowSpec {
   rotationY: number;
   width: number;
   height: number;
+  drapery?: 'music';
 }
 
 // Panneaux rapportés aux murs extérieurs : ils n'ouvrent pas l'enveloppe physique.
 export const MANSION_STORM_WINDOWS: StormWindowSpec[] = [
-  { x: 8.5, y: 2.3, z: 19.46, rotationY: 0, width: 2.0, height: 3.0 }, // Vestibule, entre les portraits
+  { x: 10.5, y: 2.3, z: 6.54, rotationY: Math.PI, width: 4.0, height: 3.2, drapery: 'music' }, // Salon de musique, face au départ
   { x: -8.5, y: 2.3, z: 19.46, rotationY: 0, width: 2.0, height: 3.0 }, // Salon, derrière les offrandes
   { x: -23.46, y: 2.55, z: -3.4, rotationY: -Math.PI / 2, width: 2.0, height: 3.5 }, // Galerie, au nord du portrait
   { x: -23.46, y: 2.55, z: 3.4, rotationY: -Math.PI / 2, width: 2.0, height: 3.5 }, // Galerie, au sud du portrait
@@ -188,7 +189,7 @@ export const MANSION_ROOMS: RoomSpec[] = [
   // SECTEUR 1 : Rez-de-chaussée Sud & Ouest (Palier 1, Y = 0)
   {
     id: 'vestibule',
-    name: "Vestibule d'Entrée",
+    name: 'Salon de Musique',
     tier: 1,
     bounds: { minX: -2.5, maxX: 23.5, minZ: 6.5, maxZ: 19.5 },
   },
@@ -232,6 +233,34 @@ export const PLAYER_START_POSITION: Point3D = {
   y: 1.7,
   z: 16.0,
 };
+
+// Implantation partagée par les volumes visibles, les collisions et le tapis sonore.
+export const PIANO_ROOM_LAYOUT = {
+  piano: { x: 10.5, z: 11.5, rotationY: Math.PI / 8, width: 1.7, depth: 2.8 },
+  bench: { localZ: 2, width: 1.25, depth: 0.5 },
+  carpet: { x: 10.5, z: 11.5, width: 5, depth: 4.8 },
+  console: { x: 21.5, z: 18.7, width: 2.7, depth: 0.65 },
+  chandelier: { x: 10.5, y: 3.0, z: 13.0 },
+} as const;
+
+// Navigation XZ : enveloppes des meubles tournés, séparées des surfaces réelles de tir.
+const pianoRoomAngle = PIANO_ROOM_LAYOUT.piano.rotationY;
+const pianoRoomCos = Math.cos(pianoRoomAngle);
+const pianoRoomSin = Math.sin(pianoRoomAngle);
+export const PIANO_ROOM_COLLIDERS: readonly BoxCollider[] = [
+  { localZ: 0, width: PIANO_ROOM_LAYOUT.piano.width, depth: PIANO_ROOM_LAYOUT.piano.depth, height: 2.1 },
+  { localZ: PIANO_ROOM_LAYOUT.bench.localZ, width: PIANO_ROOM_LAYOUT.bench.width, depth: PIANO_ROOM_LAYOUT.bench.depth, height: 0.55 },
+].map(item => ({
+  x: PIANO_ROOM_LAYOUT.piano.x + item.localZ * pianoRoomSin,
+  y: item.height / 2,
+  z: PIANO_ROOM_LAYOUT.piano.z + item.localZ * pianoRoomCos,
+  width: item.width * pianoRoomCos + item.depth * pianoRoomSin,
+  height: item.height,
+  depth: item.width * pianoRoomSin + item.depth * pianoRoomCos,
+  materialType: 'obstacle' as const,
+})).concat([{
+  ...PIANO_ROOM_LAYOUT.console, y: 0.45, height: 0.9, materialType: 'obstacle' as const,
+}]);
 
 // 4. Murs solides du manoir (Enceinte, soutènement, cloisons et garde-corps)
 export const MANSION_WALLS: BoxCollider[] = [

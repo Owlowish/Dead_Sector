@@ -116,6 +116,16 @@ assert.equal(field('lamp-state').textContent, 'ÉTEINTE');
 assert.equal(document.querySelector('#flashlight-status').classList.contains('off'), true);
 
 const ammo = { weaponId: 'pistol', weaponName: 'Pistolet 9mm', magazine: 0, capacity: 15, reserve: 0, maxReserve: 60, isReloading: false };
+hud.setBoss({ health: 800, maxHealth: 800, phase: 1, attack: 'throw' });
+assert.equal(field('boss').hidden, false);
+assert.equal(field('boss-bar').getAttribute('aria-valuenow'), '800');
+assert.match(field('boss-attack').textContent, /JET DE CLÉS/);
+hud.setBoss({ health: 360, maxHealth: 800, phase: 2, attack: null, recovering: true });
+assert.equal(field('boss-bar').style.getPropertyValue('--fill'), '45%');
+assert.match(field('boss-phase').textContent, /II/);
+assert.match(field('boss-attack').textContent, /RÉCUPÉRATION/);
+hud.clear();
+assert.equal(field('boss').hidden, true, 'aucune jauge après victoire ou redémarrage');
 hud.setAmmo(ammo, false);
 assert.equal(field('magazine').textContent, '0');
 assert.match(field('ammo-state').textContent, /ÉPUISÉES/);
@@ -129,6 +139,53 @@ assert.equal(document.querySelector('#ammo').classList.contains('is-reloading'),
 hud.setAmmo({ ...ammo, magazine: 2 }, true);
 assert.match(field('ammo-state').textContent, /RÉSERVE ÉPUISÉE/);
 assert.doesNotMatch(field('ammo-state').textContent, /\[R\]/);
+
+// Le cœur suit le temps de contrôle ; aucune animation autonome pendant une pause.
+const heartFrame = () => Number(document.querySelector('#health').style.getPropertyValue('--heart-frame'));
+hud.setReducedMotion(false); hud.setHealth(100, 100); hud.clear();
+assert.equal(heartFrame(), 0);
+const observedFrames = [];
+for (let step = 0; step < 140; step++) {
+  hud.update(0.01, true); observedFrames.push(heartFrame());
+}
+assert.deepEqual([...new Set(observedFrames)].sort(), [0, 1, 2, 3], 'un cycle utilise les quatre poses de l’atlas');
+assert.ok(observedFrames.filter((pose) => pose === 0).length > observedFrames.length / 2,
+  'le cœur reste principalement au repos');
+assert.equal(heartFrame(), 0, 'retour au repos après le cycle');
+for (let step = 0; step < 140 && heartFrame() === 0; step++) hud.update(0.01, true);
+assert.notEqual(heartFrame(), 0);
+const pausedHeart = heartFrame();
+hud.update(20, false);
+assert.equal(heartFrame(), pausedHeart, 'la perte de contrôle fige la pose sans consommer le cycle');
+hud.setReducedMotion(true);
+assert.equal(heartFrame(), 0, 'réduire le mouvement remet immédiatement le cœur au repos');
+hud.update(2, true); assert.equal(heartFrame(), 0);
+hud.setReducedMotion(false); hud.setHealth(0, 100);
+hud.update(2, true); assert.equal(heartFrame(), 0, 'aucun battement après la mort');
+hud.setHealth(100, 100); hud.update(0.35, true); hud.clear();
+assert.equal(heartFrame(), 0, 'un redémarrage remet le cycle au repos');
+
+// Le secteur apparaît à l’entrée du palier, pas à chaque mise à jour du compteur.
+const combat = { phase: 'combat', tier: 1, total: 8, sector: 'VESTIBULE', remaining: 4, respiteSeconds: 0 };
+hud.setProgression(combat); hud.update(0, true);
+assert.equal(field('sector').textContent, 'VESTIBULE');
+assert.equal(field('sector').hidden, false);
+hud.update(1, true); hud.update(20, false);
+assert.equal(field('sector').hidden, false, 'la pause conserve la fenêtre du secteur sans la faire expirer');
+hud.update(0, true);
+assert.equal(field('sector').hidden, false, 'la pause ne consomme pas sa durée');
+hud.setProgression({ ...combat, remaining: 3 }); hud.update(2.1, true);
+assert.equal(field('sector').hidden, true, 'trois secondes actives suffisent malgré les mises à jour du combat');
+hud.setProgression({ ...combat, remaining: 2 }); hud.update(0, true);
+assert.equal(field('sector').hidden, true, 'une élimination ne réaffiche pas le secteur');
+const nextCombat = { ...combat, tier: 2, sector: 'HALL' };
+hud.setProgression(nextCombat); hud.update(0, true);
+assert.equal(field('sector').hidden, false);
+assert.equal(field('sector').textContent, 'HALL');
+hud.update(2, true); hud.setProgression(nextCombat); hud.update(1.1, true);
+assert.equal(field('sector').hidden, true, 'le nouveau palier réarme une seule fenêtre de visibilité');
+assert.equal(field('sector').textContent, 'HALL', 'le nom réel reste disponible dans le DOM');
+hud.clear();
 
 // Deux avis au plus, fusion de gains de même type, durée en temps de contrôle.
 for (const invalid of [0, -1, NaN, Infinity]) hud.notifyGain('health', invalid);
@@ -211,10 +268,10 @@ const revival = Object.assign(Object.create(Zombie.prototype), { alive: false, r
 game.zombies = [revival, { isAlive: () => true }];
 game.updateObjectiveDisplay();
 assert.match(field('phase').textContent, /1 \/ 8/);
-assert.equal(field('progress').textContent, '4 MENACES RESTANTES');
+assert.match(field('progress').textContent, /^4\b.*MENACES/i);
 revival.revivalPending = false;
 game.updateObjectiveDisplay();
-assert.equal(field('progress').textContent, '3 MENACES RESTANTES');
+assert.match(field('progress').textContent, /^3\b.*MENACES/i);
 game.zombies = []; game.spawnQueue = 0;
 
 // Les vrais soins et réserves plafonnés doivent produire le delta réellement appliqué.
@@ -229,7 +286,8 @@ assert.equal(notifications().length, 0, 'aucun gain ni notification sans contrô
 game.updatePickups(0.05, true);
 assert.equal(player.getHealth(), 100);
 assert.equal(weapon.getReserveAmmo(), 60);
-assert.equal(game.ammoDrops.length, 0, 'le drop consommé est libéré');
+assert.equal(game.ammoDrops.length, 1, 'le reliquat du ramassage partiel reste au sol');
+assert.equal(game.ammoDrops[0].getRemainingAmmo(), 8);
 assert.deepEqual(notifications().map((node) => node.textContent).sort(), ['+2 MUNITIONS · 9 MM', '+2 PV']);
 assert.equal(field('health-value').textContent, '100');
 assert.equal(field('reserve').textContent, '60');
@@ -269,6 +327,11 @@ assert.equal(field('reserve').textContent, '2');
 weapon.cancelReload();
 assert.equal(field('magazine').textContent, '1', 'interrompre après insertion conserve la cartouche engagée');
 assert.equal(document.querySelector('#ammo').classList.contains('is-reloading'), false);
+weapon.shoot();
+assert.equal(field('magazine').textContent, '0', 'le tir consomme la cartouche engagée');
+assert.equal(weapon.switchWeapon('pistol'), true);
+assert.equal(field('capacity').textContent, '15');
+assert.equal(field('magazine').textContent, String(weapon.getAmmo()));
 
 // La boucle réelle, pas une recopie du garde, décide de suspendre l'accalmie.
 game.state = 'exploration'; game.pendingTierStart = 2; game.respiteTimer = 9.4;
@@ -278,12 +341,19 @@ assert.match(field('progress').textContent, /10 S/);
 assert.equal(field('respite-bar').hidden, false);
 game.start();
 const tick = () => { game.lastFrameTime = performance.now() - 125; frame(); };
+hud.clear();
+for (let step = 0; step < 140 && heartFrame() === 0; step++) hud.update(0.01, true);
+const heartBeforeFocusLoss = heartFrame();
+assert.notEqual(heartBeforeFocusLoss, 0);
 document.pointerLockElement = null; tick();
 assert.equal(game.respiteTimer, 9.4, 'Échap suspend le décompte');
+assert.equal(heartFrame(), heartBeforeFocusLoss, 'Échap suspend le cœur animé');
 document.pointerLockElement = canvas; document.focused = false; tick();
 assert.equal(game.respiteTimer, 9.4, 'le focus est requis même avec la souris capturée');
+assert.equal(heartFrame(), heartBeforeFocusLoss, 'le cœur ne bat pas dans une application sans focus');
 document.focused = true; document.hidden = true; tick();
 assert.equal(game.respiteTimer, 9.4, 'un onglet masqué ne consomme pas le décompte');
+assert.equal(heartFrame(), heartBeforeFocusLoss, 'le cœur reste figé dans un onglet masqué');
 document.hidden = false; tick();
 assert.ok(game.respiteTimer < 9.4 && game.respiteTimer > 9.3);
 game.respiteTimer = 0.04; tick();

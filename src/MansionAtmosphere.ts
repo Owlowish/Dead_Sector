@@ -2,7 +2,7 @@ import * as THREE from 'three';
 
 // Volumes étroits près de la lumière, loin des axes de combat et des escaliers.
 export const mansionDustVolumes = [
-  { roomId: 'vestibule', x: 8.5, y: 2.5, z: 18.0, width: 2.2, height: 1.6, depth: 1.5, color: 0x8d9dac },
+  { roomId: 'vestibule', x: 10.5, y: 2.4, z: 7.8, width: 3.0, height: 1.8, depth: 1.6, color: 0x8d9dac },
   { roomId: 'salon', x: -11.1, y: 2.3, z: 13, width: 1.8, height: 1.5, depth: 3.4, color: 0xb49770 },
   { roomId: 'galerie', x: -21.7, y: 3, z: -3.4, width: 2, height: 1.8, depth: 2.6, color: 0x8194a7 },
   { roomId: 'grand_hall', x: 8.1, y: 3.7, z: 0, width: 2.6, height: 2, depth: 3, color: 0xa99877 },

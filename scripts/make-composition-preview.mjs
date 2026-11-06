@@ -14,7 +14,7 @@ button[aria-pressed="true"]{background:#514834}main{height:calc(100dvh - 185px);
 canvas{display:block;width:100%;height:100%;image-rendering:pixelated}p{margin:0 18px 8px;min-height:2em}
 small{color:#b69a60}#stats{margin-right:auto}
 </style>
-<header><strong>Composition du manoir</strong><nav id="rooms" aria-label="Pièce"></nav><nav id="views" aria-label="Vue"><button data-view="overview">Ensemble</button><button data-view="focus">Point focal</button><button data-view="calm">Mur calme</button></nav><button id="lamp" aria-pressed="true">Lampe allumée</button><button id="animation" aria-pressed="true">Feu et poussière animés</button><button id="capture">Exporter la vue</button></header>
+<header><strong>Composition du manoir</strong><nav id="rooms" aria-label="Pièce"></nav><nav id="views" aria-label="Vue"><button data-view="overview">Ensemble</button><button data-view="focus">Point focal</button><button data-view="calm">Mur calme</button><button data-view="start">Départ réel</button><button data-view="archNorth">Arche nord</button><button data-view="archSouth">Arche sud</button><button data-view="console">Console</button></nav><button id="lamp" aria-pressed="true">Lampe allumée</button><button id="animation" aria-pressed="true">Feu et poussière animés</button><button id="capture">Exporter la vue</button></header>
 <p id="description"></p><main id="stage"></main><footer><span id="stats">Chargement…</span><small>Niveau réel · exposition 1,05 · sans combat ni déplacement. Les compteurs incluent les passes de rendu ; ils ne mesurent pas le temps GPU.</small></footer>
 <script type="module">
 import * as THREE from 'three';
@@ -28,7 +28,7 @@ const level=new Level(scene);level.update(0);
 const camera=new THREE.PerspectiveCamera(75,1,.1,100);scene.add(camera);
 const lamp=new THREE.SpotLight(0xfffaec,22,28,Math.PI/5.2,.5,1.8),aim=new THREE.Object3D();lamp.position.set(.2,-.15,-.1);aim.position.set(.2,-.15,-5);camera.add(lamp,aim);lamp.target=aim;
 const views={
-  vestibule:{overview:{position:[7,1.7,12.6],look:[12,2.06,19.405]},focus:{position:[12,1.7,15],look:[12,2.06,19.405]}},
+  vestibule:{overview:{position:[8,1.7,16],look:[10.5,1.6,10]},focus:{position:[12.7,1.7,15.1],look:[10.5,1.0,11.5]},start:{position:[8,1.7,16],look:[8,1.7,8]},archNorth:{position:[-1.4,1.7,9.5],look:[10.5,1.3,11.5]},archSouth:{position:[-1.4,1.7,16.5],look:[10.5,1.3,11.5]},console:{position:[18,1.7,15.5],look:[21.5,1.35,18.7]}},
   salon:{overview:{position:[-4.6,1.7,16.5],look:[-14,1.5,13]},focus:{position:[-8.8,1.7,13],look:[-13.3,1,13]}},
   galerie:{overview:{position:[-5.5,1.7,4],look:[-18,1.8,0]},focus:{position:[-18,1.7,4.7],look:[-18,1.9,0]}},
   grand_hall:{overview:{position:[0,1.7,4],look:[8,3.6,0]},focus:{position:[8,1.7,4.2],look:[8,4,0]}},
@@ -38,6 +38,7 @@ const views={
 let roomId=MANSION_ROOMS[0].id,viewName='overview',animated=true;
 function move(){
   const room=MANSION_ROOMS.find(item=>item.id===roomId),composition=roomCompositions.find(item=>item.roomId===roomId);
+  if(viewName!=='calm'&&!views[roomId][viewName])viewName='overview';
   if(viewName==='calm'){
     // La caméra regarde le milieu du segment réellement réservé dans les données du jeu.
     const wall=composition.calmWall,along=(wall.low+wall.high)/2;
@@ -51,7 +52,7 @@ function move(){
     const view=views[roomId][viewName];camera.position.fromArray(view.position);camera.lookAt(...view.look);
   }
   for(const button of document.querySelectorAll('[data-room]'))button.setAttribute('aria-pressed',String(button.dataset.room===roomId));
-  for(const button of document.querySelectorAll('[data-view]'))button.setAttribute('aria-pressed',String(button.dataset.view===viewName));
+  for(const button of document.querySelectorAll('[data-view]')){button.hidden=button.dataset.view!=='calm'&&!views[roomId][button.dataset.view];button.setAttribute('aria-pressed',String(button.dataset.view===viewName))};
   document.querySelector('#description').textContent=room.name+' · '+composition.focus.label+' — '+composition.secondary+(viewName==='calm'?' Zone murale volontairement laissée sans tableau ni panneau.':'');
 }
 for(const room of MANSION_ROOMS){const button=document.createElement('button');button.textContent=room.name;button.dataset.room=room.id;button.onclick=()=>{roomId=room.id;move()};document.querySelector('#rooms').append(button)}

@@ -1,0 +1,397 @@
+{
+  "documentType": "asset-pack",
+  "templateVersion": 1,
+  "id": "HUD_GOTHIQUE_2026-11-06",
+  "updatedAt": "2026-11-06",
+  "request": "V2 validée par l’utilisateur : HUD plus simple, compact et réellement pixel art ; cœur animé discret ; textures du décor moins chargées.",
+  "scope": {
+    "prepare": true,
+    "generate": true,
+    "integrate": true,
+    "authorizedDecisions": [
+      "Créer deux illustrations HUD statiques et des cadres/code vectoriels décoratifs.",
+      "Recomposer le HUD en conservant valeurs, contrôles et calques d’armes.",
+      "Retoucher seulement les couleurs des ombres et de la brume du manoir.",
+      "V2 : retirer médaillons/cadres chargés et cartouches redondantes ; remplacer le cœur par quatre poses natives32px, battement discret et mouvement réduit.",
+      "Atténuer localement les détails des textures murales/bois/tapis au chargement, sans modifier leurs fichiers sources."
+    ],
+    "assumptions": [
+      "Référence de style et de composition, sans reprise de ses valeurs de munitions ni ajout de batterie à la lampe."
+    ],
+    "pendingDecisions": []
+  },
+  "style": {
+    "workflow": "docs/PIPELINE_ASSETS.md",
+    "references": [
+      {
+        "path": "docs/asset-packs/references/hud-gothic-reference.png",
+        "sha256": "c599f9c0e9b96147c2f97e7b2d46e21391ab90b108bd14f03c22075e4e950449",
+        "role": "direction artistique et composition",
+        "inspected": true,
+        "attachedToGenerator": true,
+        "provenance": "Image fournie par l’utilisateur dans le chat, conservée à l’identique pour référence ; auteur/licence non précisés, non chargée par le jeu."
+      },
+      {
+        "path": "public/assets/pickups/medkit.png",
+        "role": "palette et groupes de pixels",
+        "inspected": true,
+        "attachedToGenerator": true
+      },
+      {
+        "path": "public/assets/pickups/ammo.png",
+        "role": "matières laiton et lisibilité des munitions",
+        "inspected": true,
+        "attachedToGenerator": false
+      }
+    ],
+    "lockedIdentity": [
+      "Cœur anatomique simplifié, six tons opaques rouge vin/brique, alpha binaire.",
+      "Cellules32×32, cadre absent, artères identiques sur11lignes et ancrage commun ; affichage64×64.",
+      "Aplats noir brun, contours fins laiton mat et valeurs ivoire plus lumineuses que les bordures.",
+      "Identité des armes/ennemis et vrais signaux de combat conservés."
+    ],
+    "acceptedBaseFile": "docs/asset-packs/hud-gothic-v2/heart-base-source.png",
+    "humanApproval": "not_requested"
+  },
+  "technicalContract": {
+    "usage": "HUD DOM sobre ; seule l’illustration du cœur bat.",
+    "displaySize": "Cœur64px, HUD santé208×80px et munitions250×~80px à1280×720 ; source32px doublée à un facteur entier.",
+    "sourceDimensions": "Deux PNG générés conservés dans hud-gothic-v2 ; mesures et SHA dans sourceProvenance.",
+    "exportDimensions": [
+      128,
+      32
+    ],
+    "format": "PNG RGBA, quatre cellules32×32 horizontales.",
+    "background": "Alpha binaire, six couleurs opaques.",
+    "coordinateSpace": "Cellules32×32, source action2×2 ; export [0,0,32,32],[32,0,32,32],[64,0,32,32],[96,0,32,32].",
+    "coordinateConversion": "Nearest et palette déterministe ; ni lissage ni échelle par pose.",
+    "anchors": [
+      {
+        "space": "cell32x32",
+        "x": 16,
+        "y": 3,
+        "meaning": "Haut des vaisseaux fixe ; aucune mise à l’échelle par pose."
+      }
+    ],
+    "fixedParts": [
+      "Vaisseaux11lignes supérieures, position et luminosité."
+    ],
+    "movingParts": [
+      "Lobes inférieurs, petites variations de contraction/relâchement."
+    ],
+    "phases": "Chronologie de référence dans src/HeartAnimation.ts ; cycle1,4s, repos1,16s puis3poses de0,08s.",
+    "interruptions": "GameHud.update avance seulement sous contrôle avec vie>0 ; mouvement réduit ou décès repos0 ; clear/reset remet le cycleà0.",
+    "budget": {
+      "runtimeImageBytes": 956,
+      "decodedRgbaBytes": 16384,
+      "newThreeLights": 0,
+      "newThreeMeshes": 0
+    }
+  },
+  "assets": [
+    {
+      "id": "heart-medallion",
+      "purpose": "Médaillon de santé, indépendant du nombre de PV.",
+      "required": true,
+      "productionStatus": "generated",
+      "sourceFile": "exec-5d3deda7-39f0-4e1e-a788-b55d89368536.png",
+      "exportFile": "public/assets/ui/gothic/heart-medallion-v1.png",
+      "runtimeUrl": "/assets/ui/gothic/heart-medallion-v1.png",
+      "bytes": 1277755,
+      "sha256": "ae19d076a89e5c4716ab2a854ebf37629021f3d1e43957a0a3cb7ea0faec4e21",
+      "measuredDimensions": [
+        1254,
+        1254
+      ],
+      "alpha": {
+        "mode": "RGBA",
+        "range": [
+          0,
+          255
+        ],
+        "fullyTransparentPixels": 759259
+      },
+      "referencesActuallyAttached": [
+        "docs/asset-packs/references/hud-gothic-reference.png",
+        "public/assets/pickups/medkit.png"
+      ],
+      "promptExact": "Use case: stylized-concept. Asset type: a single transparent RGBA game HUD medallion for DEAD SECTOR.\nInput image 1 is a STYLE REFERENCE ONLY: the supplied gothic Victorian FPS screenshot. Input image 2 is a palette/pixel-cluster reference, the game's existing medkit sprite. Do not edit or reproduce the screenshot.\nCreate ONE isolated circular health medallion matching the lower-left heart emblem in reference 1: a richly drawn anatomical human heart, vivid deep vermilion, dark crimson chambers, little warm ivory/amber highlights, legible arteries and muscular folds. An ornate antique-gold circular frame surrounds it: thin double brass ring, small Victorian acanthus leaves at lower sides, little Gothic finial at the top. Interior is near-black warm brown. Outside the medallion is genuine transparent alpha.\nStyle: carefully authored retro game pixel art, readable broad 2–4 px pixel clusters, angular stepped contour, rich but controlled detail. No smooth vector shapes, no photorealism, no 3D render. Gold should be tarnished ochre/brass, not bright yellow. At the intended 130px display size the red heart must read immediately and the gold ring must stay thin.\nComposition: square 512x512 canvas, whole ring and ornament fit inside x=34..478 y=24..488, fully centered, no cropped tips, transparent margin. Heart occupies about 65% of inner circle. Stable static resting state, no halo outside, no sound waves, no pulse graphics.\nNO letters, numbers, bars, text, extra panel, UI screenshot, buttons, hand, body, checkerboard painted background, watermark or signature. Only this one heart medallion.",
+      "toolAndModelActuallyUsed": "image_gen.imagegen intégré ; modèle non exposé",
+      "transformations": [
+        "Copie à l’identique du PNG généré vers le dépôt ; aucune retouche, découpe ou conversion."
+      ],
+      "validation": {
+        "file": "pass",
+        "art": "pass",
+        "continuity": "not_applicable",
+        "integration": "pass",
+        "gameplay": "not_checked"
+      },
+      "evidence": [
+        "Sortie du générateur inspectée ; dimensions, alpha et SHA256 mesurés.",
+        "Chargement CSS sans 404, captures de scènes préparées inspectées à 1280 × 720 et 1024 × 768 ; géométrie HUD contrôlée aussi à 1920 × 1080 et 2560 × 1080."
+      ],
+      "knownDefects": [],
+      "humanApproval": "not_requested",
+      "runtimeActive": false,
+      "retainedForProvenance": true
+    },
+    {
+      "id": "manor-medallion",
+      "purpose": "Emblème du manoir pour le bloc de progression.",
+      "required": true,
+      "productionStatus": "generated",
+      "sourceFile": "exec-2f2b626c-bfb4-449e-8936-f94196c2c1cb.png",
+      "exportFile": "public/assets/ui/gothic/manor-medallion-v1.png",
+      "runtimeUrl": "/assets/ui/gothic/manor-medallion-v1.png",
+      "bytes": 1405715,
+      "sha256": "6c99165343edf9b03d3b1f1d4fcb7a955839d5b4e02f0a0faf588f875fc331d3",
+      "measuredDimensions": [
+        1254,
+        1254
+      ],
+      "alpha": {
+        "mode": "RGBA",
+        "range": [
+          0,
+          255
+        ],
+        "fullyTransparentPixels": 699542
+      },
+      "referencesActuallyAttached": [
+        "docs/asset-packs/references/hud-gothic-reference.png",
+        "public/assets/ui/gothic/heart-medallion-v1.png"
+      ],
+      "promptExact": "Use case: stylized-concept. Asset type: a single transparent RGBA architectural medallion for the DEAD SECTOR gothic Victorian game HUD.\nInput image 1: STYLE REFERENCE ONLY, the user-provided game screenshot. Input image 2: the newly produced heart medallion, matching gold material, pixel-cluster scale and frame identity. Neither is an edit target.\nCreate ONE isolated circular medallion: a gloomy Victorian manor façade at night, three steep roofs and a central narrow tower, a few warm amber-lit windows, distant pale sepia moon and bare tree silhouettes behind the manor. Composition should be bold, simplified and readable as a tiny 96px HUD emblem. The manor silhouette is central and takes most of the circle, dark chocolate/charcoal against muted warm grey sky.\nSurround it with a thin double circular antique brass ring and restrained symmetrical acanthus leaves, using the tarnished ochre gold from image2, with tiny Gothic finials. Interior opaque dark brown, exterior genuine transparent alpha. Whole ornament fits safely within a square canvas with 5% transparent margin, no clipped tips.\nStyle: authored retro game pixel art, crisp stepped silhouette and visible 2–4px clusters, controlled rich detail, strong broad masses. Avoid smooth vector gradients, photographs, 3D-render shine and yellow plastic gold. Still night, no lightning or animated effects.\nNO text, letters, numbers, title plaque, health heart, extra buttons, UI screenshot, separate icons, painted checkerboard, watermark or signature. Only one manor medallion.",
+      "toolAndModelActuallyUsed": "image_gen.imagegen intégré ; modèle non exposé",
+      "transformations": [
+        "Copie à l’identique du PNG généré vers le dépôt ; aucune retouche, découpe ou conversion."
+      ],
+      "validation": {
+        "file": "pass",
+        "art": "pass",
+        "continuity": "not_applicable",
+        "integration": "pass",
+        "gameplay": "not_checked"
+      },
+      "evidence": [
+        "Sortie du générateur inspectée ; dimensions, alpha et SHA256 mesurés.",
+        "Chargement CSS sans 404, captures de scènes préparées inspectées à 1280 × 720 et 1024 × 768 ; géométrie HUD contrôlée aussi à 1920 × 1080 et 2560 × 1080."
+      ],
+      "knownDefects": [],
+      "humanApproval": "not_requested",
+      "runtimeActive": false,
+      "retainedForProvenance": true
+    },
+    {
+      "id": "gothic-frame",
+      "purpose": "Cadre décoratif adaptable par border-image nine-slice.",
+      "required": true,
+      "productionStatus": "generated",
+      "sourceFile": "public/assets/ui/gothic/frame-v1.svg",
+      "exportFile": "public/assets/ui/gothic/frame-v1.svg",
+      "runtimeUrl": "/assets/ui/gothic/frame-v1.svg",
+      "bytes": 1761,
+      "sha256": "a69856a11c287f1ca56aee724e4dcf126f57b4eb9456b89d6e02b79cc27180c6",
+      "measuredDimensions": [
+        128,
+        128
+      ],
+      "alpha": null,
+      "referencesActuallyAttached": [],
+      "promptExact": null,
+      "toolAndModelActuallyUsed": "SVG écrit dans le dépôt, sans générateur bitmap.",
+      "transformations": [
+        "Tracé vectoriel déterministe, utilisé directement par CSS."
+      ],
+      "validation": {
+        "file": "pass",
+        "art": "pass",
+        "continuity": "not_applicable",
+        "integration": "pass",
+        "gameplay": "not_checked"
+      },
+      "evidence": [
+        "Chargement CSS sans 404, captures de scènes préparées inspectées à 1280 × 720 et 1024 × 768 ; géométrie HUD contrôlée aussi à 1920 × 1080 et 2560 × 1080."
+      ],
+      "knownDefects": [],
+      "humanApproval": "not_requested",
+      "runtimeActive": false,
+      "retainedForProvenance": true
+    },
+    {
+      "id": "flashlight",
+      "purpose": "Icône lampe, état réel sans jauge de batterie.",
+      "required": true,
+      "productionStatus": "generated",
+      "sourceFile": "public/assets/ui/gothic/flashlight-v1.svg",
+      "exportFile": "public/assets/ui/gothic/flashlight-v1.svg",
+      "runtimeUrl": "/assets/ui/gothic/flashlight-v1.svg",
+      "bytes": 690,
+      "sha256": "6d305c82fdc3bd4861d59924070ae796b7e634ee6fd012352a486113ed79ddec",
+      "measuredDimensions": [
+        80,
+        44
+      ],
+      "alpha": null,
+      "referencesActuallyAttached": [],
+      "promptExact": null,
+      "toolAndModelActuallyUsed": "SVG écrit dans le dépôt, sans générateur bitmap.",
+      "transformations": [
+        "Tracé vectoriel déterministe, utilisé directement par CSS."
+      ],
+      "validation": {
+        "file": "pass",
+        "art": "pass",
+        "continuity": "not_applicable",
+        "integration": "pass",
+        "gameplay": "not_checked"
+      },
+      "evidence": [
+        "Chargement CSS sans 404, captures de scènes préparées inspectées à 1280 × 720 et 1024 × 768 ; géométrie HUD contrôlée aussi à 1920 × 1080 et 2560 × 1080."
+      ],
+      "knownDefects": [],
+      "humanApproval": "not_requested",
+      "runtimeActive": false,
+      "retainedForProvenance": true
+    },
+    {
+      "id": "heart-beat-v2",
+      "purpose": "Signature de vie animée discrète ; quatre poses natives, sans mouvement du cadre.",
+      "required": true,
+      "runtimeActive": true,
+      "productionStatus": "generated",
+      "sourceFile": "docs/asset-packs/hud-gothic-v2/heart-action-source.png",
+      "exportFile": "public/assets/ui/gothic/heart-beat-v2.png",
+      "runtimeUrl": "/assets/ui/gothic/heart-beat-v2.png",
+      "bytes": 956,
+      "sha256": "7a2bf3733ffb43cfe18e08f26d8d2d8c6e8ecbf1d302486e9eba77b30579928f",
+      "measuredDimensions": [
+        128,
+        32
+      ],
+      "cellsAndOrder": [
+        "repos",
+        "contraction",
+        "systole",
+        "relâchement"
+      ],
+      "anchors": [
+        {
+          "space": "cell32x32",
+          "x": 16,
+          "y": 3,
+          "meaning": "Haut des vaisseaux fixe ; aucune mise à l’échelle par pose."
+        }
+      ],
+      "alpha": {
+        "mode": "RGBA",
+        "range": [
+          0,
+          255
+        ],
+        "binary": true,
+        "opaqueColors": 6
+      },
+      "referencesActuallyAttached": [
+        "docs/asset-packs/hud-gothic-v2/heart-base-source.png"
+      ],
+      "promptExact": "Use case: stylized-concept. Asset type: four-frame heart beat sprite atlas for a restrained pixel-art survival horror HUD.\nAttached image is the accepted BASE IDENTITY, anatomy and palette. Produce a NEW 2x2 animation atlas with four equal square cells: top-left resting(0), top-right mild contraction(1), bottom-left deepest contraction(2), bottom-right release/rebound(3).\nEvery cell contains the SAME small anatomical heart from the reference with identical three top arteries, aortic arch, ventricular divide, orientation, colors and center anchor. Strict32x32 logical pixel grid within each cell, broad square clusters, six flat muted wine/brick-red colors and transparent background. No gradients, shine, fine veins or new details.\nAnimation is VERY SUBTLE: leave the top arteries completely fixed in every cell. Only the lower ventricular masses squeeze inward by about ONE native pixel, then relax. Top-left is the exact resting silhouette, top-right slight squeeze, bottom-left lower lobes one pixel narrower and one pixel higher, bottom-right near resting with a small internal rebound. No translation, no rotation, no global scale, no change in brightness, no glow.\nComposition: four equal square cells in a perfect2x2 grid, no separator lines. Each heart has the same logical top/bottom anchor and same15% transparent padding. Nothing crosses cell boundaries. Entire sheet genuine transparent alpha, each heart opaque. No panel, border, frame, medallion, text, numbers, labels, shadow, painted checkerboard or watermark. Clear pixel art, NOT a high-resolution medical illustration.",
+      "toolAndModelActuallyUsed": "image_gen.imagegen intégré ; modèle non exposé.",
+      "sourceProvenance": [
+        {
+          "path": "docs/asset-packs/hud-gothic-v2/heart-base-source.png",
+          "bytes": 427004,
+          "sha256": "f775f3e9c6642e4c3636a0b96427787d93f3c1f7999f209072db4131b9eac051",
+          "promptExact": "Use case: stylized-concept. Asset type: native low-resolution anatomical heart icon for a restrained retro horror game HUD.\nImage1 is an ANATOMY reference only, the previous ornate heart. REMOVE the frame and all gold, ornament, glow, highlights and tiny veins. Image2 is a muted-material palette reference only. Produce a NEW icon, not a screenshot.\nDraw a single compact anatomical human heart as if authored on a strict 32x32 logical pixel grid: chunky square pixel clusters, three simple large arteries at the top, two broad ventricular masses and an asymmetrical tapered lower tip. Six flat colors total: near-black burgundy outline, dark wine red, muted brick red, restrained russet highlight, one dusky red middle tone, one small warm pale-red accent. No gradients, no antialiasing, no shiny specular streaks, no fine texture, no busy veins. Low saturation, broad easy-to-read shapes. It must look handmade for a 1990s pixel-art survival-horror HUD and still read at32px.\nOne heart only. Square composition with generous even transparent margin of15%, heart centered with top arteries ending around y=20% and bottom tip around y=83%. The full asset is opaque where the heart is, genuine transparent alpha elsewhere. No ring, medallion, panel, text, numbers, ground, shadow, halo, checkerboard or watermark. Static resting/base pose. Export square.",
+          "referencesActuallyAttached": [
+            "public/assets/ui/gothic/heart-medallion-v1.png",
+            "public/assets/pickups/ammo.png"
+          ],
+          "measuredDimensions": [
+            1254,
+            1254
+          ]
+        },
+        {
+          "path": "docs/asset-packs/hud-gothic-v2/heart-action-source.png",
+          "bytes": 640600,
+          "sha256": "72c8e5f021cc88e8d2271ec89fdc44588e824d02e298b353b54293ecf7f7ee8a",
+          "promptExact": "Use case: stylized-concept. Asset type: four-frame heart beat sprite atlas for a restrained pixel-art survival horror HUD.\nAttached image is the accepted BASE IDENTITY, anatomy and palette. Produce a NEW 2x2 animation atlas with four equal square cells: top-left resting(0), top-right mild contraction(1), bottom-left deepest contraction(2), bottom-right release/rebound(3).\nEvery cell contains the SAME small anatomical heart from the reference with identical three top arteries, aortic arch, ventricular divide, orientation, colors and center anchor. Strict32x32 logical pixel grid within each cell, broad square clusters, six flat muted wine/brick-red colors and transparent background. No gradients, shine, fine veins or new details.\nAnimation is VERY SUBTLE: leave the top arteries completely fixed in every cell. Only the lower ventricular masses squeeze inward by about ONE native pixel, then relax. Top-left is the exact resting silhouette, top-right slight squeeze, bottom-left lower lobes one pixel narrower and one pixel higher, bottom-right near resting with a small internal rebound. No translation, no rotation, no global scale, no change in brightness, no glow.\nComposition: four equal square cells in a perfect2x2 grid, no separator lines. Each heart has the same logical top/bottom anchor and same15% transparent padding. Nothing crosses cell boundaries. Entire sheet genuine transparent alpha, each heart opaque. No panel, border, frame, medallion, text, numbers, labels, shadow, painted checkerboard or watermark. Clear pixel art, NOT a high-resolution medical illustration.",
+          "referencesActuallyAttached": [
+            "docs/asset-packs/hud-gothic-v2/heart-base-source.png"
+          ],
+          "measuredDimensions": [
+            1262,
+            1246
+          ]
+        }
+      ],
+      "transformations": [
+        "scripts/export-hud-heart.ps1 : quatre quadrants source2×2 réordonnés en bande horizontale ; échantillonnage nearest sur32×32 identique pour les quatre poses.",
+        "Alpha sous128 supprimé, pixels opaques ramenés à une palette fixe de six couleurs, sans antialiasing.",
+        "Translation commune vers centrex16/hauty3, sans normaliser la taille de chaque pose ; onze lignes supérieures reprises de la pose de repos pour figer les vaisseaux."
+      ],
+      "palette": [
+        "#290e17",
+        "#4d1822",
+        "#70232a",
+        "#93342e",
+        "#ad4b3b",
+        "#c76b4c"
+      ],
+      "acceptanceCriteria": [
+        "Quatre poses différentes, continuité et petit mouvement des lobes ; haut des vaisseaux parfaitement stable.",
+        "Aucun halo, éclat ni pulsation de luminosité ; pause hors contrôle et vie nulle, mouvement réduit.",
+        "Valeurs et sources partagées entre GameHud et scripts/make-hud-preview.mjs via HeartAnimation."
+      ],
+      "validation": {
+        "file": "pass",
+        "art": "pass",
+        "continuity": "pass_sampled_browser",
+        "integration": "pass",
+        "gameplay": "not_checked"
+      },
+      "evidence": [
+        "PNG956octets,128×32RGBA, sept couleurs incluant transparent ; alpha binaire, quatre poses uniques, onze lignes supérieures identiques.",
+        "Aperçu réel GameHud : poses 0/1/2/3 observées, pause, mouvement réduit, persistance et préférence système vérifiés dans tmp/hud-preview/review/report.json.",
+        "Scène réelle préparée inspectée en hanche et ADS ; chargement sans erreur et géométrie du HUD vérifiée sur quatre formats dans tmp/gothic-review/report.json."
+      ],
+      "knownDefects": [],
+      "humanApproval": "not_requested"
+    }
+  ],
+  "limitations": [
+    "V1 conservée pour provenance ; les anciens médaillons et SVG ornés ne sont plus chargés par le HUD V2.",
+    "Animation contrôlée dans l’aperçu et sur captures de poses ; discrétion sous pression et performances comparatives non établies par un combat réel."
+  ],
+  "validation": {
+    "files": "pass",
+    "inGameRendering": "pass_prepared_scenes_only",
+    "animation": "pass_sampled_browser",
+    "gameplay": "not_checked",
+    "evidence": [
+      "tmp/hud-preview/review/report.json",
+      "tmp/gothic-review/report.json",
+      "scripts/check-hud.mjs"
+    ]
+  },
+  "currentVersion": 2,
+  "v2": {
+    "status": "implemented_visual_review_complete",
+    "acceptedChanges": [
+      "HUD compact et suppression des ornements/cartouches redondants.",
+      "Secteur affiché trois secondes actives par palier, compteurs en continu.",
+      "Battement discret, préférence système et option de mouvement réduit persistante."
+    ],
+    "texturePass": {
+      "modules": [
+        "src/MansionMaterials.ts",
+        "src/MansionWallMaterial.ts"
+      ],
+      "method": "Au chargement, mélange30% d’une version regroupée par blocs4texels avec la source, mêmes dimensions/UV/filtres nearest ; aucun traitement par frame.",
+      "sourceFilesUnchanged": true
+    },
+    "preview": "node scripts/make-hud-preview.mjs → /tmp/hud-preview/index.html"
+  }
+}

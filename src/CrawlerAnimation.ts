@@ -13,7 +13,7 @@ export const crawlerConfig = {
   attackRange: 1.1,
   attackDamage: 12,
   attackCooldown: 1.1,
-  attackWindup: 0.18,
+  attackWindup: 0.35,
   attackRecovery: 0.25,
   hurtDuration: 0.18,
   width: spriteSize,
@@ -22,7 +22,7 @@ export const crawlerConfig = {
 
 export const crawlerAnimation = {
   crawlPoseDuration: 0.20,
-  attackDuration: 0.35,
+  attackDuration: crawlerConfig.attackWindup + crawlerConfig.attackRecovery,
   hurtDuration: 0.18,
   deathDuration: 0.45,
   poses: ['idle', 'crawl-a', 'crawl-b', 'attack', 'hurt', 'death'] as const,

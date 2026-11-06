@@ -26,6 +26,8 @@ import { StormController } from './StormController.ts';
 import { SpitterZombie } from './SpitterZombie.ts';
 import { CrawlerZombie } from './CrawlerZombie.ts';
 import { SpitProjectile } from './SpitProjectile.ts';
+import { GuardianZombie } from './GuardianZombie.ts';
+import { GuardianProjectile } from './GuardianProjectile.ts';
 import { TierDiagnosticsTracker, type TierDiagnosticRecord } from './TierDiagnostics.ts';
 import { GameHud, type HudPrompt } from './GameHud.ts';
 import { AudioMix, type AudioChannel } from './AudioMix.ts';
@@ -41,13 +43,17 @@ export class Game {
   private level: Level;
   private player: Player;
   private zombies: Array<Zombie | SpitterZombie | CrawlerZombie> = [];
-  private spitProjectiles: SpitProjectile[] = [];
+  private spitProjectiles: Array<SpitProjectile | GuardianProjectile> = [];
   private medkits: Medkit[] = [];
   private ammoBoxes: AmmoBox[] = [];
   private ammoDrops: AmmoBox[] = [];
   private dropBudget = 0;
   private dropsMade = 0;
   private killsThisTier = 0;
+  private defeatedZombies = new WeakSet<Zombie | SpitterZombie | CrawlerZombie>();
+  private spawnGroupIndex = 0;
+  private groupRespiteRemaining: number | null = null;
+  private finaleSupplyLots = 0;
   private hordeAlertTimer = 0;
   private respiteTimer = 0;
   private shotgunPickup: ShotgunPickup;
@@ -209,7 +215,9 @@ export class Game {
 
       // 1. Ramassage du fusil à pompe si visé
       if (this.shotgunPickup.canInteract(this.player.camera.position, cameraDir)) {
+        const before = this.weapon.getAmmoStocks().shotgun;
         if (this.shotgunPickup.collect(this.weapon)) {
+          this.recordShotgunGain(before.unlocked ? before.magazine + before.reserve : 0);
           this.updateAmmoDisplay();
           this.hud.notifyWeapon();
           return;
@@ -280,6 +288,7 @@ export class Game {
         const target = this.zombies.find((z) => z.isAlive());
         if (!target) return false;
         target.takeDamage(amount);
+        if (!target.isAlive()) this.onZombieKilled(target);
         this.tierDiagnostics?.recordDamageDealt();
         this.checkTierCompletion();
         this.updateObjectiveDisplay();
@@ -413,7 +422,7 @@ export class Game {
         if (zombie) {
           const wasAlive = zombie.isAlive();
           zombie.takeDamage(damage, shot.headHits > 0, shot.impactForce);
-          this.tierDiagnostics?.recordHit(shot.headHits, shot.bodyHits);
+          this.tierDiagnostics?.recordHit(shot.headHits, shot.bodyHits, shot.weaponId);
           if (wasAlive && !zombie.isAlive()) this.onZombieKilled(zombie);
           this.tierDiagnostics?.recordDamageDealt();
         }
@@ -442,7 +451,7 @@ export class Game {
 
     // Détonation, recul de caméra (View Punch) différencié et alerte sonore immédiate à t = 0
     this.weapon.setOnShoot((aimAmount, weaponId) => {
-      this.tierDiagnostics?.recordShot();
+      this.tierDiagnostics?.recordShot(weaponId);
       const isShotgun = weaponId === 'shotgun';
       const pitchRecoil = isShotgun
         ? (aimAmount > 0.5 ? 0.05 : 0.09)
@@ -584,6 +593,7 @@ export class Game {
     this.weaponMotion?.reset();
     for (const drop of this.ammoDrops) drop.dispose();
     this.ammoDrops = [];
+    this.finaleSupplyLots = 0;
     for (const shell of this.shellCasings) shell.dispose();
     this.shellCasings = [];
     this.hitEffects.clear();
@@ -655,28 +665,21 @@ export class Game {
 
         // Simulation des zombies pendant le combat actif
         if (this.state === 'playing') {
+          if (wasControlActive && !isTabSwitch) this.tierDiagnostics?.advance(rawDeltaSec);
           this.hordeAlertTimer -= delta;
           if (this.hordeAlertTimer <= 0) {
             this.hordeAlertTimer = 0.75;
             for (const zombie of this.zombies) if (zombie.isAlive()) zombie.alert(this.player.camera.position);
           }
-          this.spitProjectiles = this.spitProjectiles.filter((projectile) => projectile.update(delta, this.scene, this.level, this.player.camera.position, (damage) => {
-            const previousHealth = this.player.getHealth();
-            this.player.takeDamage(damage);
-            this.tierDiagnostics?.recordDamageTaken(previousHealth - this.player.getHealth());
-            if (this.player.getHealth() < previousHealth) {
-              this.damageEffectRemaining = this.damageEffectDuration;
-              if (this.damageOverlay) this.damageOverlay.style.opacity = '1';
-            }
-            this.updateHealthDisplay();
-            if (!this.player.isAlive()) this.endGame('lost');
-          }));
+          this.updateProjectiles(delta);
           // Gestion échelonnée de la file d'apparition
           this.spawnCooldownTimer -= delta;
+          this.advanceSpawnGroup(delta);
           const livingCount = this.zombies.filter((z) => z instanceof Zombie ? z.isThreat() : z.isAlive()).length;
           this.tierDiagnostics?.updateActiveThreats(livingCount);
           const activeLimit = Math.min(this.maxSimultaneousZombies, this.encounterConfigs[this.currentTier - 1]?.maxActiveZombies ?? this.maxSimultaneousZombies);
-          if (this.spawnQueue > 0 && livingCount < activeLimit && this.spawnCooldownTimer <= 0) {
+          if (this.state === 'playing' && this.player.isAlive()
+            && this.spawnQueue > 0 && livingCount < activeLimit && this.spawnCooldownTimer <= 0) {
             if (this.trySpawnZombie()) {
               this.spawnQueue--;
               const config = this.encounterConfigs[this.currentTier - 1];
@@ -695,6 +698,14 @@ export class Game {
 
           for (const zombie of this.zombies) {
             if (!this.player.isAlive()) break;
+            if (zombie instanceof GuardianZombie) {
+              zombie.update(delta, this.player.camera.position,
+                this.zombies.filter((z): z is Zombie => z instanceof Zombie),
+                (damage) => this.applyEnemyDamage(damage),
+                (origin, target) => this.spitProjectiles.push(new GuardianProjectile(this.scene, origin, target)));
+              this.updateBossDisplay();
+              continue;
+            }
             if (zombie instanceof SpitterZombie) {
               zombie.update(delta, this.player.camera.position, this.zombies, (origin, target) => {
                 this.spitProjectiles.push(new SpitProjectile(this.scene, origin, target));
@@ -839,7 +850,9 @@ export class Game {
     if (!controlActive) return;
     const position = this.player.camera.position;
     this.shotgunPickup.update(delta, position);
+    const shotgunBefore = this.weapon.getAmmoStocks().shotgun;
     if (this.shotgunPickup.tryPickup(position, this.weapon)) {
+      this.recordShotgunGain(shotgunBefore.unlocked ? shotgunBefore.magazine + shotgunBefore.reserve : 0);
       this.updateAmmoDisplay();
       this.hud?.notifyWeapon();
     }
@@ -848,13 +861,13 @@ export class Game {
       const before = this.player.getHealth();
       if (medkit.tryPickup(this.player)) {
         this.hud?.notifyGain('health', this.player.getHealth() - before);
-        this.tierDiagnostics?.recordMedkit();
+        this.tierDiagnostics?.recordMedkit(this.player.getHealth() - before);
         this.updateHealthDisplay();
       }
     }
     for (const box of this.ammoBoxes) {
       box.update(delta, position);
-      if (this.collectAmmoBox(box)) this.tierDiagnostics?.recordAmmoBox();
+      this.collectAmmoBox(box);
     }
     for (const box of this.ammoDrops) {
       box.update(delta, position);
@@ -871,9 +884,16 @@ export class Game {
     const kind = box.getWeaponType();
     const before = this.weapon.getReserveAmmoFor(kind);
     if (!box.tryPickup(this.player.camera.position, this.weapon)) return false;
-    this.hud?.notifyGain(kind, this.weapon.getReserveAmmoFor(kind) - before);
+    const gained = this.weapon.getReserveAmmoFor(kind) - before;
+    this.hud?.notifyGain(kind, gained);
+    this.tierDiagnostics?.recordAmmoBox(kind, gained);
     this.updateAmmoDisplay();
     return true;
+  }
+
+  private recordShotgunGain(before: number): void {
+    const stock = this.weapon.getAmmoStocks().shotgun;
+    this.tierDiagnostics?.recordAmmoGain('shotgun', stock.magazine + stock.reserve - before);
   }
 
   private perfTimer = 0;
@@ -920,7 +940,9 @@ export class Game {
   }
 
   public getTierDiagnostics(): TierDiagnosticRecord[] {
-    return this.tierDiagnostics?.getRecords() ?? [];
+    const records = this.tierDiagnostics?.getRecords() ?? [];
+    const current = this.tierDiagnostics?.getCurrentRecord?.(this.weapon?.getAmmoStocks?.());
+    return current ? [...records, current] : records;
   }
 
   private logPerformanceMetrics(delta: number): void {
@@ -939,10 +961,12 @@ export class Game {
   private updateZombieRemains(delta: number): void {
     if (this.debugMenuOpen || this.runSummaryOpen) return;
     const animate = ((this.state === 'playing' || this.state === 'exploration' || this.state === 'terminal' || this.state === 'won' || this.state === 'respite')
-        && document.pointerLockElement === this.renderer.domElement);
+        && document.pointerLockElement === this.renderer.domElement
+        && !document.hidden && (document.hasFocus?.() ?? true));
     if (!animate) return;
     for (const zombie of this.zombies) {
       zombie.updateDeath(delta, this.player.camera.position);
+      if (!zombie.isAlive()) this.onZombieKilled(zombie);
       if (zombie instanceof Zombie && zombie.consumeJustRevived()) {
         this.tierDiagnostics?.recordRevival(zombie.getKind());
       }
@@ -975,6 +999,10 @@ export class Game {
   }
 
   private onZombieKilled(zombie: Zombie | SpitterZombie | CrawlerZombie): void {
+    if (zombie instanceof Zombie && zombie.isThreat()) return;
+    const defeated = this.defeatedZombies ??= new WeakSet();
+    if (defeated.has(zombie)) return;
+    defeated.add(zombie);
     this.killsThisTier++;
     const remaining = this.encounterConfigs[this.currentTier - 1].totalZombies - this.killsThisTier;
     const due = this.dropBudget > 0 && (this.killsThisTier <= 2 || remaining <= this.dropBudget);
@@ -991,7 +1019,7 @@ export class Game {
   private enterRespite(): void {
     if (this.state !== 'playing') return;
     (this.completedTiers ??= new Set<number>()).add(this.currentTier);
-    this.tierDiagnostics?.endTier();
+    this.tierDiagnostics?.endTier(this.weapon?.getAmmoStocks?.());
 
     // 1. Déverrouiller la nouvelle aile accessible selon la rencontre validée
     const configs = this.encounterConfigs ?? (this as unknown as { tierCandidateSpawns?: EncounterSpec[] }).tierCandidateSpawns;
@@ -1032,6 +1060,7 @@ export class Game {
     this.state = 'exploration';
     this.encounterBell?.setActive(false);
     this.respiteTimer = 10;
+    if (configs?.[this.pendingTierStart - 1]?.finalEncounter) this.prepareFinaleSupplies();
     this.hud?.announce(unlockedNames.length > 0
       ? `ACCÈS OUVERTS · ${unlockedNames.join(' · ')}`
       : 'PALIER PURGÉ · RÉCUPÉREZ VOS RESSOURCES');
@@ -1099,12 +1128,16 @@ export class Game {
     this.tierSpitterSpawned = 0;
     this.tierCrawlerSpawned = 0;
     this.tierStandardSpawned = 0;
-    this.dropBudget = Math.max(2, Math.ceil((configs?.[tierNumber - 1]?.totalZombies ?? 4) / 3));
+    this.dropBudget = configs?.[tierNumber - 1]?.finalEncounter ? 0
+      : Math.max(2, Math.ceil((configs?.[tierNumber - 1]?.totalZombies ?? 4) / 3));
     this.dropsMade = 0;
     this.killsThisTier = 0;
+    this.defeatedZombies = new WeakSet();
+    this.spawnGroupIndex = 0;
+    this.groupRespiteRemaining = null;
     this.hordeAlertTimer = 0;
     this.lastSpawnQuadrant = -1;
-    this.tierDiagnostics?.startTier(tierNumber);
+    this.tierDiagnostics?.startTier(tierNumber, this.weapon?.getAmmoStocks?.());
     this.encounterBell?.setActive(false);
     for (const p of (this.upgradePedestals ?? [])) {
       p.close();
@@ -1154,234 +1187,224 @@ export class Game {
 
     // 5. Basculer en phase de combat actif
     this.state = 'playing';
+    if (config?.finalEncounter) this.prepareFinaleSupplies();
     // Une nouvelle rencontre remplace les retours de la précédente.
     this.hud?.clear();
     if (config?.finalEncounter) this.hud?.announce('DERNIÈRE RENCONTRE · LE GARDIEN DU MANOIR');
     this.updateObjectiveDisplay();
+    this.updateBossDisplay();
     this.perfTracker?.recordTransition(tierNumber, performance.now() - t0);
+  }
+
+  private getSpawnQuota(config: EncounterSpec): Record<ZombieKind, number> {
+    const quota = {
+      standard: Math.max(0, config.totalZombies - config.maxAgile - config.maxSpitter - (config.maxCrawler ?? 0)),
+      agile: config.maxAgile, spitter: config.maxSpitter, crawler: config.maxCrawler ?? 0,
+    };
+    if (!config.spawnGroups) return quota;
+    for (const kind of Object.keys(quota) as ZombieKind[]) quota[kind] = 0;
+    for (const group of config.spawnGroups.slice(0, (this.spawnGroupIndex ?? 0) + 1)) {
+      for (const kind of Object.keys(quota) as ZombieKind[]) quota[kind] += group[kind];
+    }
+    return quota;
+  }
+
+  private advanceSpawnGroup(delta: number): void {
+    if (this.state !== 'playing') return;
+    const config = this.encounterConfigs[this.currentTier - 1];
+    const groups = config?.spawnGroups;
+    const index = this.spawnGroupIndex ?? 0;
+    if (!groups || index >= groups.length - 1 || delta <= 0) return;
+    const groupTotal = Object.values(this.getSpawnQuota(config)).reduce((sum, count) => sum + count, 0);
+    if (config.totalZombies - this.spawnQueue < groupTotal || this.killsThisTier < groupTotal) return;
+    if (this.groupRespiteRemaining == null) {
+      this.groupRespiteRemaining = groups[index].pauseAfterSeconds ?? 0;
+      this.hud?.announce('UNE COURTE ACCALMIE · RECHARGEZ', 3);
+      return;
+    }
+    this.groupRespiteRemaining = Math.max(0, this.groupRespiteRemaining - delta);
+    if (this.groupRespiteRemaining === 0) {
+      this.spawnGroupIndex = index + 1;
+      this.groupRespiteRemaining = null;
+      this.spawnCooldownTimer = 0;
+      this.hud?.announce('LE MANOIR SE RÉVEILLE · RENFORTS', 2);
+    }
   }
 
   public trySpawnZombie(): boolean {
     const t0 = performance.now();
     const configs = this.encounterConfigs ?? (this as unknown as { tierCandidateSpawns?: EncounterSpec[] }).tierCandidateSpawns;
     const config = configs?.[this.currentTier - 1];
-    if (!config) return false;
-
+    if (!config || this.spawnQueue <= 0) return false;
     const playerPos = this.player.camera.position;
     const cameraDir = this.player.camera.getWorldDirection(new THREE.Vector3());
-    const livingZombies = this.zombies.filter((z) => z.isAlive());
+    const living = this.zombies.filter((z) => z.isAlive());
+    const threats = this.zombies.filter((z) => z instanceof Zombie ? z.isThreat() : z.isAlive()).length;
+    const activeLimit = Math.min(this.maxSimultaneousZombies ?? 8, config.maxActiveZombies);
+    if (threats >= activeLimit) return false;
+    const quota = this.getSpawnQuota(config);
+    const spawned = {
+      standard: this.tierStandardSpawned ?? 0, agile: this.tierAgileSpawned ?? 0,
+      spitter: this.tierSpitterSpawned ?? 0, crawler: this.tierCrawlerSpawned ?? 0,
+    };
+    const remaining = (kind: ZombieKind) => Math.max(0, quota[kind] - spawned[kind]);
+    const aliveAgile = this.zombies.filter((z) => z instanceof Zombie && z.getKind() === 'agile' && z.isThreat()).length;
+    const unlocked = (kind: 'agile' | 'spitter' | 'crawler') => (this.killsThisTier ?? 0) >= (config.spawnUnlocks?.[kind] ?? 0);
+    const canAgile = remaining('agile') > 0 && aliveAgile < config.maxSimultaneousAgile && unlocked('agile');
+    const canSpitter = remaining('spitter') > 0 && unlocked('spitter')
+      && living.filter((z) => z.getKind() === 'spitter').length < config.maxSimultaneousSpitter;
+    const canCrawler = remaining('crawler') > 0 && unlocked('crawler')
+      && living.filter((z) => z.getKind() === 'crawler').length < (config.maxSimultaneousCrawler ?? 2);
+    // Un Coureur reste reserve pour chaque Cracheur encore attendu.
+    const canSoloAgile = canAgile && remaining('agile') > remaining('spitter');
+    const canStandard = remaining('standard') > 0;
+    const order: ZombieKind[] = [];
+    if (canSpitter && canAgile && this.spawnQueue >= 2 && threats + 2 <= activeLimit) order.push('spitter');
+    if (canCrawler && (spawned.crawler <= spawned.agile || !canSoloAgile)) order.push('crawler');
+    if (canSoloAgile && (!canStandard || spawned.agile <= spawned.standard)) order.push('agile');
+    if (canStandard) order.push('standard');
+    if (canSoloAgile && !order.includes('agile')) order.push('agile');
+    if (canCrawler && !order.includes('crawler')) order.push('crawler');
 
-    interface CandidateScore {
-      x: number;
-      z: number;
-      score: number;
-      quadrant: number;
+    interface Candidate { x: number; z: number; floor: number; score: number; quadrant: number }
+    const quadrants = [0, 0, 0, 0];
+    const quadrantOf = (dx: number, dz: number) => Math.floor(((Math.atan2(dz, dx) + Math.PI + Math.PI / 4) % (2 * Math.PI)) / (Math.PI / 2)) % 4;
+    for (const other of living) {
+      const pos = other.getPosition();
+      quadrants[quadrantOf(pos.x - playerPos.x, pos.z - playerPos.z)]++;
     }
-    const eligible: CandidateScore[] = [];
+    const candidates: Candidate[] = [];
     const pool = config.spawnPool ?? (config as unknown as { pool: Point2D[] }).pool;
-
-    // Répartition des zombies vivants par quadrant angulaire relatif au joueur (4 directions : 0=Est, 1=Sud, 2=Ouest, 3=Nord)
-    const livingQuadrantCounts = [0, 0, 0, 0];
-    for (const living of livingZombies) {
-      const lPos = living.getPosition();
-      const ldx = lPos.x - playerPos.x;
-      const ldz = lPos.z - playerPos.z;
-      const lAngle = Math.atan2(ldz, ldx);
-      const lq = Math.floor(((lAngle + Math.PI + Math.PI / 4) % (2 * Math.PI)) / (Math.PI / 2)) % 4;
-      livingQuadrantCounts[lq]++;
+    for (const point of pool) {
+      if (this.level.isColliding(point.x, point.z, 0.45)) continue;
+      if (point.x < config.sectorBounds.minX || point.x > config.sectorBounds.maxX
+        || point.z < config.sectorBounds.minZ || point.z > config.sectorBounds.maxZ) continue;
+      const dx = point.x - playerPos.x, dz = point.z - playerPos.z;
+      const distance = Math.hypot(dx, dz);
+      if (distance < 6 || living.some((other) => Math.hypot(other.getPosition().x - point.x, other.getPosition().z - point.z) < 1.8)) continue;
+      const floor = this.level.getFloorHeightAt(point.x, point.z);
+      const position = new THREE.Vector3(point.x, floor + 1, point.z);
+      const dot = (dx * cameraDir.x + dz * cameraDir.z) / distance;
+      const visible = this.level.hasLineOfSight(playerPos, position);
+      if (dot > 0.45 && visible) continue;
+      if (!this.level.findNextWaypoint(position, playerPos, 0.4)) continue;
+      const quadrant = quadrantOf(dx, dz);
+      const score = Math.max(0, 24 - distance) * 2 + (!visible ? 5 : 0) + (dot <= 0 ? 2 : 0)
+        + (quadrants[quadrant] === 0 ? 4 : quadrants[quadrant] === 1 ? 1 : -3)
+        + (this.lastSpawnQuadrant >= 0 && quadrant !== this.lastSpawnQuadrant ? 2 : 0);
+      candidates.push({ ...point, floor, score, quadrant });
     }
-
-    // Détermination de la composition garantie selon les quotas de la rencontre
-    this.tierStandardSpawned = this.tierStandardSpawned ?? 0;
-    const totalZombies = config.totalZombies;
-    const maxAgileThisTier = config.maxAgile;
-    const maxSpitterThisTier = config.maxSpitter;
-    const maxCrawlerThisTier = config.maxCrawler ?? 0;
-    const maxStandardThisTier = Math.max(0, totalZombies - maxAgileThisTier - maxSpitterThisTier - maxCrawlerThisTier);
-
-    const remainingAgile = Math.max(0, maxAgileThisTier - this.tierAgileSpawned);
-    const remainingSpitter = Math.max(0, maxSpitterThisTier - this.tierSpitterSpawned);
-    const remainingCrawler = Math.max(0, maxCrawlerThisTier - this.tierCrawlerSpawned);
-    const remainingStandard = Math.max(0, maxStandardThisTier - this.tierStandardSpawned);
-
-    const livingAgile = this.zombies.filter((z) => z instanceof Zombie && z.getKind() === 'agile' && z.isThreat()).length;
-    const livingSpitter = livingZombies.filter((z) => z.getKind() === 'spitter').length;
-    const livingCrawler = livingZombies.filter((z) => z.getKind() === 'crawler').length;
-
-    const canSpawnSpitter = remainingSpitter > 0 && livingSpitter < config.maxSimultaneousSpitter;
-    const canSpawnCrawler = remainingCrawler > 0 && livingCrawler < (config.maxSimultaneousCrawler ?? 2);
-    const canSpawnAgile = remainingAgile > 0 && livingAgile < config.maxSimultaneousAgile;
-    const canSpawnSoloAgile = canSpawnAgile && remainingAgile > remainingSpitter;
-    const canSpawnStandard = remainingStandard > 0;
-
-    if (!canSpawnSpitter && !canSpawnCrawler && !canSpawnAgile && !canSpawnStandard) {
+    candidates.sort((a, b) => b.score - a.score);
+    for (const kind of order) {
+      const eligible = kind === 'spitter' && this.currentTier === 3
+        ? candidates.filter((c) => c.floor >= 2) : candidates;
+      if (eligible.length === 0) continue;
+      let chosen = eligible[Math.floor(Math.random() * Math.min(5, eligible.length))];
+      let escort: Candidate | undefined;
+      if (kind === 'spitter') {
+        for (const candidate of eligible) {
+          const partner = eligible.find((other) => {
+            const distance = Math.hypot(other.x - candidate.x, other.z - candidate.z);
+            return distance >= 2 && distance <= 8 && Math.abs(other.floor - candidate.floor) < 1
+              && this.level.hasLineOfSight(new THREE.Vector3(candidate.x, candidate.floor + 1, candidate.z),
+                new THREE.Vector3(other.x, other.floor + 1, other.z));
+          });
+          if (partner) { chosen = candidate; escort = partner; break; }
+        }
+        if (!escort) continue;
+      }
+      this.lastSpawnQuadrant = chosen.quadrant;
+      const zombie = kind === 'spitter' ? new SpitterZombie(this.scene, this.level, chosen.x, chosen.z)
+        : kind === 'crawler' ? new CrawlerZombie(this.scene, this.level, chosen.x, chosen.z)
+        : config.finalEncounter ? new GuardianZombie(this.scene, this.level, chosen.x, chosen.z)
+        : new Zombie(this.scene, this.level, chosen.x, chosen.z, kind);
+      if (kind === 'standard') this.tierStandardSpawned = spawned.standard + 1;
+      else if (kind === 'agile') this.tierAgileSpawned = spawned.agile + 1;
+      else if (kind === 'spitter') this.tierSpitterSpawned = spawned.spitter + 1;
+      else this.tierCrawlerSpawned = spawned.crawler + 1;
+      zombie.alert(playerPos);
+      if (this.zombieGroanBuffer) zombie.setupAudio(this.player.audioListener, this.zombieGroanBuffer, this.getEffectsVolume());
+      this.zombies.push(zombie);
+      this.tierDiagnostics?.recordSpawn(kind, threats + 1);
+      if (escort) {
+        const runner = new Zombie(this.scene, this.level, escort.x, escort.z, 'agile');
+        runner.alert(playerPos);
+        if (this.zombieGroanBuffer) runner.setupAudio(this.player.audioListener, this.zombieGroanBuffer, this.getEffectsVolume());
+        this.zombies.push(runner);
+        this.tierAgileSpawned = spawned.agile + 1;
+        this.spawnQueue--;
+        this.tierDiagnostics?.recordSpawn('agile', threats + 2);
+      }
+      this.weapon?.setTargets(this.zombies.map((z) => z.getMesh()));
+      this.updateBossDisplay();
       this.perfTracker?.recordSpawn(performance.now() - t0);
-      return false;
+      this.perfTracker?.recordPathfinding(this.level.getLastPathfindingDurationMs?.() ?? 0);
+      return true;
     }
-
-    let chosenKind: ZombieKind;
-    if (this.currentTier === 3 && this.tierSpitterSpawned === 0 && canSpawnSpitter) {
-      chosenKind = 'spitter';
-    } else if (canSpawnSpitter) {
-      chosenKind = 'spitter';
-    } else if (canSpawnCrawler && (this.tierCrawlerSpawned <= this.tierAgileSpawned || !canSpawnAgile)) {
-      chosenKind = 'crawler';
-    } else if (canSpawnSoloAgile && canSpawnStandard) {
-      chosenKind = this.tierAgileSpawned <= this.tierStandardSpawned ? 'agile' : 'standard';
-    } else if (canSpawnSoloAgile) {
-      chosenKind = 'agile';
-    } else if (canSpawnStandard) {
-      chosenKind = 'standard';
-    } else if (canSpawnCrawler) {
-      chosenKind = 'crawler';
-    } else {
-      return false;
-    }
-
-    for (const c of pool) {
-      // 1. Collision solide avec le décor
-      if (this.level.isColliding(c.x, c.z, 0.45)) continue;
-
-      // 2. Vérification des limites du secteur ouvert
-      if (
-        c.x < config.sectorBounds.minX ||
-        c.x > config.sectorBounds.maxX ||
-        c.z < config.sectorBounds.minZ ||
-        c.z > config.sectorBounds.maxZ
-      ) {
-        continue;
-      }
-
-      // 3. Distance minimale de sécurité au joueur (6 unités minimum)
-      const dx = c.x - playerPos.x;
-      const dz = c.z - playerPos.z;
-      const dist = Math.hypot(dx, dz);
-      if (dist < 6.0) continue;
-
-      // 4. Séparation minimale avec les autres zombies vivants
-      const tooCloseToOther = livingZombies.some((other) => {
-        const oPos = other.getPosition();
-        return Math.hypot(c.x - oPos.x, c.z - oPos.z) < 1.8;
-      });
-      if (tooCloseToOther) continue;
-
-      // 5. Évaluation du champ de vision (FOV) et de la visibilité réelle (rejet rapide)
-      const spawnFloorY = this.level.getFloorHeightAt(c.x, c.z);
-      if (chosenKind === 'spitter' && this.currentTier === 3 && spawnFloorY < 2.0) continue;
-      const spawnPos3D = new THREE.Vector3(c.x, spawnFloorY + 1.0, c.z);
-      const dirX = dx / dist;
-      const dirZ = dz / dist;
-      const dot = dirX * cameraDir.x + dirZ * cameraDir.z;
-      const hasLOS = this.level.hasLineOfSight(playerPos, spawnPos3D);
-
-      // Rejeter si le point est en plein champ de vision direct dégagé
-      if (dot > 0.45 && hasLOS) continue;
-
-      // 6. Chemin praticable jusqu'au joueur
-      const hasPath = this.level.findNextWaypoint(spawnPos3D, playerPos, 0.4);
-      if (!hasPath) continue;
-
-      // Calcul du quadrant d'apparition relatif au joueur
-      const angle = Math.atan2(dz, dx);
-      const quadrant = Math.floor(((angle + Math.PI + Math.PI / 4) % (2 * Math.PI)) / (Math.PI / 2)) % 4;
-
-      // Une apparition sûre mais proche met la vague en contact sans longue chasse dans le manoir.
-      let score = Math.max(0, 24 - dist) * 2;
-      if (!hasLOS) score += 5;
-      if (dot <= 0) score += 2;
-
-      // Diversité multidirectionnelle et imprévisibilité :
-      // 1. Privilégier les directions sans aucun zombie vivant
-      if (livingQuadrantCounts[quadrant] === 0) {
-        score += 4;
-      } else if (livingQuadrantCounts[quadrant] === 1) {
-        score += 1;
-      } else {
-        score -= 3;
-      }
-
-      // 2. Alterner par rapport à la dernière direction d'apparition
-      if (this.lastSpawnQuadrant >= 0 && quadrant !== this.lastSpawnQuadrant) {
-        score += 2;
-      }
-
-      eligible.push({ x: c.x, z: c.z, score, quadrant });
-    }
-
-    if (eligible.length === 0) {
-      // Aucun point n'est immédiatement éligible : conserver en file d'attente
-      this.perfTracker?.recordSpawn(performance.now() - t0);
-      this.perfTracker?.recordPathfinding(this.level?.getLastPathfindingDurationMs?.() ?? 0);
-      return false;
-    }
-
-    // Trier par score et piocher aléatoirement parmi les meilleurs candidats variés
-    eligible.sort((a, b) => b.score - a.score);
-    const selectionPoolSize = Math.min(5, eligible.length);
-    let chosen = eligible[Math.floor(Math.random() * selectionPoolSize)];
-    let escort: CandidateScore | undefined;
-    if (chosenKind === 'spitter') {
-      const threats = this.zombies.filter((z) => z instanceof Zombie ? z.isThreat() : z.isAlive()).length;
-      const activeLimit = Math.min(this.maxSimultaneousZombies, config.maxActiveZombies);
-      if (!canSpawnAgile || this.spawnQueue < 2 || threats > activeLimit - 2) return false;
-      for (const candidate of eligible) {
-        const partner = eligible.find((other) => {
-          const distance = Math.hypot(other.x - candidate.x, other.z - candidate.z);
-          if (distance < 2 || distance > 8) return false;
-          const first = new THREE.Vector3(candidate.x, this.level.getFloorHeightAt(candidate.x, candidate.z) + 1, candidate.z);
-          const second = new THREE.Vector3(other.x, this.level.getFloorHeightAt(other.x, other.z) + 1, other.z);
-          return Math.abs(first.y - second.y) < 1 && this.level.hasLineOfSight(first, second);
-        });
-        if (partner) { chosen = candidate; escort = partner; break; }
-      }
-      if (!escort) return false;
-    }
-    this.lastSpawnQuadrant = chosen.quadrant;
-
-    if (chosenKind === 'spitter') {
-      this.tierSpitterSpawned++;
-    } else if (chosenKind === 'crawler') {
-      this.tierCrawlerSpawned++;
-    } else if (chosenKind === 'agile') {
-      this.tierAgileSpawned++;
-    } else {
-      this.tierStandardSpawned++;
-    }
-
-    // Créer le zombie et l'alerter vers le joueur
-    const zombie = chosenKind === 'spitter'
-      ? new SpitterZombie(this.scene, this.level, chosen.x, chosen.z)
-      : chosenKind === 'crawler'
-      ? new CrawlerZombie(this.scene, this.level, chosen.x, chosen.z)
-      : new Zombie(this.scene, this.level, chosen.x, chosen.z, chosenKind, Math.random,
-        { elite: config.finalEncounter === true && chosenKind === 'standard' && this.tierStandardSpawned === 1 });
-    zombie.alert(playerPos);
-    if (this.zombieGroanBuffer) {
-      zombie.setupAudio(this.player.audioListener, this.zombieGroanBuffer, this.getEffectsVolume());
-    }
-    this.zombies.push(zombie);
-    this.tierDiagnostics?.recordSpawn(chosenKind, livingZombies.length + 1);
-
-    if (escort) {
-      const runner = new Zombie(this.scene, this.level, escort.x, escort.z, 'agile');
-      runner.alert(playerPos);
-      if (this.zombieGroanBuffer) runner.setupAudio(this.player.audioListener, this.zombieGroanBuffer, this.getEffectsVolume());
-      this.zombies.push(runner);
-      this.tierAgileSpawned++;
-      this.spawnQueue--;
-      this.tierDiagnostics?.recordSpawn('agile', livingZombies.length + 2);
-    }
-
-    if (this.weapon) {
-      this.weapon.setTargets(this.zombies.map((z) => z.getMesh()));
-    }
-
     this.perfTracker?.recordSpawn(performance.now() - t0);
-    this.perfTracker?.recordPathfinding(this.level?.getLastPathfindingDurationMs?.() ?? 0);
-    return true;
+    this.perfTracker?.recordPathfinding(this.level.getLastPathfindingDurationMs?.() ?? 0);
+    return false;
+  }
+
+  private prepareFinaleSupplies(): void {
+    if ((this.finaleSupplyLots ?? 0) >= 3) return;
+    const position = this.player.camera.position;
+    const points: Point2D[] = [];
+    for (const radius of [2, 3.5, 5]) {
+      for (let i = 0; i < 8; i++) points.push({ x: position.x + Math.cos(i * Math.PI / 4) * radius,
+        z: position.z + Math.sin(i * Math.PI / 4) * radius });
+    }
+    points.push(...(this.encounterConfigs.find((config) => config.finalEncounter)?.spawnPool ?? []));
+    const chosen: Point2D[] = [];
+    for (const point of points) {
+      if (this.level.isColliding(point.x, point.z, 0.45)
+        || chosen.some((other) => Math.hypot(other.x - point.x, other.z - point.z) < 1.5)) continue;
+      const floor = this.level.getFloorHeightAt(point.x, point.z);
+      if (!this.level.findNextWaypoint(new THREE.Vector3(point.x, floor + 1, point.z), position, 0.4)) continue;
+      this.ammoDrops.push(new AmmoBox(this.scene, point.x, point.z, 20, 'pistol', floor));
+      this.finaleSupplyLots = (this.finaleSupplyLots ?? 0) + 1;
+      chosen.push(point);
+      if (this.finaleSupplyLots === 3) break;
+    }
+    if (chosen.length > 0) this.hud?.announce('LE GARDIEN APPROCHE · MUNITIONS À PROXIMITÉ', 4);
+  }
+
+  private applyEnemyDamage(damage: number): void {
+    if (this.state !== 'playing' || !this.player.isAlive()) return;
+    const before = this.player.getHealth();
+    this.player.takeDamage(damage);
+    this.tierDiagnostics?.recordDamageTaken(before - this.player.getHealth());
+    if (this.player.getHealth() < before) {
+      this.damageEffectRemaining = this.damageEffectDuration;
+      if (this.damageOverlay) this.damageOverlay.style.opacity = '1';
+    }
+    this.updateHealthDisplay();
+    if (!this.player.isAlive()) this.endGame('lost');
+  }
+
+  private updateProjectiles(delta: number): void {
+    const projectiles = this.spitProjectiles;
+    this.spitProjectiles = [];
+    for (const projectile of projectiles) {
+      if (this.state === 'playing' && projectile.update(delta, this.scene, this.level,
+        this.player.camera.position, (damage) => this.applyEnemyDamage(damage))) {
+        this.spitProjectiles.push(projectile);
+      } else {
+        projectile.dispose(this.scene);
+      }
+    }
+  }
+
+  private updateBossDisplay(): void {
+    const boss = this.zombies.find((z): z is GuardianZombie => z instanceof GuardianZombie && z.isAlive());
+    this.hud?.setBoss?.(this.state === 'playing' && boss
+      ? { health: boss.getHealth(), maxHealth: boss.getMaxHealth(), phase: boss.getPhase(),
+        attack: boss.getState() === 'ATTACK' ? boss.getAttackKind() : null,
+        recovering: boss.getState() === 'RECOVER' } : null);
   }
 
   private updateObjectiveDisplay(): void {
+    this.updateBossDisplay();
     const livingZombies = this.zombies.filter((z) => z instanceof Zombie ? z.isThreat() : z.isAlive()).length;
     const encounter = this.encounterConfigs?.[this.currentTier - 1];
     this.hud?.setProgression({
@@ -1409,7 +1432,7 @@ export class Game {
 
   private endGame(result: 'won' | 'lost'): void {
     if (this.state !== 'playing' && this.state !== 'respite' && this.state !== 'exploration') return;
-    this.tierDiagnostics?.endTier();
+    this.tierDiagnostics?.endTier(this.weapon?.getAmmoStocks?.());
     this.state = result;
     this.runResult = result;
     this.pendingTierStart = 0;
@@ -1508,6 +1531,7 @@ export class Game {
     for (const drop of this.ammoDrops) drop.dispose();
     for (const shell of this.shellCasings) shell.dispose();
     this.ammoDrops = [];
+    this.finaleSupplyLots = 0;
     this.shellCasings = [];
     this.hitEffects.clear();
     this.appliedUpgrades = [];
@@ -1607,7 +1631,7 @@ export class Game {
 
   public dispose(): void {
     this.disposed = true;
-    this.hud?.clear();
+    this.hud?.dispose();
     window.removeEventListener('keydown', this.onDebugKeyDown);
     this.debugDisplay?.removeEventListener('click', this.onDebugClick);
     if (this.debugDisplay) this.debugDisplay.hidden = true;

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { StormWindowSpec } from './MansionConfig.ts';
 import { getMansionFloorHeight } from './MansionConfig.ts';
 
@@ -6,6 +7,78 @@ export interface StormWindowVisuals {
   glass: THREE.MeshBasicMaterial;
   projections: { mesh: THREE.Mesh; material: THREE.MeshBasicMaterial; position: THREE.Vector3 }[];
   bolts: { mesh: THREE.Mesh; position: THREE.Vector3 }[];
+  disposeDrapery(): void;
+}
+
+/** Plis en relief et embrasses du seul salon de musique, dans le repère local de sa baie. */
+function musicDrapery(): THREE.Group {
+  const group = new THREE.Group();
+  group.name = 'music-room-curtains';
+  const clothParts: THREE.BufferGeometry[] = [];
+  const goldParts: THREE.BufferGeometry[] = [];
+  for (const side of [-1, 1]) {
+    const positions: number[] = [], colors: number[] = [], indices: number[] = [];
+    for (let row = 0; row <= 12; row++) {
+      const t = row / 12, y = 1.02 - t * 2.40;
+      const inside = 0.75 + 0.25 * Math.sin(t * Math.PI);
+      for (let col = 0; col <= 18; col++) {
+        const u = col / 18, fold = Math.cos(u * Math.PI * 10);
+        positions.push(side * (inside + (1.23 - inside) * u), y, -0.115 - fold * 0.032);
+        const shade = 0.72 + 0.28 * (fold + 1) / 2;
+        const color = new THREE.Color(0x641e2d).multiplyScalar(shade);
+        colors.push(color.r, color.g, color.b);
+      }
+    }
+    for (let row = 0; row < 12; row++) for (let col = 0; col < 18; col++) {
+      const a = row * 19 + col, b = a + 19;
+      indices.push(a, b, a + 1, a + 1, b, b + 1);
+    }
+    const cloth = new THREE.BufferGeometry();
+    cloth.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    cloth.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    cloth.setIndex(indices); cloth.computeVertexNormals(); clothParts.push(cloth);
+    const cord = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(side * 0.98, -0.21, -0.16),
+      new THREE.Vector3(side * 1.08, -0.26, -0.20),
+      new THREE.Vector3(side * 1.23, -0.18, -0.16),
+    ]);
+    goldParts.push(new THREE.TubeGeometry(cord, 10, 0.013, 5, false));
+    const tassel = new THREE.CylinderGeometry(0.018, 0.038, 0.16, 6);
+    tassel.translate(side * 1.05, -0.36, -0.20); goldParts.push(tassel);
+  }
+  // Lambrequin froncé et galon courbe : laisse la partie centrale de la vitre lisible.
+  const swagPositions: number[] = [], swagColors: number[] = [], swagIndices: number[] = [];
+  const edge: THREE.Vector3[] = [];
+  for (let i = 0; i <= 32; i++) {
+    const x = -1.22 + i / 32 * 2.44;
+    const bottom = 0.72 + 0.21 * (x / 1.22) ** 2;
+    const fold = Math.cos(i / 32 * Math.PI * 16);
+    for (const y of [1.02, bottom]) {
+      swagPositions.push(x, y, -0.17 - fold * 0.018);
+      const color = new THREE.Color(0x6b2232).multiplyScalar(0.8 + fold * 0.12);
+      swagColors.push(color.r, color.g, color.b);
+    }
+    edge.push(new THREE.Vector3(x, bottom, -0.205));
+    if (i < 32) { const a = i * 2; swagIndices.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+  }
+  const swag = new THREE.BufferGeometry();
+  swag.setAttribute('position', new THREE.Float32BufferAttribute(swagPositions, 3));
+  swag.setAttribute('color', new THREE.Float32BufferAttribute(swagColors, 3));
+  swag.setIndex(swagIndices); swag.computeVertexNormals(); clothParts.push(swag);
+  goldParts.push(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(edge), 32, 0.012, 5, false));
+  const rod = new THREE.CylinderGeometry(0.023, 0.023, 2.55, 8);
+  rod.rotateZ(Math.PI / 2); rod.translate(0, 1.035, -0.12); goldParts.push(rod);
+  for (const [parts, material] of [
+    [clothParts, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, side: THREE.DoubleSide })],
+    [goldParts, new THREE.MeshStandardMaterial({ color: 0xa88a4e, roughness: 0.64, metalness: 0.32 })],
+  ] as const) {
+    const geometry = mergeGeometries(parts);
+    for (const part of parts) part.dispose();
+    if (!geometry) throw new Error('Fusion des rideaux du salon de musique impossible');
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.receiveShadow = true; group.add(mesh);
+  }
+  return group;
 }
 
 function pointedArch(): THREE.Shape {
@@ -62,6 +135,7 @@ export function createStormWindowVisuals(scene: THREE.Scene, specs: readonly Sto
   const shadowMap = windowShadowTexture();
   const projections: StormWindowVisuals['projections'] = [];
   const bolts: StormWindowVisuals['bolts'] = [];
+  const draperies: THREE.Group[] = [];
 
   for (const [index, spec] of specs.entries()) {
     const group = new THREE.Group();
@@ -118,7 +192,10 @@ export function createStormWindowVisuals(scene: THREE.Scene, specs: readonly Sto
     bolt.visible = false;
     group.add(bolt);
 
-    for (const side of [-1, 1]) {
+    if (spec.drapery === 'music') {
+      const drapery = musicDrapery();
+      group.add(drapery); draperies.push(drapery);
+    } else for (const side of [-1, 1]) {
       const curtain = new THREE.Shape();
       curtain.moveTo(side * 1.18, 0.85);
       curtain.lineTo(side * 0.88, 0.85);
@@ -147,5 +224,17 @@ export function createStormWindowVisuals(scene: THREE.Scene, specs: readonly Sto
     projections.push({ mesh, material, position });
     bolts.push({ mesh: bolt, position });
   }
-  return { glass, projections, bolts };
+  let draperyDisposed = false;
+  return { glass, projections, bolts, disposeDrapery() {
+    if (draperyDisposed) return;
+    draperyDisposed = true;
+    for (const group of draperies) {
+      group.removeFromParent();
+      group.traverse(object => {
+        if (!(object instanceof THREE.Mesh)) return;
+        object.geometry.dispose();
+        for (const material of Array.isArray(object.material) ? object.material : [object.material]) material.dispose();
+      });
+    }
+  } };
 }
