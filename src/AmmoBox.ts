@@ -75,6 +75,10 @@ export class AmmoBox {
     return this.consumed;
   }
 
+  public getWeaponType(): WeaponId {
+    return this.weaponType;
+  }
+
   public respawn(): void {
     if (!this.consumed) return;
     this.consumed = false;

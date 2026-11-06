@@ -7,12 +7,12 @@ registerHooks({
     return next(specifier.startsWith('.') && !/\.[a-z0-9]+$/i.test(specifier) ? `${specifier}.ts` : specifier, context);
   },
 });
-
 THREE.TextureLoader.prototype.load = function () { return new THREE.Texture(); };
 
 const { HorrorDirector } = await import('../src/HorrorDirector.ts');
 const { Level } = await import('../src/Level.ts');
 const { MANSION_HORROR_POINTS, MANSION_ROOMS } = await import('../src/MansionConfig.ts');
+const { ENCOUNTER_CONFIGS } = await import('../src/EncounterConfig.ts');
 const { Game } = await import('../src/Game.ts');
 
 class FakeSource {
@@ -34,115 +34,168 @@ const player = new THREE.Vector3(0, 1.7, 0);
 const lookingNorth = new THREE.Vector3(0, 0, -1);
 const behind = [{ x: 0, y: 1.3, z: 10 }];
 const ahead = [{ x: 0, y: 1.3, z: -10 }];
+// Pas binaire exact : les limites 3/4/6/10 s ne dépendent pas des arrondis de 0,05.
+const STEP = 1 / 32;
+const advance = (seconds, frame) => {
+  assert.ok(Number.isInteger(seconds / STEP), 'la durée simulée doit être un nombre exact de pas');
+  for (let i = 0; i < seconds / STEP; i++) frame(STEP);
+};
 const ticks = (director, seconds, eligible, points = behind) => {
-  const count = Math.ceil(seconds / 0.05);
-  for (let i = 0; i < count; i++) director.update(0.05, eligible, player, lookingNorth, points);
+  advance(seconds, (delta) => director.update(delta, eligible, player, lookingNorth, points));
+};
+const randomSequence = (...values) => {
+  let calls = 0;
+  const random = () => values[calls++] ?? 0;
+  return { random, get calls() { return calls; } };
+};
+
+// Vraies méthodes de Game, sans construire WebGL ni l'AudioContext.
+const makeGame = (random = () => 0) => {
+  const source = new FakeSource();
+  const director = new HorrorDirector(random);
+  director.setSource(source);
+  const game = Object.create(Game.prototype);
+  Object.assign(game, {
+    state: 'exploration', currentTier: 1, pendingTierStart: 2, respiteTimer: 10,
+    spawnQueue: 0, zombies: [], spitProjectiles: [], medkits: [], upgradePedestals: [],
+    debugMenuOpen: false, horrorDirector: director, encounterConfigs: ENCOUNTER_CONFIGS,
+    renderer: { domElement: {} },
+    player: { camera: { position: player.clone(), getWorldDirection: () => lookingNorth.clone() } },
+    level: { getAccessibleHorrorPoints: () => behind, getDoors: () => [] },
+    weapon: { setTargets() {} }, ambianceAudio: null,
+    updateObjectiveDisplay() {},
+  });
+  globalThis.document = { pointerLockElement: game.renderer.domElement, hidden: false, hasFocus: () => true };
+  return { game, source, director };
+};
+const respiteTicks = (game, seconds) => {
+  advance(seconds, (delta) => {
+    // Période sous contrôle : même ordre que la boucle réelle, transition avant audio.
+    if (game.state === 'exploration') game.advanceRespite(delta);
+    game.updateHorrorAudio(delta);
+  });
 };
 
 console.log('=== F5 — bruit spatial conditionnel ===');
 
-// Le vrai calcul d'éligibilité de Game doit exclure chaque état et chaque condition de focus.
+// Le vrai filtre Game exclut les phases, menaces et conditions de pause.
 {
-  globalThis.document = {
-    pointerLockElement: null,
-    hidden: false,
-    hasFocus: () => true,
-  };
-  const makeGame = () => {
-    const source = new FakeSource();
-    const director = new HorrorDirector(() => 0);
-    director.setSource(source);
-    const game = Object.create(Game.prototype);
-    Object.assign(game, {
-      state: 'exploration',
-      pendingTierStart: 2,
-      spawnQueue: 0,
-      zombies: [],
-      horrorDirector: director,
-      renderer: { domElement: {} },
-      player: { camera: { position: player.clone(), getWorldDirection: () => lookingNorth.clone() } },
-      level: { getAccessibleHorrorPoints: () => behind },
-      ambianceAudio: null,
-    });
-    globalThis.document.pointerLockElement = game.renderer.domElement;
-    return { game, source, director };
-  };
   const invalidCases = [
     ['combat', (game) => { game.state = 'playing'; }],
     ['phase terminale', (game) => { game.state = 'terminal'; game.pendingTierStart = 0; }],
+    ['menu debug', (game) => { game.debugMenuOpen = true; }],
     ['aucune rencontre en attente', (game) => { game.pendingTierStart = 0; }],
     ['apparitions en attente', (game) => { game.spawnQueue = 1; }],
     ['ennemi vivant', (game) => { game.zombies = [{ isAlive: () => true }]; }],
-    ['souris libérée', (game) => { globalThis.document.pointerLockElement = null; }],
-    ['onglet masqué', () => { globalThis.document.hidden = true; }],
-    ['application sans focus', () => { globalThis.document.hasFocus = () => false; }],
+    ['souris libérée', () => { document.pointerLockElement = null; }],
+    ['onglet masqué', () => { document.hidden = true; }],
+    ['application sans focus', () => { document.hasFocus = () => false; }],
   ];
   for (const [label, invalidate] of invalidCases) {
-    globalThis.document.hidden = false;
-    globalThis.document.hasFocus = () => true;
     const { game, source, director } = makeGame();
     invalidate(game);
-    for (let i = 0; i < 420; i++) game.updateHorrorAudio(0.05);
-    assert.equal(source.playCount, 0, `Game exclut ${label} même après 21 secondes`);
+    advance(11, (delta) => game.updateHorrorAudio(delta));
+    assert.equal(source.playCount, 0, `Game exclut ${label}`);
     director.dispose();
   }
+}
 
-  globalThis.document.hidden = false;
-  globalThis.document.hasFocus = () => true;
+// Régression : une accalmie réelle de dix secondes permet un son, avant le combat suivant.
+{
   const { game, source, director } = makeGame();
-  for (let i = 0; i < 362; i++) game.updateHorrorAudio(0.05);
-  assert.equal(source.playCount, 1, 'Game transmet une exploration admissible au vrai directeur');
-  globalThis.document.pointerLockElement = null;
+  respiteTicks(game, 3 - STEP);
+  assert.equal(source.playCount, 0, 'aucun son avant trois secondes éligibles');
+  respiteTicks(game, STEP);
+  assert.equal(source.playCount, 1, 'le son démarre pendant la fenêtre de dix secondes');
+  assert.equal(game.state, 'exploration');
+  assert.deepEqual(source.position.toArray(), [0, 1.3, 10]);
+  respiteTicks(game, 7 - STEP);
+  assert.equal(source.playCount, 1, 'une seule lecture avant la transition');
+  assert.equal(source.isPlaying, true);
+  respiteTicks(game, STEP);
+  assert.equal(game.state, 'playing', 'le vrai advanceRespite lance la rencontre suivante');
+  assert.equal(game.currentTier, 2);
+  assert.equal(game.pendingTierStart, 0);
+  assert.equal(source.isPlaying, false, 'startTier coupe le son précédent');
+  advance(10, (delta) => game.updateHorrorAudio(delta));
+  assert.equal(source.playCount, 1, 'aucun son supplémentaire en combat');
+  director.dispose();
+}
+
+// La borne haute reste dans l'accalmie ; une source terminée ne rejoue pas.
+{
+  const { game, source, director } = makeGame(randomSequence(0, 0.999, 0).random);
+  respiteTicks(game, 6 - STEP);
+  assert.equal(source.playCount, 0, 'le délai peut approcher six secondes');
+  respiteTicks(game, STEP);
+  assert.equal(source.playCount, 1);
+  source.stop();
+  respiteTicks(game, 4 - STEP);
+  assert.equal(source.playCount, 1, 'la fin naturelle du son ne réarme pas le directeur');
+  director.dispose();
+  assert.equal(source.disconnectCount, 1);
+  assert.equal(source.removeCount, 1);
+}
+
+// Une accalmie silencieuse ne retire pas au hasard à chaque frame ou regain de focus.
+{
+  const sampled = randomSequence(0.35, 0, 0, 0);
+  const { game, source, director } = makeGame(sampled.random);
+  respiteTicks(game, 3);
+  document.hidden = true;
   game.syncAmbientAudio();
-  assert.equal(source.isPlaying, false, 'syncAmbientAudio arrête réellement le craquement à la pause');
+  advance(20, (delta) => game.updateHorrorAudio(delta));
+  assert.equal(game.respiteTimer, 7, 'la pause ne consomme pas l’accalmie');
+  document.hidden = false;
+  respiteTicks(game, 7 - STEP);
+  assert.equal(source.playCount, 0, 'le tirage à 0,35 conserve toute l’accalmie silencieuse');
+  assert.equal(sampled.calls, 1, 'ni frames, ni pause/reprise ne retirent la probabilité');
+  respiteTicks(game, STEP);
+  assert.equal(sampled.calls, 3, 'le vrai startTier effectue un nouveau tirage et son délai');
+  Object.assign(game, { state: 'exploration', pendingTierStart: 3, spawnQueue: 0, respiteTimer: 10 });
+  respiteTicks(game, 3);
+  assert.equal(source.playCount, 1, 'le nouveau tirage permet un son à l’accalmie suivante');
   director.dispose();
 }
 
-// Délai, sélection regard/distance et unicité de l'événement.
+// Pause : temps gelé, arrêt immédiat et quatre secondes de silence à la reprise.
 {
-  const source = new FakeSource();
-  const director = new HorrorDirector(() => 0);
-  director.setSource(source);
-  ticks(director, 17.95, true);
-  assert.equal(source.playCount, 0, 'le délai minimum de 18 s doit être respecté');
-  ticks(director, 0.1, true);
-  assert.equal(source.playCount, 1, 'un point à 10 m derrière le joueur doit être choisi');
-  assert.deepEqual(source.position.toArray(), [0, 1.3, 10], 'la source audio prend la position du point choisi');
-  ticks(director, 40, true);
-  assert.equal(source.playCount, 1, 'une seule lecture par accalmie malgré les frames suivantes');
-  director.dispose();
-  assert.equal(source.stopCount, 1, 'dispose arrête la source active');
-  assert.equal(source.disconnectCount, 1, 'dispose libère la source audio');
-  assert.equal(source.removeCount, 1, 'dispose retire le PositionalAudio de la scène');
-}
-
-// Intervalle maximal et aucune activité dans les phases non éligibles.
-{
-  const source = new FakeSource();
-  const director = new HorrorDirector(() => 0.999);
-  director.setSource(source);
-  ticks(director, 60, false);
-  assert.equal(source.playCount, 0, 'combat, terminal et pause sont exclus par le contexte non éligible');
-  ticks(director, 29.95, true);
-  assert.equal(source.playCount, 0, 'le délai aléatoire peut atteindre 30 s');
-  ticks(director, 0.1, true);
-  assert.equal(source.playCount, 1, 'l’événement devient possible après 30 s éligibles');
+  const sampled = randomSequence(0, 0, 0);
+  const { game, source, director } = makeGame(sampled.random);
+  respiteTicks(game, 1);
+  document.hasFocus = () => false;
+  game.syncAmbientAudio();
+  advance(20, (delta) => game.updateHorrorAudio(delta));
+  document.hasFocus = () => true;
+  respiteTicks(game, 4);
+  assert.equal(source.playCount, 0, 'quatre secondes de silence précèdent le délai restant');
+  respiteTicks(game, 2 - STEP);
+  assert.equal(source.playCount, 0, 'le délai reprend au lieu de repartir de zéro');
+  assert.equal(sampled.calls, 2, 'la reprise de focus ne retire ni chance ni délai');
+  respiteTicks(game, STEP);
+  assert.equal(source.playCount, 1);
+  document.pointerLockElement = null;
+  game.syncAmbientAudio();
+  assert.equal(source.isPlaying, false, 'syncAmbientAudio coupe une lecture dès la pause');
   director.dispose();
 }
 
-// Pause : arrêt, gel du temps et silence imposé à la reprise.
+// Un délai proche de six secondes + le silence de reprise peut dépasser la fenêtre utile.
 {
-  const source = new FakeSource();
-  const director = new HorrorDirector(() => 0);
-  director.setSource(source);
-  ticks(director, 12, true);
-  director.suspend();
-  assert.equal(source.isPlaying, false, 'la suspension coupe la source immédiatement');
-  ticks(director, 50, false);
-  ticks(director, 3.95, true);
-  assert.equal(source.playCount, 0, 'la reprise impose au moins quatre secondes de silence');
-  ticks(director, 6.1, true);
-  assert.equal(source.playCount, 1, 'le délai restant reprend après le silence de reprise');
+  const sampled = randomSequence(0, 0.999, 0, 0);
+  const { game, source, director } = makeGame(sampled.random);
+  respiteTicks(game, 5.5);
+  document.pointerLockElement = null;
+  game.syncAmbientAudio();
+  advance(20, (delta) => game.updateHorrorAudio(delta));
+  document.pointerLockElement = game.renderer.domElement;
+  respiteTicks(game, 4.5 - STEP);
+  assert.equal(source.playCount, 0);
+  assert.equal(sampled.calls, 2, 'la pause tardive ne relance pas le hasard');
+  respiteTicks(game, STEP);
+  assert.equal(game.state, 'playing');
+  assert.equal(source.playCount, 0, 'le son est abandonné si sa frame coïncide avec la transition');
+  assert.equal(source.isPlaying, false);
   director.dispose();
 }
 
@@ -151,7 +204,7 @@ console.log('=== F5 — bruit spatial conditionnel ===');
   const source = new FakeSource();
   const director = new HorrorDirector(() => 0);
   director.setSource(source);
-  ticks(director, 18.5, true, ahead);
+  ticks(director, 3.5, true, ahead);
   assert.equal(source.playCount, 0, 'un point dans le cône de regard ne doit pas jouer');
   ticks(director, 2, true, [{ x: 0, y: 1.3, z: 5 }]);
   assert.equal(source.playCount, 0, 'un point trop proche ne doit pas jouer');
@@ -160,23 +213,13 @@ console.log('=== F5 — bruit spatial conditionnel ===');
   ticks(director, 2, true, []);
   assert.equal(source.playCount, 0, 'aucun point admissible conserve le silence');
   ticks(director, 1, true, behind);
-  assert.equal(source.playCount, 1, 'le directeur réévalue les points sans consommer l’accalmie');
+  assert.equal(source.playCount, 1, 'les points sont réévalués sans consommer l’accalmie');
+  director.setVolume(0);
+  assert.equal(source.isPlaying, false, 'le volume nul coupe aussi une lecture en cours');
   director.resetRespite();
-  director.setVolume(0);
-  ticks(director, 20, true, behind);
-  assert.equal(source.playCount, 1, 'le volume zéro désactive l’événement');
-  assert.equal(source.volume, 0, 'le volume appliqué à la source vaut zéro');
-  director.dispose();
-}
-
-{
-  const source = new FakeSource();
-  const director = new HorrorDirector(() => 0);
-  director.setSource(source);
-  ticks(director, 18.1, true);
-  assert.equal(source.isPlaying, true);
-  director.setVolume(0);
-  assert.equal(source.isPlaying, false, 'passer le volume à zéro coupe aussi une lecture en cours');
+  ticks(director, 10, true);
+  assert.equal(source.playCount, 1, 'le volume nul désactive le prochain événement');
+  assert.equal(source.volume, 0);
   director.setVolume(1.4);
   assert.equal(source.volume, 1, 'le volume ne dépasse jamais 1');
   director.dispose();

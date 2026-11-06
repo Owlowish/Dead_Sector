@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { setImpactSurface } from './ImpactSurface.ts';
 
 export const mansionSurfaceAssets = {
   wood: 'wood-structure-v1.png', stone: 'stone-ashlar-v1.png',
@@ -30,6 +31,7 @@ export function mansionMaterial(surface: MansionSurface, repeatX = 1, repeatY = 
   const map = repeatX === 1 && repeatY === 1 ? base : base.clone();
   map.repeat.set(repeatX, repeatY);
   const material = new THREE.MeshStandardMaterial({ map, roughness: 0.9, metalness: 0 });
+  setImpactSurface(material, surface === 'stone' || surface === 'brick' ? 'stone' : 'wood');
   material.name = `mansion-${surface}`;
   materials.set(key, material);
   return material;

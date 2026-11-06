@@ -1,7 +1,7 @@
 /**
  * DEAD SECTOR — Configuration centralisée des rencontres (Paliers de combat).
  * Découple la progression des rencontres de l'ouverture des secteurs du manoir.
- * Version F4 : Progression complète de 7 rencontres (Paliers 1 à 3 d'ouverture + Paliers 4 à 7 en manoir ouvert multidirectionnel).
+ * Paliers 1 à 3 d'ouverture, 4 à 7 en manoir ouvert, puis rencontre finale.
  */
 
 import type { Point2D } from './MansionConfig.ts';
@@ -30,6 +30,8 @@ export interface EncounterSpec {
   maxSimultaneousCrawler?: number;
   /** Nombre d'ennemis envoyés lors de la salve d'ouverture initiale */
   openingSpawns?: number;
+  /** Rencontre de clôture : un standard est remplacé par l'élite finale. */
+  finalEncounter?: boolean;
   /** Secteur déverrouillé à l'issue de cette rencontre (null si le manoir est déjà complètement ouvert) */
   unlockSectorTier: number | null;
   /** Type de transition pour déclencher la rencontre après l'accalmie */
@@ -48,7 +50,7 @@ export interface EncounterSpec {
 }
 
 /**
- * Pool étendu de points d'apparition candidats dans l'ensemble du manoir ouvert (Paliers 4 à 7).
+ * Pool étendu de points d'apparition candidats dans l'ensemble du manoir ouvert (Paliers 4 à 8).
  * Couvre équitablement les 4 points cardinaux et les deux niveaux (+0m et +2.4m) :
  * - Sud / Sud-Ouest : Grand Salon (masqué par le refend et la cheminée)
  * - Sud-Est : Vestibule d'entrée
@@ -231,7 +233,27 @@ export const ENCOUNTER_CONFIGS: EncounterSpec[] = [
     openingSpawns: 6,
     unlockSectorTier: null,
     activationType: 'arena_signal',
-    explorationPrompt: 'TENTATIVE COMPLÉTÉE · 7 PALIERS PURGÉS · MANOIR MAÎTRISÉ',
+    explorationPrompt: 'PALIER 7 PURGÉ · PRÉPAREZ-VOUS À LA RENCONTRE FINALE',
+    sectorBounds: { minX: -23.5, maxX: 23.5, minZ: -19.5, maxZ: 19.5 },
+    spawnPool: MANSION_OPEN_SPAWN_POOL,
+  },
+  {
+    tierNumber: 8,
+    name: 'Le Gardien du Manoir',
+    sectorName: 'RENCONTRE FINALE · MANOIR OUVERT',
+    finalEncounter: true,
+    totalZombies: 6,
+    maxActiveZombies: 4,
+    maxAgile: 3,
+    maxSimultaneousAgile: 2,
+    maxSpitter: 1,
+    maxSimultaneousSpitter: 1,
+    maxCrawler: 0,
+    maxSimultaneousCrawler: 0,
+    openingSpawns: 3,
+    unlockSectorTier: null,
+    activationType: 'arena_signal',
+    explorationPrompt: 'MANOIR LIBÉRÉ · TENTATIVE TERMINÉE',
     sectorBounds: { minX: -23.5, maxX: 23.5, minZ: -19.5, maxZ: 19.5 },
     spawnPool: MANSION_OPEN_SPAWN_POOL,
   },

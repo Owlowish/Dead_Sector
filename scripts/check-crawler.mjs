@@ -125,6 +125,10 @@ for (let t = 3; t < 7; t++) {
 }
 console.log('   -> Paliers 4 à 7 : quotas de Rampeurs [2, 2, 2, 2] rigoureusement respectés.\n');
 
+const finale = ENCOUNTER_CONFIGS[7];
+assert.equal(finale.finalEncounter, true, 'P8 porte bien le contrat de finale');
+assert.equal(finale.maxCrawler ?? 0, 0, 'La finale garde son groupe dédié sans Rampeuse ajoutée implicitement');
+
 console.log('========================================================');
 console.log('CONTRÔLES FICHIERS, GÉOMÉTRIE ET CONFIGURATION RÉUSSIS. Gameplay non validé par ce script.');
 console.log('========================================================');

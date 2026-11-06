@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>dead_sector</title>
+    <title>DEAD SECTOR</title>
   </head>
   <body>
     <div id="app"></div>
@@ -57,14 +57,47 @@
         </div>
       </div>
     </div>
-    <div id="objective" class="objective" aria-live="polite">PALIER 1 · 3 MENACES</div>
-    <div id="health" class="health" aria-live="polite">VIE : 100</div>
-    <div id="flashlight-status" class="flashlight-status" aria-live="polite">[F] LAMPE : ALLUMÉE</div>
-    <div id="ammo" class="ammo" aria-live="polite">CHARGEUR : 10 / 15 · RÉSERVE : 30</div>
-    <div id="prompt" class="prompt" hidden>[E] OUVRIR LA PORTE</div>
+    <div id="objective" class="objective" data-phase="combat" role="group" aria-label="Progression de la tentative">
+      <div class="objective-heading">
+        <span class="hud-eyebrow" data-hud-phase>PALIER 1 / 8</span>
+        <span class="objective-mark" aria-hidden="true">DS</span>
+      </div>
+      <div class="objective-sector" data-hud-sector>VESTIBULE</div>
+      <div class="objective-progress" data-hud-progress>4 MENACES</div>
+      <div class="respite-track" data-hud-respite-bar style="--fill: 100%" aria-hidden="true" hidden></div>
+      <div class="objective-announcement" data-hud-announcement hidden></div>
+    </div>
+    <div id="health" class="health" role="group" aria-label="Santé">
+      <div class="hud-panel-heading">
+        <span class="hud-eyebrow">VIE</span>
+        <span class="health-state" data-hud-health-state>STABLE</span>
+      </div>
+      <div class="health-reading"><strong data-hud-health-value>100</strong><span class="hud-value-limit">/ <span data-hud-health-max>100</span></span></div>
+      <div class="health-track" data-hud-health-bar style="--fill: 100%" aria-hidden="true"></div>
+    </div>
+    <div id="flashlight-status" class="flashlight-status" role="group" aria-label="Lampe torche">
+      <kbd class="hud-key">F</kbd><span class="lamp-icon" aria-hidden="true"></span><span>LAMPE</span><span class="lamp-state" data-hud-lamp-state>ALLUMÉE</span>
+    </div>
+    <div id="ammo" class="ammo" role="group" aria-label="Arme et munitions">
+      <div class="hud-panel-heading">
+        <span class="hud-eyebrow" data-hud-weapon-name>PISTOLET</span>
+        <div class="weapon-slots" aria-label="Armes disponibles"><span class="weapon-slot is-active" data-hud-slot="pistol"><kbd>1</kbd> PIST.</span><span class="weapon-slot" data-hud-slot="shotgun" hidden><kbd>2</kbd> FUSIL</span></div>
+      </div>
+      <div class="ammo-readings">
+        <div class="magazine-reading"><strong data-hud-magazine>10</strong><span class="hud-value-limit">/ <span data-hud-capacity>15</span></span></div>
+        <div class="reserve-reading"><span class="hud-eyebrow">RÉSERVE</span><span data-hud-reserve>30</span></div>
+      </div>
+      <div class="ammo-state" data-hud-ammo-state>PRÊT</div>
+    </div>
+    <div id="prompt" class="prompt" hidden>
+      <kbd class="hud-key" data-hud-prompt-key>E</kbd>
+      <span class="prompt-copy"><strong data-hud-prompt-action>OUVRIR</strong><span data-hud-prompt-object>LA PORTE</span></span>
+    </div>
+    <div id="hud-notifications" class="hud-notifications" role="status" aria-live="polite" aria-atomic="false"></div>
     <div id="pause-message" class="message">Cliquez pour jouer · Clic droit : viser · [F] Lampe · [E] Ouvrir · Échap : pause · [K] Debug
       <label class="horror-volume">Craquement lointain <input id="horror-volume" type="range" min="0" max="1" step="0.01" value="0.18" aria-label="Volume des craquements lointains"><output id="horror-volume-value">18 %</output></label>
       <label class="horror-volume">Musique <input id="music-volume" type="range" min="0" max="1" step="0.01" value="0.4" aria-label="Volume de la musique"><output id="music-volume-value">40 %</output></label>
+      <button id="run-summary-open" class="restart-button" type="button" hidden>Consulter le bilan · B</button>
     </div>
     <section id="debug-menu" class="debug-menu" role="dialog" aria-modal="true" aria-labelledby="debug-title" aria-describedby="debug-description" hidden>
       <div class="debug-panel">
@@ -75,8 +108,25 @@
         <small>Après fermeture, cliquez dans le jeu pour reprendre le contrôle.</small>
       </div>
     </section>
-    <div id="game-over" class="message game-over" role="alert" hidden>VOUS ÊTES MORT<br><button class="restart-button" type="button">Recommencer une tentative</button></div>
-    <div id="victory" class="message game-over victory" role="status" hidden>TENTATIVE SURVÉCUE<br><small>Tentative réussie · Les 7 rencontres ont été surmontées</small><button class="restart-button" type="button">Recommencer une tentative</button></div>
+    <section id="run-summary" class="debug-menu" role="dialog" aria-modal="true" aria-labelledby="run-summary-title" hidden>
+      <div class="debug-panel run-panel">
+        <h2 id="run-summary-title">BILAN DE TENTATIVE</h2>
+        <dl class="run-stats">
+          <div><dt>Temps actif</dt><dd data-run-stat="duration">0:00</dd></div>
+          <div><dt>Paliers purgés</dt><dd data-run-stat="tiers">0 / 8</dd></div>
+          <div><dt>Tirs</dt><dd data-run-stat="shots">0</dd></div>
+          <div><dt>Impacts</dt><dd data-run-stat="hits">0</dd></div>
+          <div><dt>Dégâts subis</dt><dd data-run-stat="damage">0 PV</dd></div>
+          <div><dt>Tentative</dt><dd data-run-stat="mode">Normale</dd></div>
+        </dl>
+        <div class="run-actions">
+          <button type="button" data-summary-close>Fermer · B / Échap</button>
+          <button type="button" data-summary-restart>Nouvelle tentative</button>
+        </div>
+        <small data-summary-hint>Fermez le bilan puis cliquez dans le jeu pour reprendre l'exploration.</small>
+      </div>
+    </section>
+    <div id="game-over" class="message game-over" role="alert" hidden>VOUS ÊTES MORT<br><small>[B] Consulter le bilan</small><br><button class="restart-button" type="button">Recommencer une tentative</button></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

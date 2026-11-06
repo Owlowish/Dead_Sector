@@ -5,6 +5,7 @@ import { zombieAnimation, attackFrame, createAtlasFrameGeometry } from './Zombie
 import { ZombieRemains } from './ZombieRemains.ts';
 import { SpitterZombie } from './SpitterZombie.ts';
 import { prepareSpriteHitMask } from './SpriteHitMask.ts';
+import { finalEliteConfig } from './FinaleConfig.ts';
 import {
   agileZombieConfig,
   agileAnimationsData,
@@ -152,6 +153,8 @@ export class Zombie {
   private remains: ZombieRemains;
   private disposed = false;
   private readonly kind: 'standard' | 'agile';
+  private readonly elite: boolean;
+  private readonly displayScale: number;
 
   // Ressources zombie standard (partagées en cache)
   private standardResources: StandardSharedResources | null = null;
@@ -173,10 +176,12 @@ export class Zombie {
   private readonly stopDistance = 1.2;
   private readonly separationRadius = 0.85;
   private readonly separationStrength = 1.8;
-  private readonly attackRange = 1.4;
-  private readonly attackDamage = 10;
+  private readonly attackRange: number;
+  private readonly attackDamage: number;
   private readonly attackInterval: number;
   private readonly attackWindupDuration: number;
+  private readonly attackImpactDuration: number;
+  private readonly attackRecoveryDuration: number;
   private readonly hurtDuration: number;
   private attackWindupRemaining = 0;
   private attackCooldown = 0;
@@ -209,17 +214,24 @@ export class Zombie {
     x: number,
     z: number,
     kind: 'standard' | 'agile' = 'standard',
-    random: () => number = Math.random
+    random: () => number = Math.random,
+    options: { elite?: boolean } = {}
   ) {
     this.level = level;
     this.kind = kind;
     this.random = random;
+    this.elite = options.elite === true && kind === 'standard';
+    this.displayScale = this.elite ? finalEliteConfig.scale : 1;
+    this.attackRange = this.elite ? finalEliteConfig.attackRange : 1.4;
+    this.attackDamage = this.elite ? finalEliteConfig.attackDamage : 10;
     const initialFloorY = typeof this.level.getFloorHeightAt === 'function' ? this.level.getFloorHeightAt(x, z) : 0;
 
     if (kind === 'agile') {
       this.speed = agileZombieConfig.speed;
       this.health = agileZombieConfig.health;
       this.attackWindupDuration = agileZombieConfig.attackWindup;
+      this.attackImpactDuration = agileZombieConfig.attackImpactDuration;
+      this.attackRecoveryDuration = agileZombieConfig.attackRecoveryDuration;
       this.attackInterval = agileZombieConfig.attackInterval;
       this.hurtDuration = agileZombieConfig.hurtDuration;
       this.frameCount = agileAnimationsData.run.frames.length;
@@ -236,10 +248,12 @@ export class Zombie {
       this.mesh.customDepthMaterial = this.agileResources.depthMaterials.idle;
       this.mesh.customDistanceMaterial = this.agileResources.distanceMaterials.idle;
     } else {
-      this.speed = 1.5;
-      this.health = 100;
-      this.attackWindupDuration = zombieAnimation.windup;
-      this.attackInterval = 1.0;
+      this.speed = this.elite ? finalEliteConfig.speed : 1.5;
+      this.health = this.elite ? finalEliteConfig.health : 100;
+      this.attackWindupDuration = this.elite ? finalEliteConfig.attackWindup : zombieAnimation.windup;
+      this.attackImpactDuration = zombieAnimation.impactDuration;
+      this.attackRecoveryDuration = this.elite ? finalEliteConfig.attackRecovery : zombieAnimation.recoveryDuration;
+      this.attackInterval = this.elite ? finalEliteConfig.attackRecovery : 1.0;
       this.hurtDuration = zombieAnimation.hurtDuration;
       this.frameCount = zombieAnimation.walk.frames;
       this.frameDuration = zombieAnimation.walk.frameDuration;
@@ -262,12 +276,21 @@ export class Zombie {
       this.mesh.customDistanceMaterial = this.standardResources.distanceMaterials.idle;
     }
 
+    if (this.elite) {
+      this.mesh.scale.setScalar(this.displayScale);
+      this.mesh.position.y = initialFloorY + this.displayScale;
+      this.material.color.setHex(visualColors.brass);
+    }
     scene.add(this.mesh);
     this.remains = new ZombieRemains(scene, this.kind);
   }
 
   public getKind(): 'standard' | 'agile' {
     return this.kind;
+  }
+
+  public isElite(): boolean {
+    return this.elite;
   }
 
   public setupAudio(listener: THREE.AudioListener, buffer: AudioBuffer): void {
@@ -364,6 +387,7 @@ export class Zombie {
     } else {
       this.hitFlashRemaining = this.hitFlashDuration;
       this.hurtRemaining = this.hurtDuration;
+      if (this.elite) this.material.emissiveIntensity = 0;
       // Une blessure interrompt la préparation d'attaque
       this.attackWindupRemaining = 0;
       this.attackAnimationTime = null;
@@ -381,7 +405,7 @@ export class Zombie {
 
   private die(headHit = false): void {
     const revivalChance = this.kind === 'agile' ? 0.12 : 0.2;
-    this.revivalPending = !headHit && (this.kind === 'standard' || this.kind === 'agile') && !this.hasRevived && this.random() < revivalChance;
+    this.revivalPending = !this.elite && !headHit && (this.kind === 'standard' || this.kind === 'agile') && !this.hasRevived && this.random() < revivalChance;
     this.revivalDelay = this.revivalPending ? (this.kind === 'agile' ? 2.0 : 2.5) : 0;
     this.alive = false;
     this.mesh.visible = false;
@@ -390,7 +414,7 @@ export class Zombie {
     this.hurtRemaining = 0;
     this.isWalking = false;
     this.stopAudio();
-    this.remains.start(this.mesh.position, this.mesh.rotation.y);
+    this.remains.start(this.mesh.position, this.mesh.rotation.y, this.displayScale);
 
     console.log(`Zombie [${this.kind}] éliminé !`);
   }
@@ -462,10 +486,7 @@ export class Zombie {
     this.attackCooldown = Math.max(0, this.attackCooldown - delta);
     if (this.attackAnimationTime !== null) this.attackAnimationTime += delta;
 
-    const attackTotalDuration =
-      this.kind === 'agile'
-        ? agileZombieConfig.attackWindup + agileZombieConfig.attackImpactDuration + agileZombieConfig.attackRecoveryDuration
-        : zombieAnimation.windup + zombieAnimation.impactDuration + zombieAnimation.recoveryDuration;
+    const attackTotalDuration = this.attackWindupDuration + this.attackImpactDuration + this.attackRecoveryDuration;
 
     if (this.state === 'RECOVER' && this.attackAnimationTime !== null && this.attackAnimationTime >= attackTotalDuration) {
       this.attackAnimationTime = null;
@@ -502,7 +523,8 @@ export class Zombie {
       this.searchWaypoint = null;
       this.searchReplanTimer = 0;
     }
-    if (this.state === 'ATTACK' && (distance > this.attackRange || !canSeePlayer)) {
+    // L'élite s'engage dans son coup : une esquive la laisse exposée en récupération.
+    if (!this.elite && this.state === 'ATTACK' && (distance > this.attackRange || !canSeePlayer)) {
       this.attackWindupRemaining = 0;
       this.attackAnimationTime = null;
       this.state = 'IDLE';
@@ -548,9 +570,11 @@ export class Zombie {
     }
 
     // Répulsion mutuelle pour éviter l'empilement
-    const sep = this.computeSeparation(otherZombies, delta);
-    moveX += sep.x;
-    moveZ += sep.z;
+    if (!this.elite || (this.state !== 'ATTACK' && this.state !== 'RECOVER')) {
+      const sep = this.computeSeparation(otherZombies, delta);
+      moveX += sep.x;
+      moveZ += sep.z;
+    }
 
     if (moveX !== 0 || moveZ !== 0) {
       this.move(moveX, moveZ);
@@ -563,7 +587,7 @@ export class Zombie {
     const canAttack = attackDistance <= this.attackRange && this.hasClearPath(attackX, attackY, attackZ, attackDistance);
 
     if (this.state === 'ATTACK') {
-      if (!canAttack) {
+      if (!canAttack && !this.elite) {
         this.attackWindupRemaining = 0;
         this.attackAnimationTime = null;
         this.state = 'IDLE';
@@ -573,7 +597,7 @@ export class Zombie {
           this.state = 'RECOVER';
           this.attackAnimationTime = this.attackWindupDuration;
           this.attackCooldown = this.attackInterval;
-          onAttack(this.attackDamage);
+          if (canAttack) onAttack(this.attackDamage);
         }
       }
     } else if (this.state !== 'RECOVER' && canAttack && this.attackCooldown === 0) {
@@ -583,8 +607,12 @@ export class Zombie {
     }
 
     this.material.color.setHex(
-      this.hitFlashRemaining > 0 ? visualColors.blood : this.state === 'ATTACK' ? visualColors.warning : 0xffffff
+      this.hitFlashRemaining > 0 ? visualColors.blood : this.state === 'ATTACK' ? visualColors.warning : this.elite ? visualColors.brass : 0xffffff
     );
+    if (this.elite) {
+      this.material.emissive.setHex(visualColors.warning);
+      this.material.emissiveIntensity = this.state === 'ATTACK' ? 0.35 : 0;
+    }
 
     const movedDistance = Math.hypot(this.mesh.position.x - oldX, this.mesh.position.z - oldZ);
     this.isWalking = movedDistance > 0.00001;
@@ -618,7 +646,12 @@ export class Zombie {
     if (this.attackAnimationTime !== null) {
       this.frameIndex = 0;
       this.frameTimer = 0;
-      this.showStandardFrame('attack', attackFrame(this.attackAnimationTime));
+      const animationTime = this.elite
+        ? this.attackAnimationTime < this.attackWindupDuration
+          ? this.attackAnimationTime * zombieAnimation.windup / this.attackWindupDuration
+          : zombieAnimation.windup + this.attackAnimationTime - this.attackWindupDuration
+        : this.attackAnimationTime;
+      this.showStandardFrame('attack', attackFrame(animationTime));
       return;
     }
     if (!this.isWalking) {
@@ -741,6 +774,6 @@ export class Zombie {
     }
 
     const floorY = typeof this.level.getFloorHeightAt === 'function' ? this.level.getFloorHeightAt(this.mesh.position.x, this.mesh.position.z) : 0;
-    this.mesh.position.y = floorY + 1.0;
+    this.mesh.position.y = floorY + this.displayScale;
   }
 }

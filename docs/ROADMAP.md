@@ -1,120 +1,62 @@
-# DEAD SECTOR — Roadmap d'une tentative complète
+# DEAD SECTOR — Travaux restants
 
-Mise à jour du 2 novembre 2026. Direction validée : tentative de 10 à 15 minutes avec rencontre finale, progression au-delà du palier 3, améliorations sans menu automatique et horreur psychologique. Ce plan ne décrit pas des fonctionnalités déjà livrées et n'autorise pas tous les ateliers en une seule intervention.
+Plan actualisé le 6 novembre 2026 depuis le code local. État et vérifications dans `ETAT_PROJET.md` ; conception gameplay, compositions chiffrées et boss dans `ORIENTATION_JEU.md`. UI1–UI3 sont implémentés ; G1–G4 et UI4–UI6 restent des propositions à réaliser.
 
-## Destination et décisions
+## Socle présent
 
-Même manoir victorien ouvert progressivement, circuits de fuite et demi-niveau existants conservés. Après ouverture complète, la variété vient des rencontres et des décisions, sans nouvelle aile à chaque palier. Deux armes et deux variantes suffisent au premier équilibrage.
+Manoir progressif, deux armes, quatre types d'ennemis, relèves, drops, transitions automatiques, rendu rétro, orage et diagnostics. Le travail local ajoute P8 avec élite, victoire libre, bilan B, nouvelle tentative sans rechargement de page et impacts bois/pierre/métal. Leur présence dans le code ne vaut pas validation en partie.
 
-**Validé :** format fini 10–15 minutes avec finale ; récompenses gratuites ; aucun menu surgissant après la dernière élimination ; horreur psychologique par sons, silhouettes et événements inquiétants ; jeu léger et style pixel art cohérent.
+## Priorité gameplay — lots proposés
 
-**Proposé, à tester :** huit paliers, dispositifs de choix dans le monde, rythme des accalmies, catalogue de bonus et identité de la finale. La durée est une cible observée, pas un chronomètre imposant la victoire. Aucune survie infinie ou méta-progression implicitement validée.
+**G1 — Équité et mesures fiables.** Corriger obstacle/altitude des attaques de Rampeuse ; conserver les reliquats de munitions ; distinguer relève et élimination dans les quotas de drops. Différer une paire Cracheur/escorte bloquée sans empêcher les autres apparitions ni consommer son quota réservé. Mesurer temps actif, tirs par arme, stocks et gains réels. **Acceptation :** pas de dégâts entre étages ou derrière porte ; collecte partielle exacte ; pause exclue des durées ; quotas/relèves et file d'apparition conservés.
 
-## Socle constaté
+**G2 — Rythme et choix d'armes.** Appliquer les compositions P1–P7 proposées, introduire les spécialistes dans l'ordre prévu et donner à P6 deux poussées finies ; comparer fusil 12/13 dégâts corps par plomb et préparation Rampeuse 0,18/0,35 s. Associer UI1–UI3 à ce lot pour lire combat, gains et transitions. **Acceptation :** jouer l'enchaînement et les deux circuits, relever ressources/dégâts/durée active ; garder dix secondes entre paliers, aucun nouveau contrôle obligatoire ni changement du recul de deux secondes.
 
-Trois paliers, apparitions différées, portes/raccourcis, manoir 48 × 40 avec demi-niveau +2,4 m et plafonds, pistolet/fusil, ADS/rechargement, lampe, standards/agiles et cadavres nettoyés au palier suivant. Voir le code et ETAT_PROJET pour les limites réelles.
+**G3 — Duel final du Gardien.** Après G1 et vérification ciblée de l'élite actuelle, remplacer sa composition P8 par le duel décrit dans la direction : deux attaques, deux phases, budget fini et poursuite dans le manoir ouvert. Prototyper les comportements avant les assets dédiés. **Acceptation :** esquives et couvert observés, aucune annulation systématique par le pistolet, victoire possible sans fusil ni stock hérité, mort et changement de phase sûrs, exploration/bilan/redémarrage conservés.
 
-`enterRespite` réapprovisionne et passe directement à l'exploration : le choix d'amélioration n'est plus actif dans ce flux. L'atelier performance F0 est confié à Gemini, avec changements locaux en cours ; vérifier ses résultats sans présumer ses gains.
+**G4 — Calage de la tentative.** Comparer une découverte et un joueur connaissant les circuits, puis ajuster un axe à la fois. Documenter écarts à la cible de 10–15 minutes ; ne pas les masquer par attentes ou PV artificiels. Conserver les valeurs expérimentales seulement si les parties les justifient. UI4–UI6 restent le lot de confort et de finition.
 
-Les roadmaps à trois paliers et linéaires sont archivées dans `docs/archives`. Elles ne sont plus la liste des prochaines tâches.
+## Plan UI — direction et règles
 
-## Transition proposée sans rupture de contrôle
+**Carnet d'incident victorien** : anthracite, ivoire, laiton patiné ; rouge réservé au danger, sauge à la réussite. Conserver la palette existante, des cadres fins et des ornements sobres dans les menus. Monde pixelisé, textes nets ; chiffres dominants, libellés secondaires, icônes accompagnées d'un sens explicite.
 
-1. Dernière élimination : signal discret, chute du dernier ennemi conservée, déplacement et souris conservés. Aucun menu automatique.
-2. Accalmie : recharger, se soigner, explorer et rejoindre un dispositif clairement signalé. Pas de nouveaux ennemis pendant le choix.
-3. Deux objets/panneaux présentent les offres gratuites. Viser révèle l'effet ; une pression fraîche sur E choisit une offre, une seule fois pour ce palier.
-4. Un objet de départ distinct lance le combat suivant après préparation. La même pression de touche ne choisit pas et ne démarre pas simultanément.
-5. Possibilité proposée de passer explicitement le choix ; l'offre du palier est alors fermée. Pas de récompense différée récupérable après le départ, ni compte à rebours obligatoire au premier prototype.
+- Bas gauche : vie et lampe ; bas droite : arme et munitions ; haut gauche : progression et annonces ; centre : visée et courte interaction seulement.
+- Vie, munitions et progression toujours disponibles. Deux notifications simultanées maximum, proches du bloc concerné, fusionnées si répétées et effacées après environ deux secondes actives.
+- Les informations de combat restent fiables. Pas de radar, inventaire, batterie de lampe, dégâts flottants ou retour des améliorations dormantes dans ce lot.
+- Accalmie libre de dix secondes et victoire sans menu imposé conservées. Le total des paliers vient des configurations ; aucun chiffre 8 figé dans l'UI.
 
-Activer des supports préplacés près de la progression, plutôt que forcer un retour au vestibule après chaque combat. Tester le placement pour que les décisions restent brèves. Présentation détaillée possible à la demande, sans imposer une capture de souris. Le dispositif exact reste une proposition à valider sur un prototype.
+### UI1–UI3 — Socle livré ; validation en partie restante
 
-## Structure proposée : huit rencontres
+Fonctionnalités et contrôles dans `ETAT_PROJET.md`, responsabilité de présentation dans `ARCHITECTURE.md`. Avant extension : éprouver lecture vie/munitions/menaces, notifications, invites et transitions en combat hanche/ADS, puis comparer les temps d'image dans les mêmes conditions. Avec G3 seulement, ajouter la jauge compacte du Gardien prévue dans la direction ; aucune barre sur les ennemis ordinaires.
 
-| Palier | Intention | Espaces/pression |
-| --- | --- | --- |
-| 1 | Apprendre le tir et une boucle | Secteur initial, ennemis lents |
-| 2 | Lire deux menaces | Grand Hall, premiers agiles |
-| 3 | Apprendre la verticalité | Plateau et escaliers |
-| 4 | Réutiliser le manoir ouvert | Attaques depuis plusieurs ailes accessibles |
-| 5 | Alterner précision et mobilité | Mélanges lents/agiles |
-| 6 | Anticiper les renforts | Arrivées annoncées et accalmies locales |
-| 7 | Maîtriser les itinéraires | Pression multidirectionnelle avec voie de fuite |
-| 8 | Conclure | Finale lisible avec récupération entre attaques |
+### UI4 — Accueil, pause et commandes · priorité moyenne
 
-Budgets indicatifs : environ 6–9 minutes de combats ordinaires, 2–4 minutes de préparation/exploration et 1–2 minutes de finale. Ajuster par des tentatives complètes pour atteindre réellement 10–15 minutes ; le nombre définitif de paliers reste négociable.
+Accueil avec titre, Entrer dans le manoir, Réglages et Commandes. Pause distincte : Reprendre, Réglages, Commandes ; expliquer la reprise au clic et l'échec éventuel de capture souris. Aide complète ZQSD/WASD, Maj, tir, ADS, R, E, F, 1/2 et molette. Debug K visuellement séparé. Un seul panneau actif ; clics et clavier des menus sans effet sur le combat.
 
-Conserver d'abord le quota actuel de quatre ennemis actifs. Varier composition, directions et rythme avant d'allonger les vagues. Garder des occasions de recharger. Éviter l'inflation simultanée santé/vitesse/quantité et les ennemis artificiellement supprimés par un délai de fin.
+**Acceptation :** navigation clavier, focus visible/confiné puis restitué, Échap cohérent, alt-tab et refus du Pointer Lock sans blocage. Menus ouverts : simulation, ramassages et décompte suspendus ; retour par geste explicite sans tir accidentel.
 
-## Ateliers ordonnés
+### UI5 — Réglages persistants et lisibilité · priorité moyenne
 
-### F0 — Transitions fluides (déjà autorisé, confié à Gemini)
+Échelle HUD 80–150 %, taille/contraste du réticule, sensibilité, luminosité calibrée et bornée ; volumes musique, ambiance, effets et craquement. Réduction des éclairs, du voile rouge et des scanlines sans supprimer les vrais signaux d'attaque. Libellés français, contraste et états lisibles sans dépendre seulement d'une couleur ; annonces d'accessibilité brèves sans lecture à chaque cartouche. Valeurs validées et persistantes, bouton rétablir les valeurs initiales.
 
-- Résultat : temps d'image brut, navigation réutilisée avec portes mobiles, ressources conservées entre paliers. Lire AUDIT_PERFORMANCES_PALIERS et inspecter les changements en cours.
-- Concepts : budget d'image, graphe, durée de vie des ressources.
-- Fichiers : Game, Level/Door, Zombie, AgileZombieAnimation, ZombieRemains, PerfTracker si présent.
-- Validation : mesures avant/après comparables, p95/p99/max, premières apparitions standard/agile, portes/escaliers et corps nettoyés. Build seul insuffisant.
+**Acceptation :** effet réel de chaque réglage, persistance après recharge et redémarrage, stockage indisponible toléré. Vérifier notamment les deux chemins audio (`Audio` et Three.js). Tester 1280 × 720, 1920 × 1080, 1024 × 768 et ultralarge, échelle maximale comprise. Conserver le recul de deux secondes.
 
-### F1 — Séparer rencontres et secteurs
+### UI6 — Mort, victoire et bilan · priorité moyenne
 
-- Résultat : passer au palier 4 sans quatrième secteur ni victoire prématurée. Conserver les trois premières rencontres et ajouter un quatrième cas court pour valider la structure ; la finale complète vient plus tard.
-- Concepts : données de configuration et transitions d'état.
-- Fichiers : Game, MansionConfig, éventuellement EncounterConfig, HUD et tests de paliers.
-- Validation : accès déjà ouverts conservés ; apparitions dans les zones autorisées ; compteurs incluant la file d'attente ; fin d'une tentative indépendante du nombre de secteurs.
-- Exercice : expliquer pourquoi la longueur de la liste des secteurs ne doit plus décider de la victoire.
+Habiller le bilan existant comme un rapport : résultat/paliers d'abord, durée active/dégâts ensuite, tirs et impacts en détail. Après victoire : Continuer à explorer et Nouvelle tentative ; après mort : bilan et nouvelle tentative sans proposer de reprendre le combat. Marquer clairement les essais debug. Ne pas présenter impacts/tirs comme un pourcentage de précision : plusieurs plombs peuvent toucher par tir.
 
-### F2 — Choisir une amélioration sans menu imposé
+**Acceptation :** bilan volontaire par B après réussite, déplacement conservé tant qu'il est fermé ; fermeture cohérente après mort ; deux redémarrages successifs sans état résiduel. Réutiliser les métriques existantes plutôt qu'inventer un score.
 
-- Résultat : prototype des deux offres dans le monde et du départ distinct selon le contrat ci-dessus, avec les assets existants.
-- Concepts : options éligibles et consommation unique d'une décision.
-- Fichiers : Game, Weapon/Player, interaction et HUD ; extraire une classe seulement si la responsabilité devient concrète.
-- Commencer avec quelques bonus bornés : réserve, précision à la hanche, mobilité ADS, rechargement. Si la vitesse de rechargement change, adapter toute sa chronologie et son instant de transfert ensemble.
-- Validation : aucune capture de souris automatique ; un seul bonus ; E maintenu ne double rien ; offre passée fermée ; pas de bonus récupérable après départ ; remise à zéro à la nouvelle tentative ; aucune offre inutile ou pour une arme absente.
-- Prévoir un ravitaillement minimal indépendant du choix pour éviter une tentative impossible faute de munitions.
-- Exercice : distinguer « offre disponible » et « avantage appliqué ».
+## Ordre d'implémentation et vérification
 
-### F3 — Salle témoin visuelle et sonore
+Ordre gameplay : G1 → G2 avec le HUD UI1–UI3 livré → G3 → G4. Dans l'UI, valider ce socle en partie avant UI4 → UI5 pour le confort ; UI6 termine la cohérence des écrans. Valider chaque lot avant extension, sans tout livrer d'un coup.
 
-- Résultat : une salle existante, par exemple le Grand Salon, devient la référence avant d'étendre le style au manoir. Auditer le rendu réel et comparer les mêmes points de vue avant/après.
-- Concepts : hiérarchie visuelle, contraste utile et son spatial.
-- Fichiers : Level, VisualStyle, audio Game/Zombie/Player et assets concernés. Appliquer PIPELINE_ASSETS pour tout asset animé.
-- Améliorer repères de passage, usure, silhouettes des objets et cohérence des textures/pixels. Garder une attaque, un escalier et une poignée lisibles dans l'obscurité. Quelques sons de bâtiment avec intervalles de silence ; éviter les boucles courtes agressives.
-- Budget : matériaux/textures réutilisés, décor statique hors des trajets, pas de nouvelle ombre pour chaque bougie ni miroir temps réel ou post-traitement lourd nécessaire au résultat.
-- Validation : lecture des ennemis/escaliers, arme cohérente avec la lumière, temps d'image comparable et écoute à volume modéré.
-- Exercice : identifier le repère qui attire le regard et vérifier qu'il aide à se déplacer.
+Points d'entrée UI : `index.html` / `src/style.css`, `GameHud.ts` et callbacks de `Game.ts`. Garder la progression dans `Game`, sans bus ni framework. Les futurs réglages demandent de vrais points d'application dans le joueur, le rendu et les sources audio. Préserver les sélecteurs/calques d'armes consommés par le jeu et les scripts d'aperçu.
 
-### F4 — Construire et équilibrer la progression complète
+Après code : `npm.cmd run build`, contrôles ciblés des états/transferts/pause, puis captures aux formats cibles et essais au Pointer Lock : tir/recharge, dégâts/soins, accalmie interrompue, finale, mort et nouvelle tentative. Comparer le temps d'image avant/après dans les mêmes conditions. Distinguer compilation, logique, rendu observé et partie jouée.
 
-- Résultat : première version des paliers 1–7 de la table, avec ennemis existants et quota actif borné. Une intention et une occasion de récupération par rencontre.
-- Concepts : budget de menace et rythme.
-- Données : quotas, types, zones et rythme d'arrivée. Pas d'adaptation automatique à la performance du joueur dans ce premier essai.
-- Validation : relever durées de combat/accalmie, munitions et causes de mort ; varier une dimension à la fois ; garantir le ravitaillement minimal.
-- Exercice : comparer la pression de deux groupes de même taille mais de compositions différentes.
+## Autres travaux encore ouverts
 
-### F5 — Horreur psychologique contrôlée
-
-- Résultat : un premier événement rare, puis un petit catalogue : bruit dans une aile, silhouette qui se retire, portrait ou décor différent au retour. Déclencher surtout pendant exploration et accalmies.
-- Concepts : événements conditionnels et rythme audio/visuel.
-- Séparer ambiance et vraies entités. Une silhouette d'ambiance n'est pas une cible bloquant les tirs ou un ennemi restant ; elle ne doit pas imiter une attaque immédiatement dangereuse.
-- Contraintes : silence, volume réglable, ressources bornées/préchargées, pas de répétition à chaque porte, dégâts scriptés, contrôles arrachés au joueur, changement secret de navigation ou noir total supprimant toute lecture du combat.
-- Validation : déclenchement unique, retour propre, surcoût mesuré ; ne pas perturber une action qui exige une information précise.
-- Exercice : distinguer une incertitude inquiétante d'un signal de combat trompeur.
-
-### F6 — Rencontre finale et bilan
-
-- Résultat : finale avec anticipation, attaque et récupération, puis bilan et nouvelle tentative propre. Prototyper une élite avec les moyens actuels avant de produire un nouveau boss animé.
-- Concepts : états de combat et télégraphie.
-- Identité, attaques et renforts à valider séparément. Le placement au palier 8 est une hypothèse, pas la spécification du boss ; éviter une simple hausse massive de PV.
-- Validation : dégâts évitables, voie de fuite, ressources suffisantes, renforts comptabilisés, victoire unique, bilan durée/choix/paliers et réinitialisation complète.
-
-### F7 — Variantes, confort et démo
-
-- Résultat : variantes de rencontres avec graine, réglages persistants volume/sensibilité/luminosité, démo reproductible.
-- Concepts : hasard déterministe et séparation réglages/état de tentative.
-- Garder le squelette de circulation ; aucune génération libre des murs/escaliers prévue. Options d'ombres guidées par mesures.
-- Validation : plusieurs graines et combinaisons, tentatives chronométrées, crédits des ressources et limites documentés. Publication/hébergement à demander explicitement.
-
-## Reprise et méthode
-
-Lire AGENTS, ETAT_PROJET puis le seul atelier pertinent ici. Vérifier le code et les changements locaux. Expliquer résultat/concepts/fichiers, implémenter l'atelier autorisé, compiler, observer puis débriefer avec un exercice et actualiser l'état.
-
-F0 doit être suffisamment vérifié avant F1. Le prompt `PROMPT_GEMINI_TENTATIVE_FINIE.md` lance uniquement F1, pas toute cette roadmap. Un résultat implémenté n'est pas nécessairement observé en combat.
+- Écouter horreur et impacts, vérifier reprise après K et performances en partie avec les nouvelles compositions ; conserver ces contrôles dans G2–G4.
+- Actualiser les anciens tests attachés aux caisses/carillon/piédestaux lorsqu'ils sont concernés ; adapter les tests P8 au duel lors de G3.
+- Plus tard : silhouette d'horreur contextuelle, variantes reproductibles et démo ; objectif spatial facultatif seulement après petit prototype utile.

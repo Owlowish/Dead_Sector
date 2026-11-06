@@ -1,0 +1,87 @@
+{
+  "documentType": "asset-pack",
+  "updatedAt": "2026-11-06",
+  "id": "surface-impacts",
+  "scope": "Réponses visuelles et sonores bois, pierre et métal à partir du matériau de la face touchée. Deux sons originaux, aucun nouveau bitmap ni changement de dégâts.",
+  "referencesInspected": [
+    {
+      "file": "public/assets/sounds/impact-metal-soft.wav",
+      "role": "Impact existant réutilisé pour le métal ; format, durée, crête et RMS contrôlés. Synthèse d'origine dans generate_soft_audio.py."
+    },
+    {
+      "file": "public/assets/sounds/impact-zombie-soft.wav",
+      "role": "Référence du niveau des impacts ; réponse organique conservée sans modification."
+    },
+    {
+      "file": "public/assets/sounds/shot-soft.wav",
+      "role": "Référence de détonation du pistolet ; conservée sans modification."
+    }
+  ],
+  "production": {
+    "tool": "Python standard : math, random, struct, wave et pathlib",
+    "generator": "scripts/generate_surface_impacts.py",
+    "command": "python scripts/generate_surface_impacts.py",
+    "prompt": null,
+    "promptReason": "Synthèse procédurale originale, sans modèle génératif ni enregistrement externe. La recette exacte est le script versionné.",
+    "invariants": "Impacts mono brefs et feutrés, attaque de 1,5 ms, extinction douce, crête normalisée à 0,42, sans écrêtage ni réverbération longue.",
+    "wood": "Bruit filtré à 1000 Hz, corps à 125 Hz, décroissance 34/s, durée 0,20 s, graine 1077.",
+    "stone": "Bruit filtré à 3100 Hz, corps à 245 Hz, friction granuleuse, décroissance 42/s, durée 0,18 s, graine 1078.",
+    "transformations": "Synthèse puis quantification PCM16 ; premier et dernier échantillons nuls. Aucun fichier audio existant réécrit."
+  },
+  "assets": [
+    {
+      "file": "public/assets/sounds/impact-wood-soft.wav",
+      "status": "produced",
+      "channels": 1,
+      "sampleRate": 22050,
+      "bitsPerSample": 16,
+      "durationSeconds": 0.2,
+      "bytes": 8864,
+      "peak": 0.41998,
+      "rms": 0.06538,
+      "playbackVolume": 0.3,
+      "sha256": "98dbf793c40a7a46cd2faa03ab85e0e39835ae7f90246b11dc82306e7b6fd15a"
+    },
+    {
+      "file": "public/assets/sounds/impact-stone-soft.wav",
+      "status": "produced",
+      "channels": 1,
+      "sampleRate": 22050,
+      "bitsPerSample": 16,
+      "durationSeconds": 0.18,
+      "bytes": 7982,
+      "peak": 0.41998,
+      "rms": 0.05524,
+      "playbackVolume": 0.27,
+      "sha256": "98cd19ea19ade6f62cf2fc405fc74ccfab5f0131ac872b2d0c354823fc1f869f"
+    },
+    {
+      "file": "public/assets/sounds/impact-metal-soft.wav",
+      "status": "reused",
+      "channels": 1,
+      "sampleRate": 44100,
+      "bitsPerSample": 16,
+      "durationSeconds": 0.22,
+      "bytes": 19448,
+      "peak": 0.39999,
+      "rms": 0.04583,
+      "playbackVolume": 0.3,
+      "sha256": "5ffc92468664748900f797cfc72cb3782d23c4a9f56ad04c2c2c9c581b7b799a"
+    }
+  ],
+  "integration": {
+    "surface": "ImpactSurface.ts lit material.userData.impactSurface sur le matériau désigné par face.materialIndex. Repli : object.userData.impactSurface puis stone. Aucun classement par couleur.",
+    "annotations": "Boiseries, portes, livres/établis et parquet : wood. Pierre/briques et murs enduits : stone. Ferrures fer/laiton : metal. Les murs à texture damas/lambris unique ont un support minéral annoté ; aucun découpage par pixel du papier ou du lambris.",
+    "raycasting": "Les deux parquets et les ferrures déjà visibles rejoignent les meshes interrogeables. Les collisions de déplacement ne changent pas.",
+    "audio": "Au plus une réponse de surface par détonation : le plus proche impact décor des plombs. Une cible vivante touchée garde la priorité du son organique existant.",
+    "visual": "Éclats bruns fins pour le bois, poussière gris chaud pour la pierre, étincelles jaunes étroites et brèves pour le métal. Géométries existantes réutilisées, plafonds de 64 particules et 24 traces inchangés.",
+    "pause": "Le delta nul continue de figer les effets ; les clips courts de tir/impact gardent leur comportement audio existant. resetForNewRun coupe les clips de l'arme."
+  },
+  "verification": {
+    "files": "WAV mono PCM16 contrôlés : durée, format, taille, crête/RMS, SHA-256. Budget ajouté total : 16846 octets.",
+    "logic": "check-impact-surfaces.mjs : vraies intersections multi-matériaux, replis, palettes, un son pour huit plombs, parquet/ferrures, reset armes et portes, delta nul et WAV. check-combat-feedback, check-weapon, check-shotgun, check-decor-surfaces, check-tiers et check-split-level réussis.",
+    "listening": "Non effectuée : pas de validation auditive du mix dans le navigateur.",
+    "visualGameplay": "Non effectué : pas de nouveau combat joué au Pointer Lock ni d'inspection des nouvelles particules sous l'éclairage réel.",
+    "humanApproval": "Non déduite des tests techniques."
+  }
+}

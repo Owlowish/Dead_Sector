@@ -13,6 +13,7 @@ import {
 import type { ShotImpact } from './HitEffects.ts';
 import type { CasingType } from './ShellCasing.ts';
 import { isHeadSpriteHit, isOpaqueSpriteHit } from './SpriteHitMask.ts';
+import { getImpactSurface, type ImpactSurface } from './ImpactSurface.ts';
 
 export type WeaponId = 'pistol' | 'shotgun';
 export interface ShotDamage { headHits: number; bodyHits: number; impactForce: number }
@@ -33,11 +34,8 @@ export interface WeaponState {
   adsSpreadDeg: number;
 }
 
-export class Weapon {
-  private readonly raycaster = new THREE.Raycaster();
-
-  // Configuration et stocks distincts pour chaque arme
-  private weapons: Record<WeaponId, WeaponState> = {
+function createInitialWeapons(): Record<WeaponId, WeaponState> {
+  return {
     pistol: {
       id: 'pistol',
       name: 'PISTOLET 9MM',
@@ -69,6 +67,11 @@ export class Weapon {
       adsSpreadDeg: shotgunAdsSpreadDegrees,
     },
   };
+}
+
+export class Weapon {
+  private readonly raycaster = new THREE.Raycaster();
+  private weapons = createInitialWeapons();
 
   private activeWeaponId: WeaponId = 'pistol';
   private lastShot = -Infinity;
@@ -87,6 +90,8 @@ export class Weapon {
   private readonly shotSound = new Audio('/assets/sounds/shot-soft.wav');
   private readonly shotgunSound = new Audio('/assets/sounds/shotgun-shot.wav');
   private readonly metalImpactSound = new Audio('/assets/sounds/impact-metal-soft.wav');
+  private readonly woodImpactSound = new Audio('/assets/sounds/impact-wood-soft.wav');
+  private readonly stoneImpactSound = new Audio('/assets/sounds/impact-stone-soft.wav');
   private readonly zombieImpactSound = new Audio('/assets/sounds/impact-zombie-soft.wav');
   private readonly crosshair = document.querySelector<HTMLElement>('.crosshair');
   private headMarkerTimer: ReturnType<typeof setTimeout> | null = null;
@@ -160,6 +165,8 @@ export class Weapon {
     this.shotSound.volume = 0.5;
     this.shotgunSound.volume = 0.42;
     this.metalImpactSound.volume = 0.3;
+    this.woodImpactSound.volume = 0.3;
+    this.stoneImpactSound.volume = 0.27;
     this.zombieImpactSound.volume = 0.35;
     this.emptySound.volume = 0.3;
 
@@ -231,6 +238,37 @@ export class Weapon {
     this.updateWeaponDOM();
     this.setHipFrame(0);
     this.renderShotEffects();
+  }
+
+  public resetForNewRun(): void {
+    this.weapons = createInitialWeapons();
+    this.activeWeaponId = 'pistol';
+    this.lastShot = -Infinity;
+    this.isReloading = false;
+    this.reloadTimer = 0;
+    this.shotgunShellCommitted = false;
+    this.shotAnimationTime = Infinity;
+    this.spentShellScheduled = false;
+    this.muzzleLight.intensity = 0;
+    this.targets = [];
+    if (this.headMarkerTimer !== null) clearTimeout(this.headMarkerTimer);
+    this.headMarkerTimer = null;
+    this.crosshair?.classList.toggle('head-hit', false);
+    this.shotgunRig?.classList.toggle('is-reloading', false);
+    for (const sound of [this.emptySound, this.shotSound, this.shotgunSound, this.woodImpactSound,
+      this.stoneImpactSound, this.metalImpactSound, this.zombieImpactSound]) {
+      sound.pause?.();
+      sound.currentTime = 0;
+    }
+    this.currentBrightness = this.targetBrightness;
+    this.currentWarmth = this.targetWarmth;
+    this.weaponView?.style.setProperty('--weapon-brightness', this.currentBrightness.toFixed(2));
+    this.weaponView?.style.setProperty('--weapon-warmth', this.currentWarmth.toFixed(2));
+    this.currentFrameIndex = -1;
+    this.setHipFrame(0);
+    this.resetAim();
+    this.updateWeaponDOM();
+    this.notifyAmmoChange();
   }
 
   public getActiveWeapon(): WeaponState {
@@ -405,7 +443,7 @@ export class Weapon {
 
     // Accumulation des dégâts par cible touchée (pour appliquer un unique retour de blessure)
     const zombieHits = new Map<THREE.Mesh, { damage: number; headHits: number; bodyHits: number; hitPoint: THREE.Vector3; normal: THREE.Vector3 }>();
-    let hitAnyDeco = false;
+    let nearestSurface: { surface: ImpactSurface; distance: number } | null = null;
 
     // 3. Résolution instantanée de tous les plombs (1 pour pistolet, 8 pour fusil)
     for (let p = 0; p < config.pellets; p++) {
@@ -449,9 +487,13 @@ export class Weapon {
             });
           }
         } else {
-          hitAnyDeco = true;
+          const surface = getImpactSurface(hit);
+          if (!nearestSurface || hit.distance < nearestSurface.distance) {
+            nearestSurface = { surface, distance: hit.distance };
+          }
           this.onImpact?.({
             kind: 'surface',
+            surface,
             object: hit.object,
             point: hit.point.clone(),
             normal,
@@ -480,12 +522,18 @@ export class Weapon {
           this.headMarkerTimer = setTimeout(() => this.crosshair?.classList.remove('head-hit'), 130);
         }
       });
-    } else if (hitAnyDeco) {
+    } else if (nearestSurface) {
       console.log('Tir bloqué par le décor.');
-      this.playSound(this.metalImpactSound);
+      this.playSurfaceImpact(nearestSurface.surface);
     } else {
       console.log('Tir manqué.');
     }
+  }
+
+  private playSurfaceImpact(surface: ImpactSurface): void {
+    const sound = surface === 'wood' ? this.woodImpactSound
+      : surface === 'metal' ? this.metalImpactSound : this.stoneImpactSound;
+    this.playSound(sound);
   }
 
   private playSound(sound: HTMLAudioElement): void {
@@ -505,6 +553,10 @@ export class Weapon {
 
   public getReserveAmmo(): number {
     return this.getActiveWeapon().reserve;
+  }
+
+  public getReserveAmmoFor(id: WeaponId): number {
+    return this.weapons[id].reserve;
   }
 
   public getMaxReserve(): number {

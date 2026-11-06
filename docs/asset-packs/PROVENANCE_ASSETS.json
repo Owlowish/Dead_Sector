@@ -1,0 +1,127 @@
+{
+  "documentType": "asset-provenance",
+  "version": 1,
+  "consolidatedAt": "2026-11-06",
+  "scope": "Prompts exacts de six assets existants, extraits sans reformulation de trois comptes rendus retires pendant le nettoyage documentaire.",
+  "readingNotes": [
+    "historicalSource conserve uniquement le nom d'origine et le titre de section ; ce ne sont pas des liens ni des dependances vers des documents actifs.",
+    "Les textes des prompts utiles sont conserves integralement, hors lignes vides autour du paragraphe. Ils decrivent la demande au generateur, pas une garantie des pixels produits ni une specification du comportement courant.",
+    "Aucun asset genere, modifie ou valide par cette consolidation. Aucune provenance des autres manifestes n'est dupliquee ici.",
+    "Les limites sont une synthese documentaire distincte des prompts ; les informations non documentees restent absentes ou nulles. Le code et les fichiers presents font foi pour l'integration courante."
+  ],
+  "entries": [
+    {
+      "asset": "public/assets/weapons/modern_ads.png",
+      "historicalSource": {
+        "originalDocumentName": "ARME_ADS.md",
+        "originalSection": "Vue centrée"
+      },
+      "generationTool": "imagegen integre (outil mentionne dans le document historique)",
+      "references": [],
+      "originalGeneratedFile": null,
+      "prompt": "Use case: stylized-concept. ONE neutral resting inventory/game viewmodel asset for a retro first-person game: rear-facing view of a modern compact dark gray semiautomatic pistol with black fabric gloves and dark sleeve. Camera directly centered behind the rear sight, symmetrical 2D pixel art, strongly foreshortened, viewed along top. Three small ivory sight markings aligned in a horizontal row at x=45%,50%,55% and y=24% of square image; rear notch and small front sight centered on vertical axis. Gun body extends straight down from the sight line into gloved hands at lower center, sleeves exit bottom edge. Entire upper area above sight line transparent. Resting, stationary pose, no action, no flash, no smoke, no ammunition, no person visible beyond gloved hands. Muted gray steel and charcoal polymer, hand-painted chunky pixels, about 24-color palette, no smooth 3D render. Transparent background, square canvas, centered composition. No labels, no logos, no frame. This is the centered sight-view counterpart of a hip-view asset.",
+      "limits": [
+        "Le document ne donne pas les noms des fichiers originaux produits par le generateur.",
+        "Ce prompt de pose au repos ne decrit pas l'animation actuelle par couches.",
+        "L'alignement perceptuel du guidon et le cadrage doivent etre verifies en jeu ; le prompt ne prouve pas leur exactitude."
+      ]
+    },
+    {
+      "asset": "public/assets/textures/mansion_wall_v2.png",
+      "historicalSource": {
+        "originalDocumentName": "ASSETS_GRAPHIQUES.md",
+        "originalSection": "Mur"
+      },
+      "generationTool": "imagegen integre (outil mentionne dans le document historique)",
+      "references": [],
+      "originalGeneratedFile": null,
+      "prompt": "Use case: stylized-concept. Asset type: game wall albedo texture for DEAD SECTOR, retro FPS Victorian haunted mansion. Create ONE production-ready flat texture image, portrait 1:2 aspect, ideally 256x512 or 512x1024. Upper 65 percent: faded deep oxblood red damask wallpaper with elegant restrained gold and burgundy motifs. Lower 35 percent: aged dark walnut wainscoting, recessed rectangular panels and narrow horizontal molding. Medium value contrast, readable warm wood grain, dusty subtle wear, muted warm palette. Hand-pixelled late 1990s PC horror aesthetic, clearly stepped pixel clusters, limited palette, details must survive low resolution. Strictly orthographic flat surface filling entire image edge to edge, no perspective, no room scene, no floor, no frame, no captions. Left and right edges must tile seamlessly: matching wallpaper pattern and horizontal panel molding, no vertical border at outer edges, uniform diffuse illumination, no baked directional highlights or cast shadows. Vertical tiling not required. This is a new replacement asset, not a screenshot.",
+      "limits": [
+        "Le document ne donne pas de fichier de reference fourni au generateur ni les noms des originaux generes.",
+        "Les raccords demandes dans les prompts ne garantissent pas un pavage parfait ; les repetitions et la lisibilite sous l'eclairage reel restent a observer.",
+        "Les dimensions souhaitees dans les prompts ne sont pas un releve des exports actuels : les trois textures ont ensuite ete optimisees par scripts/optimize-assets.py.",
+        "La premiere livraison avait ete inspectee visuellement et compilee, sans verification du rendu navigateur dans cette intervention. Ce constat historique ne valide pas l'etat courant."
+      ]
+    },
+    {
+      "asset": "public/assets/textures/wood_floor_v2.png",
+      "historicalSource": {
+        "originalDocumentName": "ASSETS_GRAPHIQUES.md",
+        "originalSection": "Parquet"
+      },
+      "generationTool": "imagegen integre (outil mentionne dans le document historique)",
+      "references": [],
+      "originalGeneratedFile": null,
+      "prompt": "Use case: stylized-concept. Asset: square seamless parquet floor albedo tile for a retro first person Victorian haunted mansion game. Flat top down surface only, no perspective, no room. Aged warm medium brown oak narrow long planks, staggered joints, restrained grain, worn bevel edges, no huge cracks. Distinct late 1990s hand painted pixel art, chunky pixel clusters and limited palette, enough medium value wood detail to read under dim candlelight. Planks run vertically top to bottom, 6 planks across with varied staggered ends. Fill image edge to edge, repeatable seamlessly on BOTH axes, no border, no black seams at tile boundary, uniform diffuse color only, no baked light or shadows. No text, no props, no frame. Output square.",
+      "limits": [
+        "Le document ne donne pas de fichier de reference fourni au generateur ni les noms des originaux generes.",
+        "Les raccords demandes dans les prompts ne garantissent pas un pavage parfait ; les repetitions et la lisibilite sous l'eclairage reel restent a observer.",
+        "Les dimensions souhaitees dans les prompts ne sont pas un releve des exports actuels : les trois textures ont ensuite ete optimisees par scripts/optimize-assets.py.",
+        "La premiere livraison avait ete inspectee visuellement et compilee, sans verification du rendu navigateur dans cette intervention. Ce constat historique ne valide pas l'etat courant."
+      ]
+    },
+    {
+      "asset": "public/assets/textures/portrait_v2.png",
+      "historicalSource": {
+        "originalDocumentName": "ASSETS_GRAPHIQUES.md",
+        "originalSection": "Portrait"
+      },
+      "generationTool": "imagegen integre (outil mentionne dans le document historique)",
+      "references": [],
+      "originalGeneratedFile": null,
+      "prompt": "Use case: stylized-concept. Game asset: one framed Victorian ancestral oil portrait as a flat texture for a retro haunted mansion FPS. Portrait aspect ratio 3:4. Front facing severe elderly Victorian gentleman in a dark formal coat and ivory cravat, pale face lit gently, subtle unsettling expression, bust portrait, dark muted teal brown background. Ornate aged brass and gold rectangular carved frame contained entirely inside image, frame fills outer edges, painting fills inner frame. Pixel art like a carefully hand-painted late 1990s PC horror texture, strong large readable clusters rather than noisy tiny details. Harmonious desaturated ochre, dark brown and faded green palette with face as focal point. Flat orthographic full image, no room, no easel, no cast wall shadows, no exterior background, no perspective. Single portrait only, no text, no signature, no watermark.",
+      "limits": [
+        "Le document ne donne pas de fichier de reference fourni au generateur ni les noms des originaux generes.",
+        "Les raccords demandes dans les prompts ne garantissent pas un pavage parfait ; les repetitions et la lisibilite sous l'eclairage reel restent a observer.",
+        "Les dimensions souhaitees dans les prompts ne sont pas un releve des exports actuels : les trois textures ont ensuite ete optimisees par scripts/optimize-assets.py.",
+        "La premiere livraison avait ete inspectee visuellement et compilee, sans verification du rendu navigateur dans cette intervention. Ce constat historique ne valide pas l'etat courant."
+      ]
+    },
+    {
+      "asset": "public/assets/zombies/zombie_walk_v2.png",
+      "historicalSource": {
+        "originalDocumentName": "ZOMBIE_ANIMATIONS.md",
+        "originalSection": "Marche"
+      },
+      "generationTool": "imagegen integre (outil mentionne dans le document historique)",
+      "references": [
+        "public/assets/zombies/zombie_idle.png"
+      ],
+      "originalGeneratedFile": null,
+      "prompt": "Use case: stylized-concept. Game asset: a WALK CYCLE sprite atlas based on reference image 1 (character identity and pixel art style). Same fictional undead character, same torn off-white shirt, dark pants, dark boots, pale face, hair, body proportions and muted palette. Create SIX clearly different sequential walking poses in exact 3 columns x 2 rows, no gutters or labels. Overall portrait aspect ratio 3:4; each cell has width:height 1:2. Every cell is the same canvas, same character scale and front three-quarter camera as reference; head near y=5%, soles on y=95%, body centered x=50%. Frames read left to right top row then bottom: left step forward, left planted/right passing, right toe passing, right step forward, right planted/left passing, left toe passing. Opposing arm swing and torso lean visibly change, preserve the character rather than six copies of idle. Small vertical bob only, feet stay on one ground line, no changes of costume or face, no added limbs. Strict 2D hand-painted retro FPS pixel art, crisp clustered pixels, no smooth 3D render, limited neutral palette. Entire figure and limbs inside each cell, generous transparent left/right margins. NO ground shadow, NO ground plane, NO text, NO frame, NO scene, NO grid lines. Genuine transparent background with alpha.",
+      "limits": [
+        "Reference image 1 dans les deux prompts : public/assets/zombies/zombie_idle.png. Les noms des originaux generes ne sont pas documentes.",
+        "Les PNG generes ne sont pas un modele rigide : des variations de pose et de proportions restent possibles. Le cadrage final est ajuste par les UV de ZombieAnimation.ts, sans que le prompt suffise a le decrire.",
+        "Le document indique une inspection des cadrages en Chrome headless, mais aucun combat complet valide au navigateur pendant cette intervention. La continuite du mouvement et la lisibilite en jeu ne sont pas prouvees par la conservation des prompts."
+      ]
+    },
+    {
+      "asset": "public/assets/zombies/zombie_attack.png",
+      "historicalSource": {
+        "originalDocumentName": "ZOMBIE_ANIMATIONS.md",
+        "originalSection": "Attaque"
+      },
+      "generationTool": "imagegen integre (outil mentionne dans le document historique)",
+      "references": [
+        "public/assets/zombies/zombie_idle.png"
+      ],
+      "originalGeneratedFile": null,
+      "prompt": "Use case: stylized-concept. Game asset: FOUR-frame melee swipe animation atlas for the fictional retro zombie character in reference image 1. Preserve identity, pixel art style, torn off-white shirt, dark trousers, dark boots, face and hair. EXACT layout one horizontal row, 4 equally sized portrait cells width:height1:2, overall image aspect2:1. Front three-quarter view identical in every pose, same scale, top of head near y5%, boot soles y95%, body centered x50%. Read left to right: 1 anticipation leaning back with right forearm beginning to rise; 2 arm raised to shoulder/head height preparing one swipe; 3 arm thrust/swipe FORWARD TOWARD THE VIEWER, strongly foreshortened, readable silhouette but within cell; 4 arm lowering and torso returning to initial posture. One action only, no victim, no weapon, no effects, no added gore, no new wounds. Clear pose changes, same body proportions in all four frames. Each character including hands must fit WITHIN middle 80 percent of cell width, transparent margins on both sides, no limb crossing cell boundaries. No ground shadow or scenery, no text, no labels, no gridlines. Genuine transparent alpha. 2D clustered pixel art, not photorealistic, same muted palette as reference.",
+      "limits": [
+        "Reference image 1 dans les deux prompts : public/assets/zombies/zombie_idle.png. Les noms des originaux generes ne sont pas documentes.",
+        "Les PNG generes ne sont pas un modele rigide : des variations de pose et de proportions restent possibles. Le cadrage final est ajuste par les UV de ZombieAnimation.ts, sans que le prompt suffise a le decrire.",
+        "Le document indique une inspection des cadrages en Chrome headless, mais aucun combat complet valide au navigateur pendant cette intervention. La continuite du mouvement et la lisibilite en jeu ne sont pas prouvees par la conservation des prompts."
+      ]
+    }
+  ],
+  "omittedHistoricalEntries": [
+    {
+      "asset": "public/assets/weapons/modern_hip.png",
+      "historicalSource": {
+        "originalDocumentName": "ARME_ADS.md",
+        "originalSection": "Vue à la hanche"
+      },
+      "reason": "Ancien sprite absent du depot courant et non charge par le code. Son prompt n'est pas une provenance d'asset actif."
+    }
+  ]
+}

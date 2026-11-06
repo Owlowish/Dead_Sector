@@ -1,121 +1,98 @@
-# DEAD SECTOR — Comprendre le système
+# DEAD SECTOR — Architecture
 
-Carte du prototype inspecté le 1er novembre 2026. Les liens entre objets importent davantage que le détail de chaque ligne.
+Base `88d13ad` avec travail local sur horreur sonore, impacts et finale, le 6 novembre 2026. Le code fait foi ; validations et limites dans `ETAT_PROJET.md`.
 
-Mise à jour ciblée du 4 novembre : `Game` possède le menu debug K, distinct de l'état de rencontre. Quand il est ouvert, `isSimulationActive` refuse le contrôle et le delta de simulation est nul. Un choix passe par `jumpToDebugTier → Player.resetForDebug → Game.startTier` : retour à l'entrée, vie restaurée, nettoyage et nouveaux compteurs/file, avec équipement conservé. HTML/CSS présentent les boutons générés depuis `EncounterConfig`. La fermeture laisse la souris libre jusqu'au clic du joueur. Le reset de palier efface aussi le compteur de Rampeuses et l'ancienne accalmie.
+## Responsabilités
 
-La Rampeuse déjà intégrée par Gemini utilise `CrawlerZombie.ts` et six billboards dans `public/assets/zombies/crawler/`. Le remplacement V2 conserve ce comportement. `CrawlerAnimation.ts` fournit chronologie, caractéristiques et rectangles de tête en coordonnées d'image ; `SpriteHitMask.ts` utilise ces rectangles selon la pose et le vrai alpha. Depuis la correction des proportions, ce module fournit aussi l'offset du centre par rapport à l'appui dessiné : `CrawlerZombie` le réutilise sur le sol et les plateformes. L'aperçu importe les mêmes dimensions et le même offset, avec une comparaison 3D depuis la hauteur du joueur. Les validations d'images et de logique ne valent pas observation du combat réel ; limites actuelles dans ETAT_PROJET.
+| Modules | Rôle |
+| --- | --- |
+| `main.ts`, `Game.ts` | Démarrage, scène/rendu, instances, orchestration, progression, valeurs du HUD et nettoyage. |
+| `GameHud.ts` | Présentation DOM : santé/armes/progression, invites, annonces et deux notifications bornées. Durées sur temps actif, sans logique de combat. |
+| `Player.ts` | Caméra, entrées, Pointer Lock, déplacement, collision, santé et lampe. |
+| `MansionConfig.ts`, `Level.ts` | Données du manoir ; géométrie, solides de tir, collisions, altitude, navigation et éclairage. |
+| `Door.ts` | Interaction E, ouverture, verrouillage, collision mobile et sécurité anti-pincement. |
+| `EncounterConfig.ts`, `FinaleConfig.ts` | Huit rencontres dont finale avec élite : quotas, plafonds, salves, zones, apparitions et paramètres du Gardien. |
+| `Zombie.ts` | Standard/Coureur et option élite : perception, recherche de chemin, poursuite, attaque, blessure et relève hors élite. |
+| `SpitterZombie.ts`, `SpitProjectile.ts` | Préparation du crachat, récupération et projectile mobile avec collisions décor/joueur. |
+| `CrawlerZombie.ts`, `CrawlerAnimation.ts` | Rampeuse : comportement, six poses, proportions, appui au sol et zones de tête. |
+| `ZombieRemains.ts` | Chute/cadavre des standards, Coureurs et Cracheurs ; animation inverse des relèves. |
+| `Weapon.ts`, `WeaponSpread.ts`, `SpriteHitMask.ts` | Armes, munitions, cadence, dispersion, raycasting, alpha et classification tête/corps. |
+| `WeaponAnimation.ts`, `ShotgunAnimation.ts`, `WeaponPresentation.ts` | Chronologies et poses partagées avec les aperçus ; présentation DOM/CSS et images rétro. |
+| `HitEffects.ts`, `ImpactSurface.ts`, `ShellCasing.ts` | Surfaces bois/pierre/métal, particules et marques bornées, douilles et libération des ressources. |
+| `Medkit.ts`, `AmmoBox.ts`, `ShotgunPickup.ts`, `PickupSprite.ts` | Soins, drops de munitions, fusil et billboards partagés. |
+| `MansionMaterials.ts`, `StormWindow.ts`, `StormController.ts` | Matériaux/UV partagés, fenêtres, pluie, éclairs et tonnerre. |
+| `HorrorDirector.ts` | Source sonore rare, sélection hors regard, délai et suspension. |
+| `PerfTracker.ts`, `TierDiagnostics.ts` | Temps d'image, coûts de transitions/apparitions, tirs, contacts, dégâts, relèves et ressources par palier. |
+| `index.html`, `style.css`, `public/assets/` | Interface, couches visuelles des armes et ressources chargées par URL. |
 
-Mise à jour ciblée du 2 novembre : le tir possède maintenant une dispersion hanche/ADS (`WeaponSpread.ts`), partagée avec la projection du viseur. `Weapon.setOnImpact → Game → HitEffects` transmet la première intersection pour afficher particules et marques bornées, tandis que le callback de dégâts existant reste séparé. Les billboards Medkit/AmmoBox utilisent `PickupSprite.ts` et la position du joueur ; Zombie possède une réaction de blessure de 0,2 s qui bloque poursuite/séparation/attaque et annule la préparation. Détails actuels dans `COMBAT_FEEDBACK.md`. Le reste du document est un socle historique : Game contient aussi les paliers/récompenses/apparitions depuis d'autres interventions ; consulter son code et ETAT_PROJET.
+`EncounterBell`, `UpgradePedestal` et `UpgradeConfig` restent présents. Le carillon est instancié mais inactif ; aucun piédestal n'est instancié dans le cycle normal. Le code d'offres et d'application des améliorations est donc dormant.
 
-## Trois couches à distinguer
+## Boucle et contrôle
 
-Mise à jour fusil à pompe : `ShotgunAnimation.ts` fournit les repères du cycle de pompe (arrière, éjection, retour) et les deux images de hanche. `Weapon.ts` choisit l'image et déclenche une seule éjection ; `style.css` place le sprite et le flash. `scripts/make-shotgun-preview.mjs` génère un aperçu avec les mêmes données et le CSS du jeu. Le rechargement cartouche par cartouche est une action distincte du cycle de pompe après tir.
+`Game.start()` installe `renderer.setAnimationLoop`. Le delta de simulation vaut `min(delta réel, 0,05 s)` ; le menu K le force à zéro. `PerfTracker` mesure le delta réel séparément.
 
-Extension recul du fusil : ce même module définit aussi la fenêtre de pose de choc et son impulsion amortie. Weapon choisit une image de choc hanche ou ADS, le CSS applique le cadrage et le repère de flash correspondants. Le rechargement visuel reste une pose fixe, faute de nouveaux assets produits ; voir `FUSIL_RECUL_ADS.md`.
+- `isSimulationActive()` accepte `playing`, `respite`, `exploration`, `terminal` et `won`, sauf si K ou le bilan est ouvert.
+- Joueur, IA et projectiles exigent le Pointer Lock ; les ennemis ne sont simulés qu'en `playing`.
+- `Game.updatePickups` exige le même contrôle effectif et revérifie l'état après les dégâts : pas de collecte pendant pause, perte de focus ou frame de mort. Gains affichés depuis les deltas réellement appliqués ; `AmmoBox.getWeaponType` et `Weapon.getReserveAmmoFor` distinguent l'arme bénéficiaire.
+- Le décompte d'accalmie exige aussi un onglet visible et le focus. Les cadavres et impacts ont leurs propres conditions de pause ; certains effets visuels continuent sans Pointer Lock.
+- `Weapon.update(delta)` gère rechargement, ADS et animation ; `Weapon`/`Player` filtrent aussi leurs entrées selon le contrôle. La cadence de tir utilise `performance.now()`, les animations le delta simulé.
+- `Level.getLightingAt` transmet l'éclairage local à l'arme 2D ; le rendu 3D est calculé à un tiers de la résolution avec minimum 320 × 240, puis agrandi par CSS. Le HUD conserve sa résolution.
 
-Mise à jour ultérieure : le rechargement du fusil est désormais animé par couches DOM/CSS à partir des assets existants, avec six poses dans `ShotgunAnimation.ts`. `Weapon.commitShotgunShell` engage une seule cartouche à 0,50 s d'un cycle de 0,65 s, indépendamment de la durée du retrait de la main. Les données de pose sont partagées avec l'aperçu ; détails et limites dans `FUSIL_RECHARGEMENT_COUCHES.md`.
+K ouvre une pause de debug distincte de l'état de rencontre, annule le rechargement, suspend l'audio et libère la souris. `jumpToDebugTier → Player.resetForDebug → Game.startTier` restaure position/vie et nettoie ennemis, projectiles, drops, douilles et impacts. Équipement, munitions et améliorations sont conservés. Fermer le panneau laisse la reprise du Pointer Lock au clic du joueur.
 
-Mise à jour cadavres du 2 novembre : Zombie possède `ZombieRemains`, une représentation de mort indépendante de son IA. `die` rend le zombie immédiatement inactif/invisible aux tirs ; `Game.updateZombieRemains` avance quatre poses puis conserve la dernière, y compris pendant le menu du dernier ennemi. Le support reste vertical et orienté vers le joueur, dont la position est transmise via Zombie.updateDeath ; le premier essai horizontal a été remplacé à la demande de l'utilisateur. `startTier → Zombie.dispose → ZombieRemains.dispose` retire les corps et libère les ressources communes au dernier utilisateur. Les UV propres aux géométries permettent des poses indépendantes avec une unique texture partagée pour chute et cadavre. Voir `ZOMBIE_CADAVRES.md` pour pause, vérifications et limites de l'illusion billboard.
+## Tirs et dégâts
 
-1. **Simulation** : positions, santé, états et temporisateurs. Elle décide ce qui arrive.
-2. **Représentation** : meshes, textures, caméra, sons, HUD. Elle rend les événements perceptibles.
-3. **Coordination** : construction des objets, ordre des mises à jour et fin de partie. Elle relie les systèmes.
+`Weapon` actualise les matrices mondiales, projette un rayon par plomb depuis la caméra et trie les intersections entre cibles visibles et solides du décor. `SpriteHitMask.isOpaqueSpriteHit` ignore les pixels transparents ; `isHeadSpriteHit` utilise les UV et les zones de tête de la pose courante. Le masque alpha partagé est plafonné à 512 px.
 
-Ces couches ne sont pas encore séparées en modules stricts. Zombie et Weapon associent logique et présentation, Game contient aussi du DOM. C'est acceptable pour ce petit prototype. On séparera seulement les responsabilités qui deviennent réellement encombrantes.
+- Dégâts calculés par `Weapon` : pistolet 80 tête / 28 corps ; fusil 24 tête / 12 corps par plomb. Les impacts sont cumulés par cible.
+- `onHit(mesh, damage, shot) → Game → takeDamage(damage, headHits > 0, impactForce)` applique une seule notification par cible. `impactForce` reste distinct des dégâts pour l'interruption du Cracheur. La Rampeuse applique en plus son multiplicateur tête de 1,5.
+- `setOnImpact → Game → HitEffects.emit` produit particules et traces selon la surface bois/pierre/métal de la face touchée ; `Weapon` sélectionne aussi le son correspondant.
+- `setOnShoot` déclenche recul caméra, diagnostic et alerte des ennemis ; `setOnCasingEject` crée la douille. `setOnAmmoChange` synchronise le HUD.
+- `GameHud` conserve les références des champs `data-hud-*` ; les callbacks transmettent les valeurs sans remplacer les blocs DOM. `update(delta, controlActive)` suspend/cache les notifications et annonces hors contrôle ; `clear` les retire aux sauts debug, nouveaux paliers, fins et redémarrages. Les calques DOM des armes restent dans `Weapon`.
+- `onAttack` des ennemis et le callback du projectile passent par `Game → Player.takeDamage`, HUD et voile rouge ; une vie nulle appelle `endGame('lost')`.
 
-## Qui possède quoi ?
+Les armes du joueur sont hitscan ; les crachats sont des projectiles mobiles à 9 m/s, sans guidage. Le fusil engage une cartouche à 0,50 s d'un cycle de 0,65 s ; `commitShotgunShell` garantit un transfert unique, y compris à grand delta. Annuler avant cet instant ne consomme rien ; annuler après conserve la cartouche engagée. Recul, cycle de pompe et rechargement restent distincts. Le recul utilisateur de deux secondes est conservé.
 
-| Fichier | Responsabilité actuelle | Collaborations |
-| --- | --- | --- |
-| `src/main.ts` | Charge le CSS, construit Game, démarre | Game |
-| `src/Game.ts` | Possède scène/rendu, instances, état de partie, orchestration et HUD | Tous les systèmes |
-| `src/HorrorDirector.ts` | Temporise l'événement rare, filtre regard/distance, pilote le volume et la source audio unique | Contexte de phase et caméra via Game ; points admissibles via Level ; `PositionalAudio` attachée à la scène |
-| `src/UpgradePedestal.ts` | Offre choisissable, icône éclairée orientée vers le joueur, veilleuse et consommation unique | `UpgradeSpec` attribué par Game ; `PickupSprite` partage les textures ; Game applique le bonus après le choix |
-| `src/Player.ts` | Caméra, entrées, déplacement, collision, santé | Level, fonction canPlay fournie par Game |
-| `src/Level.ts` | Géométrie fixe, habillage, éclairage et lanternes, boîtes de collision et meshes solides | Player et Zombie pour collisions ; Weapon pour tirs ; MansionConfig et MansionMaterials pour les surfaces |
-| `src/StormWindow.ts` | Forme des baies gothiques, texture d'extérieur partagée et projection visuelle du flash au sol | Positions de MansionConfig ; Level règle leur visibilité avec la lumière d'orage |
-| `src/MansionMaterials.ts` | Catalogue des huit textures de décor, matériaux partagés et UV des boîtes | Level et Door ; les données artistiques `MansionConfig.surface` restent distinctes des dimensions physiques |
-| `src/Zombie.ts` | Standard ou Coureur : santé, poursuite, attaque et animation ; le standard peut se relever une fois après sa première mort | Level, ZombieRemains, position joueur et callback d'attaque |
-| `src/SpitterZombie.ts`, `src/SpitProjectile.ts` | Cracheur lent : préparation, tir et déplacement ; bille verte simulée avec le delta et collisions décor/joueur | Level, SpitterAnimation, Game |
-| `src/ZombieRemains.ts` | Représentation de mort : chute et corps persistant, puis animation inverse pour la relève d'un standard | Zombie, SpitterZombie et ressources GPU communes ; mises à jour coordonnées par Game |
-| `src/Weapon.ts` | Entrée de tir, cadence, rayon, sélection de cible, effets et sons | Caméra, meshes, callback onHit et canPlay |
-| `src/WeaponPresentation.ts` | Prépare les images à résolution réduite, coupe les faibles alpha, gère les Blob URL de rendu et atténue l'éclairage des armes | Initialisé par main et les aperçus ; références CSS choisies par Weapon ; anciennes URL libérées après resize ; sources et chronologies inchangées |
-| `src/Medkit.ts` | Ressource de soin : billboard pixel art éclairé, flottement, détection de contact et consommation | PickupSprite, Player (pour soigner), Game |
-| `src/Door.ts` | Porte interactive : coulissement vertical, états d'ouverture, gestion de collision et interaction | Level (obstacles et tirs), Player/Game (touche E) |
-| `src/AmmoBox.ts` | Munitions : billboard pixel art éclairé, flottement, détection de ramassage et ravitaillement | PickupSprite, Weapon (réserve), Game |
-| `src/HitEffects.ts` | Particules et traces temporaires à partir d'une intersection ; plafonds et nettoyage | Weapon via Game |
-| `src/WeaponSpread.ts` | Direction aléatoire dans un cône, angle selon ADS et projection du viseur | Weapon |
-| `index.html`, `src/style.css` | Interface superposée à l'image 3D | Game et Weapon modifient certains éléments |
-| `public/assets` | Ressources accessibles par URL | TextureLoader et Audio |
+Les armes FPS utilisent des calques DOM/CSS et des `clip-path` calibrés sur les images actuelles : carcasse, culasse, main et chargeur/cartouche. Le masque de carcasse exclut la culasse mobile ; le rechargement du fusil masque les anciens dessins de main/cartouche et les remplace par des calques séparés. Modifier les sources impose de vérifier ces masques. `WeaponPresentation.installWeaponArt` rééchantillonne le rendu sur une grille de 3 px, coupe l'alpha sous 128 et libère les anciennes Blob URL après remplacement au redimensionnement ; les sources et coordonnées de découpe restent intactes.
 
-Pour F5, `Game.updateHorrorAudio` transmet au directeur le delta, la phase réelle, la position et le regard du joueur. `Level.getAccessibleHorrorPoints` fournit des positions fixes dont les portes d'accès sont réellement ouvertes et dont l'altitude vient de la géométrie du manoir. `HorrorDirector` choisit ensuite une position hors du cône de regard et place l'unique `PositionalAudio` à cet endroit ; il ne modifie ni les ennemis, ni les collisions, ni les portes.
+## Rencontres et ressources
 
-Pas de notion de projectile mobile : le tir est instantané, dit hitscan. L'altitude n'est plus strictement plane : un moteur d'altitude $O(1)$ continu (`Level.getFloorHeightAt` issu de `MansionConfig.ts`) calcule la hauteur du sol (rez-de-chaussée à 0 m, demi-niveau à +2,4 m et rampes continues) et ancre le joueur (avec amorti de caméra), les zombies, les objets et les cadavres, avec une logique de perception et d'attaque 3D euclidienne.
+`startTier(n)` nettoie les ennemis/cadavres/projectiles précédents, actualise les portes et cibles de l'arme, remet les compteurs à zéro et initialise `spawnQueue` depuis `EncounterConfig`. Les drops non consommés persistent entre paliers normaux.
 
-## La boucle de jeu
+- `trySpawnZombie` distingue quotas totaux par type et plafonds simultanés. La limite active est le minimum du budget global et de celui du palier.
+- Les points retenus respectent secteur, collision, distance minimale de 6 m, visibilité et chemin praticable ; le score privilégie les points sûrs proches et plusieurs directions.
+- Un Cracheur réserve aussi un Coureur d'escorte : deux places, deux unités de quota et deux points sûrs proches avec ligne de vue mutuelle sont nécessaires.
+- `Zombie.isThreat()` inclut `alive || revivalPending` : un corps susceptible de se relever occupe encore une place et empêche la fin du combat. Première mort sans impact tête fatal : 20 % de relève standard, 12 % Coureur ; une seule relève, à 40 PV.
+- `checkTierCompletion()` appelle `enterRespite()` seulement quand la file et les menaces sont vides. Les accès débloqués s'ouvrent, les soins sont réarmés et dix secondes d'exploration libre précèdent le prochain palier.
+- Après P7, l'accalmie mène à P8 avec élite. Finir P8 appelle `endGame('won')` sans libérer la souris : exploration conservée et bilan volontaire par B. Le bilan suspend le contrôle ; `restartRun` réinitialise joueur/armes/portes/ressources/diagnostics et effets sans reconstruire les instances ni ajouter d'écouteurs. Les sauts debug conservent l'équipement et sont signalés au bilan.
+- Les munitions proviennent des morts via un budget par palier ; `AmmoBox` alimente la réserve de `Weapon` puis est libérée après consommation. Les caisses fixes ne sont plus instanciées.
 
-```text
-setAnimationLoop
-  → calcule delta = min(temps écoulé, 0,05 s)
-  → fait disparaître le voile rouge
-  → si playing ET souris verrouillée :
-       Player.update(delta)
-       pour chaque Zombie : update(delta, position joueur, callback attaque)
-  → Weapon.update(delta) pour les effets
-  → renderer.render(scene, camera)
-```
+`getRunSummary` agrège diagnostics clôturés, paliers réellement terminés et durée active réelle hors pause ; tirs et impacts restent des comptes distincts. P8 contient deux standards dont un Gardien, trois Coureurs et un Cracheur, sans Rampeuse. `Zombie(..., random, { elite: true })` garde le type standard et les sprites existants ; `FinaleConfig` règle charge immobile, impact évitable et récupération, sans relève.
 
-La boucle met à jour puis affiche, comme un service qui avance son état à chaque cycle. Le delta donne une durée et non un nombre d'images ; le plafond limite les grands déplacements mais ralentit la simulation lors d'images très longues. Le tir, lui, arrive dans un événement souris entre deux cycles ; il met donc à jour les matrices 3D avant d'interroger les positions.
+## Monde, animation et audio
 
-## Deux flux essentiels
+`Level.getFloorHeightAt(x, z)` délègue aux plateformes/rampes de `MansionConfig` : rez-de-chaussée à 0 m, demi-niveau à +2,4 m. Joueur, ennemis, objets et cadavres utilisent ce même sol. Les collisions horizontales et solides de raycasting sont distincts ; `Door` fournit leurs versions mobiles. La navigation exploite un graphe de points, ses arêtes statiques et l'état réel des portes.
 
-```text
-Clic accepté → Weapon : rayon centre caméra, portée 30
-  → première intersection parmi cibles visibles + solides
-  → décor : son métal
-  → cible : onHit(mesh, 40)
-       → Game retrouve l'instance via find
-       → Zombie.takeDamage → flash ou mort / mesh invisible
-       → Game vérifie every(zombie mort) → endGame('won')
-```
+Les ennemis restent des billboards verticaux. Les modules d'animation définissent poses/UV et chronologies partagées avec les aperçus ; la Rampeuse conserve un support carré et un offset calculé sur l'appui dessiné. `ZombieRemains` sélectionne des géométries UV propres aux poses sans modifier l'offset d'une texture commune : deux cadavres peuvent afficher des étapes différentes en partageant textures et matériaux. Les instances quittent la scène à chaque palier ; les ressources partagées restent en cache jusqu'à leur libération globale, notamment dans `Game.dispose`.
 
-```text
-Zombie.update → distance courte + délai écoulé + ligne d'attaque libre
-  → onAttack(10)
-  → Game appelle Player.takeDamage
-  → actualise vie et voile si santé réduite
-  → si zéro : endGame('lost')
-```
+L'`AudioListener` appartient à la caméra. `Game.syncAmbientAudio` pilote ambiance/musique et suspend les sources hors contrôle, sans focus ou onglet visible. Les voix ennemies et l'orage sont spatialisés. `HorrorDirector.update` reçoit phase, regard, position et points accessibles. `nextWait` retient 35 % des accalmies avec un délai de 3–6 s ; les autres reçoivent une attente infinie et restent silencieuses jusqu'au prochain `resetRespite`. Aucun nouveau tirage au retour de pause ou en cas de point manquant. Une lecture maximum, arrêt hors éligibilité et quatre secondes de silence à la reprise ; la pause peut faire expirer la fenêtre sans son. `advanceRespite` précède l'audio dans la boucle : le palier suivant réarme et coupe la source avant toute nouvelle lecture.
 
-Un callback est une fonction passée à un objet pour qu'il signale un résultat. Weapon connaît les meshes mais ne connaît pas la classe Zombie ; Game fait l'association. Cela suffit ici, pas besoin d'un bus d'événements général.
+Diagnostics navigateur : `window.__DEAD_SECTOR_PERF()`, `__DEAD_SECTOR_PERF_DETAILED()`, `__DEAD_SECTOR_DIAGNOSTICS()` et `__DEAD_SECTOR_START_TIER(n)`. Ces outils et les tests logiques ne prouvent pas la lisibilité, le rendu audio ou l'équilibre d'un combat réel.
 
-## Quatre représentations différentes du monde
+## Outils de vérification visuelle et sonore
 
-- Le **mesh** est une géométrie visible avec un matériau. Il sert aussi de support au raycasting.
-- La **boîte de collision** (`Box3`) est une approximation fixe d'un mur ou obstacle. Le joueur et le zombie sont des cercles sur X/Z ; Level teste leur proximité avec ces boîtes. Le déplacement est découpé en petits pas puis testé séparément sur X et Z pour glisser.
-- La **texture** colore le mesh. Le zombie est un plan vertical tourné vers le joueur (billboard). La marche déplace la fenêtre de lecture sur quatre cellules horizontales d'une texture.
-- L'**interface** est du HTML par-dessus le canvas. Le viseur et le rayon coïncident parce qu'ils utilisent tous deux le centre, pas parce que le viseur émet un rayon.
+Lancer `npm.cmd run dev` pour servir les aperçus générés sous `/tmp/` ; leurs données doivent rester celles du jeu.
 
-Transparence visuelle et collision sont distinctes : masquer les pixels d'une texture ne découpe pas sa géométrie. De même, déplacer un obstacle après sa création ne mettrait pas automatiquement à jour la Box3 stockée ; les futures portes devront traiter explicitement les deux représentations.
+| Commande depuis la racine | Résultat |
+| --- | --- |
+| `node scripts/make-weapon-preview.mjs` | Pistolet, culasse et rechargement : `/tmp/weapon-preview/index.html`. |
+| `node scripts/make-shotgun-preview.mjs` | Fusil, recul, pompe, ADS et insertion : `/tmp/shotgun-preview/index.html`. |
+| `node scripts/make-zombie-preview.mjs` | Marche/attaque standard et planche des poses : `/tmp/zombie-preview/`. |
+| `node scripts/make-zombie-death-preview.mjs` | Vraie classe de cadavre, cycle isolé et vue latérale : `/tmp/zombie-death-preview/index.html`. |
+| `node scripts/make-spitter-preview.mjs` | Poses du Cracheur : `/tmp/spitter-preview/index.html`. |
+| `node scripts/make-crawler-preview.mjs` | Rampeuse, cycles normal/lent et comparaison 3D des proportions : `/tmp/crawler-preview/index.html`. |
+| `python scripts/generate_soft_audio.py` | Régénération des sons adoucis `*-soft.wav`. |
+| `python scripts/generate_storm_audio.py` | Régénération de la pluie et du tonnerre. |
+| `python scripts/generate_combat_audio.py` | Régénération de la musique et de la détonation du fusil. |
 
-## États et temps
-
-Zombie possède aussi RECOVER depuis l'ajout de ses animations. Deux poses préparent le coup pendant 0,6 s ; l'impact inflige les dégâts une seule fois et commence une récupération de 0,32 s. Les textures de marche/attaque et les UV sont décrits dans ZombieAnimation.ts, commun au jeu et à l'aperçu. Les ombres utilisent la même texture que le matériau visible. Voir ZOMBIE_ANIMATIONS.md.
-
-L'arme est représentée par couches : carcasse/main principale fixes, culasse indépendante et main secondaire/chargeur de rechargement. Weapon pilote `--slide` pour le cycle court et les offsets de la main pour les poses de rechargement. Le CSS sélectionne des régions stables des images d'origine. Cette représentation évite les variations de perspective de l'ancienne séquence ; voir ARME_COUCHES.md pour les approximations et validations.
-
-Weapon pilote aussi une progression de visée 0–1 au clic droit ; Game la transmet à Player.setAimAmount pour interpoler le FOV (75 à 58) et la sensibilité. Le HUD reçoit la même progression pour le fondu entre les deux perspectives 2D. Pause, blur et fin réinitialisent cette progression ; le rayon central est indépendant du sprite. Voir ARME_ADS.md.
-
-Game possède `playing/won/lost`, chaque Zombie possède `IDLE/CHASE/SEARCH/ATTACK`, une santé et un indicateur alive. SEARCH suit la dernière position aperçue via des points fixes calculés par Level ; ATTACK représente la préparation avant les dégâts. Une réaction rouge et la récupération utilisent des compteurs indépendants.
-
-Le tir suit une horloge réelle en millisecondes ; les attaques et les réactions suivent des secondes simulées. Ne pas les mélanger accidentellement. Toute modification de pause doit préciser ce qui s'arrête (simulation, commandes, audio, effets).
-
-## Évoluer sans refondre
-
-- Plus d'ennemis : tableau actuel suffisant ; optimiser la recherche seulement si un besoin mesuré apparaît.
-- Niveau plus grand : commencer par des données de placement dans Level avant d'introduire un éditeur.
-- Portes : faire évoluer ensemble visuel, collision et obstruction des rayons.
-- HUD qui grossit : extraire une petite classe Hud si les mises à jour DOM masquent la coordination dans Game.
-- Redémarrage sans rechargement : définir reset et libération des écouteurs/ressources avant de reconstruire des objets.
-- Navigation : commencer avec points de passage ; réserver A* à un besoin de chemins multiples démontré.
+Les scripts audio écrasent leurs sorties dans `public/assets/sounds/` : ne les lancer que pour une modification sonore voulue. L'optimisation des textures existantes est reproductible avec `scripts/optimize-assets.py`.

@@ -119,4 +119,10 @@ export class StormController {
     this.rain = null;
     this.thunder = null;
   }
+
+  public resetForNewRun(): void {
+    this.suspend();
+    this.wait = this.nextWait();
+    this.selectedWindowIndex = -1;
+  }
 }

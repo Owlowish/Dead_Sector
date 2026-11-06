@@ -1,29 +1,49 @@
-# DEAD SECTOR — Collaboration et pédagogie
+# DEAD SECTOR — Agent autonome
 
-Répondre en français. L'utilisateur apprend le développement de jeux : l'objectif est de comprendre les mécanismes et les décisions, autant que de produire du code fonctionnel.
+Répondre en français, de façon concise et orientée résultat. Ces consignes remplacent le fonctionnement pédagogique précédent dans ce dépôt.
 
-Ne pas terminer systématiquement les réponses par une question, une proposition de suite ou un exercice. Expliquer les décisions utiles, puis conclure par le résultat et les vérifications. Poser une question uniquement si une information indispensable manque, si une décision importante reste réellement ouverte ou si l'utilisateur demande un échange pédagogique. Regrouper les questions nécessaires ; ne pas redemander un accord déjà donné. Les choix techniques courants et réversibles peuvent être résolus en annonçant l'hypothèse retenue.
+## Exécution
 
-Avant toute nouvelle fonctionnalité, expliquer brièvement ce qui sera construit, les concepts abordés, les fichiers et classes concernés, et le choix de solution. Pour une fonctionnalité importante, présenter ce plan et attendre l'accord de l'utilisateur avant de modifier le code. Les corrections triviales peuvent être faites directement.
+- Prendre en charge la demande jusqu'au résultat vérifié : inspection ciblée, implémentation, corrections, contrôles et documentation utile. Ne pas s'arrêter à un plan lorsqu'une action est demandée.
+- Choisir seul les détails techniques, hypothèses raisonnables, réglages réversibles et étapes nécessaires. Ne pas demander de confirmation à chaque fonctionnalité, fichier, asset ou étape.
+- Ne fournir ni cours, ni débrief pédagogique, ni exercice, ni question de compréhension, sauf demande explicite. Communiquer seulement les changements utiles, vérifications réelles et limites importantes.
+- Ne poser une question que pour un choix réellement « game breaker » impossible à résoudre avec le contexte : risque majeur de rendre la progression injouable, de supprimer une mécanique essentielle ou de contredire la direction validée avec un effet difficile à annuler. Expliquer le risque concret ; continuer les travaux indépendants.
+- Avant de solliciter l'utilisateur, vérifier le code et les décisions existantes, puis préférer une solution compatible et réversible. Un doute esthétique, une valeur à ajuster ou une variante de prototype ne justifient pas une question.
+- Pour « continue », « la suite » ou une demande de progression, choisir et réaliser le prochain lot cohérent. Pour une demande explicite de bilan, recherche, plan ou avis seulement, respecter ce périmètre.
+- Ne pas dérouler toute la roadmap d'un coup ni ajouter des systèmes sans lien avec la demande. Découper par résultats jouables, sans multiplier les micro-ateliers artificiels.
+- Utiliser des sous-agents pour des tâches indépendantes si cela aide ; garder des responsabilités distinctes et vérifier leur résultat. Ne pas changer les modèles ou la configuration globale de l'utilisateur sans demande.
 
-Privilégier des changements simples, lisibles, ciblés et modulaires, sans abstraction prématurée ni suppression injustifiée de fonctionnalités. Commenter seulement les logiques non évidentes. Le projet utilise TypeScript, Three.js et Vite, sans React ni moteur physique externe ; `erasableSyntaxOnly` interdit les propriétés déclarées dans les paramètres de constructeur. Vérifier la compilation avec `npm.cmd run build` après chaque intervention sur le code.
+## Repères et contraintes
 
-Après chaque implémentation, fournir un débrief pédagogique proportionné : fichiers modifiés et leur rôle ; deux ou trois concepts essentiels illustrés par le code réel et la communication entre classes ; justification des choix, compromis et limites. Les mini-exercices et questions de compréhension sont réservés aux demandes d'apprentissage explicites, sans obligation à chaque réponse. Ne pas détailler chaque ligne. Expliquer en particulier, selon le sujet, la boucle de jeu, le delta-time, le raycasting, les collisions, les billboards, les textures, les animations et les états des ennemis. Distinguer compilation et validation du gameplay, et signaler les vérifications non effectuées.
+- Commencer par `docs/ETAT_PROJET.md`, puis les seules sections utiles de l'architecture, de la direction et de la roadmap. Le code réel fait foi ; vérifier les signatures et l'état Git avant modification.
+- TypeScript, Three.js et Vite, sans React ni moteur physique externe. `erasableSyntaxOnly` interdit les propriétés déclarées dans les paramètres des constructeurs.
+- Garder des changements simples, lisibles, ciblés et modulaires. Pas d'ECS, bus d'événements, dépendance ou refonte pour un besoin hypothétique ; extraire une responsabilité seulement si elle devient concrètement difficile à suivre.
+- Préserver les réglages expérimentés, notamment le recul de deux secondes, sauf demande ou correction nécessaire justifiée par un défaut observé.
+- Préserver les modifications locales et les fonctionnalités existantes. Ne pas supprimer du code ou des assets au seul motif qu'une ancienne note les décrit mal.
+- Direction : même manoir-arène ouvert progressivement, élimination par palier, tentative finie de 10–15 minutes avec finale, sans extraction, horreur psychologique et style rétro lisible. Un prototype de finale est présent ; durée et équilibre restent à mesurer.
+- Aucun menu automatique après la dernière élimination ne doit couper le déplacement. La boucle actuelle utilise dix secondes d'accalmie puis le combat suivant, sans piédestaux ni carillon actif : ne pas rétablir les anciennes propositions par inadvertance.
 
-Ces consignes s'appliquent jusqu'à instruction contraire de l'utilisateur.
+## Vérification et compte rendu
 
-Direction de jeu validée le 2 novembre 2026 : même manoir-arène labyrinthique ouvert progressivement, ennemis à éliminer par palier, récompenses gratuites entre les combats ; tentative finie de 10 à 15 minutes avec rencontre finale, sans extraction. Aucun menu automatique après la dernière élimination ne doit casser le déplacement. Direction d'horreur privilégiée : psychologique, par sons, silhouettes et événements inquiétants. Lire `docs/ORIENTATION_JEU.md` et le jalon pertinent de `docs/ROADMAP.md` pour distinguer les décisions des propositions (huit paliers et dispositif de choix notamment). Vérifier le code et `docs/ETAT_PROJET.md` pour l'avancement réel ; le plan seul n'autorise pas l'implémentation de tous les ateliers.
+- Exécuter `npm.cmd run build` après chaque intervention sur le code, puis les contrôles ciblés pertinents. Corriger les échecs liés au changement. Ne pas ajouter des tests qui recopient l'implémentation ni relancer toute la suite sans raison.
+- Pour un changement documentaire seul, contrôler références, formats et `git diff --check` ; pas de build obligatoire.
+- Distinguer compilation, tests logiques, observation navigateur et partie jouée. Ne pas déclarer un gameplay, un son ou une animation validé sans l'avoir observé.
+- Terminer par un compte rendu court : résultat, contrôles exécutés et limites restantes. Pas de question ni de proposition de suite automatique.
 
-## Reprise du projet par un autre modèle
+## Documentation courte et entretenue
 
-1. Lire ce fichier, puis `docs/ETAT_PROJET.md` (faits et prochaine étape). Lire `docs/ARCHITECTURE.md` pour comprendre les responsabilités. Consulter seulement le jalon pertinent de `docs/ROADMAP.md`, puis les fichiers de code concernés. Ne pas relire tout le dépôt à chaque petit changement.
-2. Le code réel fait foi. Vérifier les signatures avant toute modification. Les documents décrivent un état daté et peuvent devenir périmés.
-3. Identifier la dernière demande et l'accord éventuel de l'utilisateur. Une proposition de la roadmap n'est pas une autorisation d'implémenter tous les jalons. Pour « la suite ? », recommander un seul atelier, en expliquer l'apport macroscopique et attendre l'accord pour une fonctionnalité importante. Ne pas redemander un accord déjà donné.
-4. Viser un atelier court et cohérent : un comportement observable, un ou deux concepts, un résultat testable. Ne pas découper artificiellement la progression en une longue série de retouches cosmétiques.
-5. L'utilisateur veut comprendre les responsabilités, les données et les flux entre systèmes, pas mémoriser des noms de variables. Expliquer les mécanismes sans transformer chaque réponse en interrogation. Si un exercice est demandé, le relier à la mécanique globale et proposer une manière de vérifier son effet, sans donner immédiatement la solution. Corriger les idées sans présumer qu'il connaît le vocabulaire.
-6. Avant de modifier : expliquer résultat, concepts, fichiers, justification et vérification prévue en quelques paragraphes. Pendant : faire les changements autorisés et compiler. Après : résumer changements, flux réel entre classes, deux ou trois concepts, compromis et vérifications effectuées. Donner un indice progressif si l'utilisateur bloque sur un exercice demandé.
-7. Après une étape, actualiser `docs/ETAT_PROJET.md` : réalisé, compilation, tests navigateur réellement effectués, limites, prochaine étape proposée et accord restant à obtenir. Mettre à jour architecture/roadmap seulement si elles changent. Ne jamais transformer « implémenté » en « validé en jeu » sans preuve.
-8. Conserver les réglages expérimentés par l'utilisateur (par exemple le recul à 2 secondes) sauf demande ou justification explicite. Ne pas ajouter de dépendance, ECS, bus d'événements, moteur physique ou refonte générale pour anticiper des besoins hypothétiques. Extraire une classe seulement quand une responsabilité concrète devient difficile à suivre.
-9. Pas de changement de modèle, configuration d'agent ou délégation implicite. Ce fichier est le guide du dépôt ; il ne garantit pas que chaque outil ou chaque nouvelle conversation lira automatiquement les documents. Le prompt de reprise dans `docs/ETAT_PROJET.md` indique comment retrouver le contexte.
+- Après chaque lot significatif, actualiser `docs/ETAT_PROJET.md` en remplaçant les passages périmés. Garder faits utiles, vérifications datées, défauts ouverts et prochaine priorité ; ne pas empiler un journal chronologique.
+- À chaque intervention documentaire et avant de clôturer un lot significatif, retirer ou fusionner doublons, anciens prompts de transfert, plans exécutés et documents contredits par le code. Ce nettoyage courant est autorisé sans confirmation.
+- Avant suppression, vérifier les références et dépendances des scripts. Reporter uniquement les décisions encore utiles dans leur document de référence, puis réparer les liens.
+- Utiliser Git pour l'historique. Ne pas créer d'archives, copies datées, rapports par micro-changement ou nouveau document lorsqu'un document existant peut être mis à jour.
+- Viser environ 120 lignes maximum pour l'état et l'architecture, 80 pour la roadmap, sans retirer une information indispensable pour tenir une limite artificielle.
+- Garder les documents centraux complémentaires : état réel, architecture, direction, travaux restants et pipeline d'assets. Une information a un seul emplacement de référence.
+- Préserver licences, provenance des assets encore utilisés, contrats techniques nécessaires et manifestes consommés par des scripts. Une date ancienne ne suffit pas à rendre un fichier obsolète.
 
-10. Pour tout nouvel asset ou ensemble d'assets (personnage, arme, décor, objet, effet, interface ou son), suivre `docs/PIPELINE_ASSETS.md`. Le prompt multi-modèles est `docs/PROMPT_ASSETS_MULTI_IA.md`, notamment pour Gemini ; le modèle de fiche est `docs/asset-packs/MODELE_LOT_ASSETS.json`. Inspecter les références réellement utilisées, inventorier toutes les ressources nécessaires au contenu demandé, puis produire un lot cohérent sans réinventer le style à chaque image. Définir composition, invariants et, pour une animation, éléments mobiles et phases avant la génération. Valider une base puis, si animé, un cycle isolé à taille réelle avant d'étendre l'intégration. Partager les données d'animation entre aperçu et jeu ; distinguer validation artistique, continuité et logique. Une compilation ou une planche d'images ne prouve pas la lisibilité d'un mouvement. Une demande de génération du lot autorise ses ressources nécessaires, pas une nouvelle mécanique de gameplay ni une refonte ; ne pas demander un accord pour chaque fichier déjà inclus dans ce lot. Les anciens prompts de lots restent des archives datées, pas des consignes supérieures au workflow courant.
+## Assets
+
+- Suivre `docs/PIPELINE_ASSETS.md` pour personnages, armes, décors, objets, effets, interface et sons. Prompt réutilisable : `docs/PROMPT_ASSETS_MULTI_IA.md` ; modèle : `docs/asset-packs/MODELE_LOT_ASSETS.json`.
+- Inspecter les références réellement chargées, inventorier le lot, fixer composition, invariants, ancrages et phases, puis produire une base et une action pilote avant d'étendre. Effectuer ces contrôles seul, sans demande d'accord automatique.
+- Conserver prompts exacts et transformations utiles dans le manifeste du lot existant. Partager les données d'animation entre jeu et aperçu ; vérifier séparément fichiers, continuité, intégration et lisibilité en jeu.
+- Les prompts et contrats historiques conservés pour provenance ne remplacent pas ces consignes ni le comportement constaté dans le code.
+- Respecter un périmètre explicite de préparation ou génération seule. Ne pas ajouter une mécanique pour justifier des assets supplémentaires. Signaler factuellement une capacité manquante et avancer sur les parties possibles.

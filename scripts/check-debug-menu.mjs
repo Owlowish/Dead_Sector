@@ -38,11 +38,12 @@ Object.assign(game, {
   tierDiagnostics:{startTier(){}},
   gameOverDisplay:{hidden:false}, victoryDisplay:{hidden:false}, damageOverlay:{style:{opacity:'1'}},
   state:'lost', currentTier:7, pendingTierStart:7, respiteTimer:9, tierCrawlerSpawned:2,
+  runElapsedSeconds:10,completedTiers:new Set([1,2,3]),runResult:'lost',runSummaryOpen:false,
   debugMenuOpen:true, disposed:false,
   respawnPickups(){respawns++;},updateObjectiveDisplay(){},updateHealthDisplay(){},updateAmmoDisplay(){},
   setDebugMenuOpen(open){this.debugMenuOpen=open;},
 });
-for(const tier of [4,7,1,4]){
+for(const tier of [4,7,8,1,4]){
   game.pendingTierStart=7;game.respiteTimer=9;game.tierCrawlerSpawned=2;
   game.jumpToDebugTier(tier);
   assert.equal(game.currentTier,tier);
@@ -57,9 +58,9 @@ for(const tier of [4,7,1,4]){
 }
 assert.equal(disposedEnemies,1);assert.equal(disposedProjectiles,1);
 assert.equal(disposedDrops,1);assert.equal(disposedShells,1);
-assert.equal(clearedEffects,4);assert.equal(respawns,4);
-for(const tier of [0,8,1.5,NaN]){game.jumpToDebugTier(tier);assert.equal(game.currentTier,4);}
-assert.equal(respawns,4,'une entrée invalide ne doit rien réinitialiser');
+assert.equal(clearedEffects,5);assert.equal(respawns,5);
+for(const tier of [0,9,1.5,NaN]){game.jumpToDebugTier(tier);assert.equal(game.currentTier,4);}
+assert.equal(respawns,5,'une entrée invalide ne doit rien réinitialiser');
 game.debugMenuOpen=true;assert.equal(game.isSimulationActive(),false);
 game.debugMenuOpen=false;assert.equal(game.isSimulationActive(),true);
 console.log('Debug : sauts répétés, quotas/file/accalmie réinitialisés, nettoyage, joueur restauré et pause : OK');

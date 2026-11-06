@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { visualColors } from './VisualStyle.ts';
 import { mansionMaterial, mansionBoxGeometry } from './MansionMaterials.ts';
+import { setImpactSurface } from './ImpactSurface.ts';
 
 export type DoorState = 'LOCKED' | 'CLOSED' | 'OPENING' | 'OPEN' | 'CLOSING';
 export type DoorType = 'interior' | 'sector_access' | 'permanent_limit';
@@ -46,6 +47,7 @@ export class Door {
   private leftMesh: THREE.Mesh;
   private rightMesh: THREE.Mesh;
   private frameMeshes: THREE.Mesh[] = [];
+  private hardwareMeshes: THREE.Mesh[] = [];
 
   constructor(
     scene: THREE.Scene,
@@ -89,12 +91,14 @@ export class Door {
       roughness: 0.75,
       metalness: 0.4,
     });
+    setImpactSurface(ironMaterial, 'metal');
 
     const brassMaterial = new THREE.MeshStandardMaterial({
       color: visualColors.brass,
       roughness: 0.6,
       metalness: 0.6,
     });
+    setImpactSurface(brassMaterial, 'metal');
 
     // Groupe racine de la porte permettant l'orientation selon l'axe X ou Z
     this.rootGroup = new THREE.Group();
@@ -148,6 +152,7 @@ export class Door {
       ironBand.position.set(0, yOffset, 0);
       ironBand.castShadow = true;
       this.leftMesh.add(ironBand);
+      this.hardwareMeshes.push(ironBand);
     }
     // Poignée / anneau de tirage gauche
     const leftHandle = new THREE.Mesh(
@@ -156,6 +161,7 @@ export class Door {
     );
     leftHandle.position.set(this.leafWidth * 0.42, 0, 0);
     this.leftMesh.add(leftHandle);
+    this.hardwareMeshes.push(leftHandle);
 
     this.rootGroup.add(this.leftPivot);
 
@@ -179,6 +185,7 @@ export class Door {
       ironBand.position.set(0, yOffset, 0);
       ironBand.castShadow = true;
       this.rightMesh.add(ironBand);
+      this.hardwareMeshes.push(ironBand);
     }
     // Poignée / serrure droite
     const rightLock = new THREE.Mesh(
@@ -187,6 +194,7 @@ export class Door {
     );
     rightLock.position.set(-this.leafWidth * 0.42, 0, 0);
     this.rightMesh.add(rightLock);
+    this.hardwareMeshes.push(rightLock);
 
     this.rootGroup.add(this.rightPivot);
     this.scene.add(this.rootGroup);
@@ -210,6 +218,11 @@ export class Door {
     if (this.state === 'LOCKED') {
       this.state = 'CLOSED';
     }
+  }
+
+  public resetForNewRun(): void {
+    this.lock();
+    if (this.type === 'interior') this.unlock();
   }
 
   public getName(): string {
@@ -261,7 +274,7 @@ export class Door {
   }
 
   public getSolidMeshes(): THREE.Mesh[] {
-    return [this.leftMesh, this.rightMesh, ...this.frameMeshes];
+    return [this.leftMesh, this.rightMesh, ...this.frameMeshes, ...this.hardwareMeshes];
   }
 
   public getMesh(): THREE.Mesh {

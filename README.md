@@ -1,8 +1,8 @@
 # DEAD SECTOR
 
-Petit FPS d'horreur rétro, développé dans le navigateur avec TypeScript, Three.js et Vite. Projet d'apprentissage de la conception de jeux avec l'aide d'une IA.
+FPS d'horreur rétro dans le navigateur, développé en TypeScript avec Three.js et Vite.
 
-Le prototype propose un manoir-arène qui s'ouvre progressivement, des paliers d'ennemis et une récompense gratuite à choisir entre les combats. Il comporte un pistolet, un fusil à pompe, une lampe torche et deux variantes de zombies. Voir l'état du projet pour les limites et les validations effectuées.
+Manoir-arène ouvert progressivement, pistolet, fusil à pompe et lampe. Quatre types d'ennemis : standard, Coureur, Cracheur et Rampeuse. Les munitions tombent sur les ennemis ; les combats sont séparés par dix secondes d'accalmie libre. Le code local contient huit rencontres, dont une finale provisoire avec le Gardien ; après victoire, le manoir reste explorable et le bilan s'ouvre volontairement avec B. Équilibrage et durée complète restent à valider en partie.
 
 ## Lancer le prototype
 
@@ -13,16 +13,17 @@ npm.cmd ci
 npm.cmd run dev
 ```
 
-Build de production : `npm.cmd run build`. Vérification locale de ce build : `npm.cmd run preview`.
+Build : `npm.cmd run build`. Aperçu du build : `npm.cmd run preview`.
 
-Cliquer dans le jeu pour verrouiller la souris ; ZQSD/WASD pour se déplacer, Shift pour sprinter, souris pour regarder, clic gauche pour tirer, clic droit maintenu pour viser, R pour recharger, F pour la lampe, E pour interagir, 1/2 ou molette pour changer d'arme débloquée, Échap pour mettre en pause. Éliminer les ennemis du palier pour choisir une récompense et poursuivre dans une nouvelle aile ; défaite à zéro PV.
+Cliquer pour verrouiller la souris ; ZQSD/WASD pour se déplacer, Shift pour sprinter, souris pour regarder, clic gauche pour tirer, clic droit maintenu pour viser, R pour recharger, F pour la lampe, E pour interagir, 1/2 ou molette pour changer d'arme débloquée, Échap pour la pause. K ouvre le menu debug des paliers. Défaite à zéro PV.
 
-## Comprendre et poursuivre
+## Documentation
 
-- [Consignes de collaboration](AGENTS.md) : méthode pédagogique et contrat de reprise pour les assistants.
-- [Nouvelle orientation](docs/ORIENTATION_JEU.md) : décisions validées, propositions et règles de la future boucle.
-- [État du projet](docs/ETAT_PROJET.md) : fonctionnalités réelles, limites, vérifications et prompt de reprise.
-- [Architecture](docs/ARCHITECTURE.md) : responsabilités et flux entre les systèmes.
-- [Roadmap pédagogique](docs/ROADMAP.md) : parcours complet vers une première démo terminée, atelier par atelier.
+- [Consignes de l'agent](AGENTS.md) : autonomie, vérification et entretien documentaire.
+- [État du projet](docs/ETAT_PROJET.md) : fonctionnalités réelles, limites et contrôles récents.
+- [Architecture](docs/ARCHITECTURE.md) : responsabilités et flux actuels.
+- [Direction du jeu](docs/ORIENTATION_JEU.md) : décisions et invariants.
+- [Travaux restants](docs/ROADMAP.md) : priorités vers une tentative complète.
+- [Pipeline d'assets](docs/PIPELINE_ASSETS.md) et [prompt réutilisable](docs/PROMPT_ASSETS_MULTI_IA.md).
 
-La compilation ne vaut pas validation du gameplay. La documentation d'état précise ce qui reste à tester et les prochaines propositions ; celles-ci ne sont pas automatiquement autorisées.
+La compilation et les tests logiques ne valent pas validation du gameplay. Les limites observées sont dans l'état du projet ; l'historique des changements est dans Git.

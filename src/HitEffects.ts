@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { getImpactSurface, type ImpactSurface } from './ImpactSurface.ts';
 
 export type ShotImpact = {
   kind: 'zombie' | 'surface';
@@ -6,6 +7,7 @@ export type ShotImpact = {
   point: THREE.Vector3;
   normal: THREE.Vector3;
   direction: THREE.Vector3;
+  surface?: ImpactSurface;
 };
 
 type Particle = { mesh: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>; velocity: THREE.Vector3; age: number; lifetime: number };
@@ -33,7 +35,11 @@ export class HitEffects {
 
   public emit(impact: ShotImpact): void {
     const blood = impact.kind === 'zombie';
-    const colors = blood ? [0x8f2925, 0xb84938, 0x641d20] : [0xa58b67, 0x66503b, 0xc0aa87];
+    const surface = impact.surface ?? getImpactSurface({ object: impact.object });
+    const colors = blood ? [0x8f2925, 0xb84938, 0x641d20]
+      : surface === 'wood' ? [0xa58b67, 0x66503b, 0xc0aa87]
+      : surface === 'metal' ? [0xe4cc87, 0xcda35b, 0x899593]
+      : [0x99958a, 0x686961, 0xb8b1a0];
     for (let i = 0; i < (blood ? 9 : 6); i++) {
       if (this.particles.length >= this.maxParticles) this.removeParticle(this.particles.shift()!);
       const material = new THREE.MeshBasicMaterial({
@@ -42,16 +48,19 @@ export class HitEffects {
       const mesh = new THREE.Mesh(this.pixelGeometry, material);
       mesh.position.copy(impact.point).addScaledVector(impact.normal, 0.02);
       mesh.scale.setScalar((blood ? 0.035 : 0.025) + Math.random() * 0.035);
+      if (!blood && surface !== 'stone') mesh.scale.x *= surface === 'wood' ? 0.55 : 0.3;
       const velocity = new THREE.Vector3(Math.random() - 0.5, Math.random() * 0.9, Math.random() - 0.5)
         .addScaledVector(impact.normal, 0.8).multiplyScalar(blood ? 1.5 : 1);
+      if (!blood && surface === 'metal') velocity.multiplyScalar(1.7);
       this.scene.add(mesh);
-      this.particles.push({ mesh, velocity, age: 0, lifetime: 0.22 + Math.random() * 0.16 });
+      this.particles.push({ mesh, velocity, age: 0, lifetime: (!blood && surface === 'metal' ? 0.12 : 0.22) + Math.random() * 0.16 });
     }
     if (blood) return;
 
     if (this.marks.length >= this.maxMarks) this.removeMark(this.marks.shift()!);
     const mesh = new THREE.Mesh(this.markGeometry, new THREE.MeshBasicMaterial({
-      color: 0x211510, transparent: true, opacity: 0.9, depthWrite: false, side: THREE.DoubleSide,
+      color: surface === 'wood' ? 0x211510 : surface === 'metal' ? 0x20282a : 0x34332e,
+      transparent: true, opacity: 0.9, depthWrite: false, side: THREE.DoubleSide,
       polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1,
     }));
     mesh.scale.setScalar(0.1 + Math.random() * 0.04);

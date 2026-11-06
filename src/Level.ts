@@ -3,6 +3,7 @@ import { Door } from './Door.ts';
 import { createStormWindowVisuals, type StormWindowVisuals } from './StormWindow.ts';
 import { visualColors } from './VisualStyle.ts';
 import { mansionMaterial, mansionBoxGeometry } from './MansionMaterials.ts';
+import { setImpactSurface } from './ImpactSurface.ts';
 import {
   MANSION_BUDGET,
   MANSION_WALLS,
@@ -71,6 +72,7 @@ export class Level {
       roughness: 0.75,
       metalness: 0.0,
     });
+    setImpactSurface(floorMaterial, 'wood');
 
     // 1A. Sol du rez-de-chaussée (Z in [-7, 20], profondeur 27m)
     const groundFloor = new THREE.Mesh(
@@ -81,6 +83,7 @@ export class Level {
     groundFloor.rotation.x = -Math.PI / 2;
     groundFloor.receiveShadow = true;
     this.scene.add(groundFloor);
+    this.solidMeshes.push(groundFloor);
 
     // 1B. Sol du plateau surélevé Nord (+2.4m, Z in [-20, -7], profondeur 13m)
     const raisedFloor = new THREE.Mesh(
@@ -91,6 +94,7 @@ export class Level {
     raisedFloor.rotation.x = -Math.PI / 2;
     raisedFloor.receiveShadow = true;
     this.scene.add(raisedFloor);
+    this.solidMeshes.push(raisedFloor);
 
     // 1C. Socle plein sous le plateau nord (volume occultant pour bloquer tirs et raycasts sous les pièces hautes)
     // Note : visible = false et hauteur limitée à 2.38m (top à 2.38m, sous les 2.40m du plancher)
@@ -100,6 +104,7 @@ export class Level {
     );
     plinth.position.set(0, 1.19, -13.5);
     plinth.visible = false;
+    plinth.userData.impactSurface = 'stone';
     this.solidMeshes.push(plinth);
 
     // 1D. Marches d'escaliers visibles (Ouest et Est)
@@ -197,11 +202,11 @@ export class Level {
       tex.minFilter = THREE.NearestMipmapNearestFilter;
       tex.colorSpace = THREE.SRGBColorSpace;
       tex.needsUpdate = true;
-      return new THREE.MeshStandardMaterial({
+      return setImpactSurface(new THREE.MeshStandardMaterial({
         map: tex,
         roughness: 0.88,
         metalness: 0.0,
-      });
+      }), 'stone');
     };
 
     const obstacleMaterial = mansionMaterial('wood');
@@ -211,6 +216,7 @@ export class Level {
       roughness: 0.75,
       metalness: 0.4,
     });
+    setImpactSurface(ironMaterial, 'metal');
 
     // 3. Construction physique des murs et obstacles à partir de MansionConfig
     for (const wall of MANSION_WALLS) {
@@ -411,6 +417,7 @@ export class Level {
       new THREE.MeshBasicMaterial({ visible: false })
     );
     colliderMesh.position.set(x, y, z);
+    colliderMesh.userData.impactSurface = 'stone';
     this.colliders.push(new THREE.Box3().setFromObject(colliderMesh));
     this.solidMeshes.push(colliderMesh);
 

@@ -154,6 +154,7 @@ export class ZombieRemains {
   private mesh: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
   private elapsed: number | null = null;
   private baseFloorY = 0;
+  private displayScale = 1;
   private settled = false;
   private reversing = false;
   private revivalFinished = false;
@@ -177,11 +178,14 @@ export class ZombieRemains {
     scene.add(this.mesh);
   }
 
-  public start(position: THREE.Vector3, facingAngle: number): void {
+  public start(position: THREE.Vector3, facingAngle: number, scale = 1): void {
     if (this.disposed || this.elapsed !== null) return;
     this.elapsed = 0;
-    this.baseFloorY = position.y >= 2.0 ? 2.4 : 0;
-    this.mesh.position.set(position.x, this.baseFloorY + (this.kind === 'spitter' ? 1.35 : this.kind === 'agile' ? 1 : 0), position.z);
+    this.displayScale = scale;
+    const standingCenter = this.kind === 'spitter' ? 1.35 : 1;
+    this.baseFloorY = position.y - standingCenter * scale;
+    this.mesh.scale.setScalar(scale);
+    this.mesh.position.set(position.x, this.baseFloorY, position.z);
     this.mesh.rotation.set(0, facingAngle, 0);
     this.mesh.visible = true;
     this.mesh.castShadow = true;
@@ -237,12 +241,12 @@ export class ZombieRemains {
       const pose = standardConfig.frames[index];
       this.mesh.position.y =
         this.baseFloorY +
-        (pose.groundY - pose.y - pose.height / 2) / standardConfig.pixelsPerUnit + standardConfig.floorHeight;
+        (pose.groundY - pose.y - pose.height / 2) / standardConfig.pixelsPerUnit * this.displayScale + standardConfig.floorHeight;
     } else if (this.kind === 'agile') {
       // Pour l'agile, les sommets sont déjà calibrés par rapport au centre mondial y = 1
-      this.mesh.position.y = this.baseFloorY + 1;
+      this.mesh.position.y = this.baseFloorY + this.displayScale;
     } else {
-      this.mesh.position.y = this.baseFloorY + 1.35;
+      this.mesh.position.y = this.baseFloorY + 1.35 * this.displayScale;
     }
   }
 

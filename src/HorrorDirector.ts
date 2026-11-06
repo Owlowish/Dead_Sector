@@ -34,7 +34,9 @@ export class HorrorDirector {
   }
 
   private nextWait(): number {
-    return 18 + this.random() * 12;
+    // Un seul tirage par accalmie : les autres restent silencieuses.
+    if (this.random() >= 0.35) return Number.POSITIVE_INFINITY;
+    return 3 + this.random() * 3;
   }
 
   public setSource(source: HorrorAudioSource): void {

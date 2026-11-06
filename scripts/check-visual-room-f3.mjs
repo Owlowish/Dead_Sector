@@ -218,11 +218,11 @@ const source = {
 const director = new HorrorDirector(() => 0);
 director.setSource(source);
 const backPoint = [{ x: 0, y: 1.3, z: 10 }];
-for (let i = 0; i < 359; i++) director.update(0.05, true, new THREE.Vector3(0, 1.7, 0), new THREE.Vector3(0, 0, -1), backPoint);
-assert.equal(source.playCount, 0, 'Aucun craquement avant 18 secondes de temps éligible');
-director.update(0.05, true, new THREE.Vector3(0, 1.7, 0), new THREE.Vector3(0, 0, -1), backPoint);
+for (let i = 0; i < 95; i++) director.update(1 / 32, true, new THREE.Vector3(0, 1.7, 0), new THREE.Vector3(0, 0, -1), backPoint);
+assert.equal(source.playCount, 0, 'Aucun craquement avant trois secondes de temps éligible');
+director.update(1 / 32, true, new THREE.Vector3(0, 1.7, 0), new THREE.Vector3(0, 0, -1), backPoint);
 assert.equal(source.playCount, 1, 'Le craquement démarre après le délai hors regard');
-director.update(0.05, true, new THREE.Vector3(0, 1.7, 0), new THREE.Vector3(0, 0, -1), backPoint);
+director.update(1 / 32, true, new THREE.Vector3(0, 1.7, 0), new THREE.Vector3(0, 0, -1), backPoint);
 assert.equal(source.playCount, 1, 'Une seule lecture est autorisée par accalmie');
 director.suspend();
 director.dispose();

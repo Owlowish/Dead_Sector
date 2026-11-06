@@ -27,6 +27,7 @@ import { SpitterZombie } from './SpitterZombie.ts';
 import { CrawlerZombie } from './CrawlerZombie.ts';
 import { SpitProjectile } from './SpitProjectile.ts';
 import { TierDiagnosticsTracker, type TierDiagnosticRecord } from './TierDiagnostics.ts';
+import { GameHud, type HudPrompt } from './GameHud.ts';
 
 type GameState = 'playing' | 'respite' | 'exploration' | 'terminal' | 'won' | 'lost';
 
@@ -55,11 +56,31 @@ export class Game {
   private weapon: Weapon;
   private state: GameState = 'playing';
   private currentTier = 1;
+  private runElapsedSeconds = 0;
+  private wasControlActive = false;
+  private completedTiers = new Set<number>();
+  private runResult: 'won' | 'lost' | null = null;
+  private runSummaryOpen = false;
+  private debugRun = false;
   private debugMenuOpen = false;
   private readonly debugDisplay = document.querySelector<HTMLElement>('#debug-menu');
   private debugPreviousFocus: HTMLElement | null = null;
   private readonly onDebugKeyDown = (event: KeyboardEvent): void => {
     const target = event.target;
+    if (event.code === 'KeyB' && !event.repeat && !event.ctrlKey && !event.altKey && !event.metaKey
+      && !(target instanceof HTMLElement && (target.isContentEditable || target.matches('input, textarea, select')))) {
+      if (this.runResult) {
+        event.preventDefault();
+        if (this.runSummaryOpen) this.closeRunSummary();
+        else this.openRunSummary();
+      }
+      return;
+    }
+    if (this.runSummaryOpen && event.code === 'Escape') {
+      event.preventDefault();
+      this.closeRunSummary();
+      return;
+    }
     if (event.code === 'KeyK' && !event.repeat && !event.ctrlKey && !event.altKey && !event.metaKey
       && !(target instanceof HTMLElement && (target.isContentEditable || target.matches('input, textarea, select')))) {
       event.preventDefault();
@@ -67,8 +88,9 @@ export class Game {
     } else if (this.debugMenuOpen && event.code === 'Escape') {
       event.preventDefault();
       this.setDebugMenuOpen(false);
-    } else if (this.debugMenuOpen && event.code === 'Tab') {
-      const buttons = Array.from(this.debugDisplay?.querySelectorAll<HTMLButtonElement>('button') ?? []);
+    } else if ((this.debugMenuOpen || this.runSummaryOpen) && event.code === 'Tab') {
+      const dialog = this.runSummaryOpen ? this.summaryDisplay : this.debugDisplay;
+      const buttons = Array.from(dialog?.querySelectorAll<HTMLButtonElement>('button') ?? []);
       const first = buttons[0], last = buttons.at(-1);
       if (event.shiftKey && document.activeElement === first) {
         event.preventDefault();
@@ -98,13 +120,12 @@ export class Game {
 
   private readonly encounterConfigs: EncounterSpec[] = ENCOUNTER_CONFIGS;
 
-  private readonly healthDisplay = document.querySelector<HTMLElement>('#health');
-  private readonly ammoDisplay = document.querySelector<HTMLElement>('#ammo');
-  private readonly flashlightDisplay = document.querySelector<HTMLElement>('#flashlight-status');
-  private readonly objectiveDisplay = document.querySelector<HTMLElement>('#objective');
+  private readonly hud = new GameHud();
   private readonly promptDisplay = document.querySelector<HTMLElement>('#prompt');
   private readonly gameOverDisplay = document.querySelector<HTMLElement>('#game-over');
   private readonly victoryDisplay = document.querySelector<HTMLElement>('#victory');
+  private readonly summaryDisplay = document.querySelector<HTMLElement>('#run-summary');
+  private readonly summaryOpenButton = document.querySelector<HTMLButtonElement>('#run-summary-open');
   private readonly pauseDisplay = document.querySelector<HTMLElement>('#pause-message');
   private readonly horrorVolumeInput = document.querySelector<HTMLInputElement>('#horror-volume');
   private readonly horrorVolumeValue = document.querySelector<HTMLOutputElement>('#horror-volume-value');
@@ -187,6 +208,7 @@ export class Game {
       if (this.shotgunPickup.canInteract(this.player.camera.position, cameraDir)) {
         if (this.shotgunPickup.collect(this.weapon)) {
           this.updateAmmoDisplay();
+          this.hud.notifyWeapon();
           return;
         }
       }
@@ -234,8 +256,11 @@ export class Game {
     });
 
     document.querySelectorAll<HTMLButtonElement>('#game-over .restart-button, #victory .restart-button').forEach((button) => {
-      button.addEventListener('click', () => window.location.reload());
+      button.addEventListener('click', () => this.restartRun());
     });
+    this.summaryOpenButton?.addEventListener('click', () => this.openRunSummary());
+    this.summaryDisplay?.querySelector('[data-summary-close]')?.addEventListener('click', () => this.closeRunSummary());
+    this.summaryDisplay?.querySelector('[data-summary-restart]')?.addEventListener('click', () => this.restartRun());
 
     if (typeof window !== 'undefined') {
       (window as unknown as {
@@ -246,7 +271,7 @@ export class Game {
         __DEAD_SECTOR_DAMAGE_TARGET?: (amount?: number) => boolean;
       }).__DEAD_SECTOR_PERF = () => this.getPerformanceReport();
       (window as unknown as { __DEAD_SECTOR_PERF_DETAILED?: () => unknown }).__DEAD_SECTOR_PERF_DETAILED = () => this.getDetailedPerformanceReport();
-      (window as unknown as { __DEAD_SECTOR_START_TIER?: (tier: number) => void }).__DEAD_SECTOR_START_TIER = (tier: number) => this.startTier(tier);
+      (window as unknown as { __DEAD_SECTOR_START_TIER?: (tier: number) => void }).__DEAD_SECTOR_START_TIER = (tier: number) => this.jumpToDebugTier(tier);
       (window as unknown as { __DEAD_SECTOR_DIAGNOSTICS?: () => unknown }).__DEAD_SECTOR_DIAGNOSTICS = () => this.getTierDiagnostics();
       (window as unknown as { __DEAD_SECTOR_DAMAGE_TARGET?: (amount?: number) => boolean }).__DEAD_SECTOR_DAMAGE_TARGET = (amount = 100) => {
         const target = this.zombies.find((z) => z.isAlive());
@@ -471,7 +496,7 @@ export class Game {
   }
 
   private isSimulationActive(): boolean {
-    return !this.debugMenuOpen && (this.state === 'playing' || this.state === 'respite' || this.state === 'exploration' || this.state === 'terminal');
+    return !this.debugMenuOpen && !this.runSummaryOpen && (this.state === 'playing' || this.state === 'respite' || this.state === 'exploration' || this.state === 'terminal' || this.state === 'won');
   }
 
   private setupDebugMenu(): void {
@@ -490,6 +515,7 @@ export class Game {
 
   private setDebugMenuOpen(open: boolean): void {
     if (!this.debugDisplay || this.disposed || this.debugMenuOpen === open) return;
+    if (open && this.runSummaryOpen) this.closeRunSummary();
     this.debugMenuOpen = open;
     this.debugDisplay.hidden = !open;
     if (open) {
@@ -511,6 +537,11 @@ export class Game {
 
   private jumpToDebugTier(tierNumber: number): void {
     if (!Number.isInteger(tierNumber) || !this.encounterConfigs[tierNumber - 1] || this.disposed) return;
+    this.debugRun = true;
+    this.runResult = null;
+    this.runSummaryOpen = false;
+    if (this.summaryDisplay) this.summaryDisplay.hidden = true;
+    if (this.summaryOpenButton) this.summaryOpenButton.hidden = true;
     this.weapon.cancelReload();
     this.player.resetForDebug();
     for (const drop of this.ammoDrops) drop.dispose();
@@ -518,6 +549,7 @@ export class Game {
     for (const shell of this.shellCasings) shell.dispose();
     this.shellCasings = [];
     this.hitEffects.clear();
+    this.hud?.clear();
     this.damageEffectRemaining = 0;
     if (this.damageOverlay) this.damageOverlay.style.opacity = '0';
     if (this.gameOverDisplay) this.gameOverDisplay.hidden = true;
@@ -559,21 +591,24 @@ export class Game {
       this.tabBecameVisible = false;
 
       // Conserver le plafonnement de simulation existant pour le gameplay (déplacements, physique)
-      const delta = this.debugMenuOpen ? 0 : Math.min(rawDeltaSec, 0.05);
+      const delta = this.debugMenuOpen || this.runSummaryOpen ? 0 : Math.min(rawDeltaSec, 0.05);
+      const controlActive = this.isSimulationActive()
+        && document.pointerLockElement === this.renderer.domElement
+        && !document.hidden && (document.hasFocus?.() ?? true);
+      const wasControlActive = this.wasControlActive;
+      this.wasControlActive = controlActive;
 
-      const isCombat = this.state === 'playing' && (typeof document !== 'undefined' && document.pointerLockElement === this.renderer.domElement);
+      const isCombat = this.state === 'playing' && controlActive;
       this.perfTracker?.recordFrame(rawDeltaMs, isCombat, isTabSwitch);
 
       this.updateDamageEffect(delta);
 
-      const stormActive = this.isSimulationActive()
-        && document.pointerLockElement === this.renderer.domElement
-        && !document.hidden
-        && (document.hasFocus?.() ?? true);
+      const stormActive = controlActive;
       this.stormController.update(delta, stormActive, this.player.camera.position, this.level.getStormWindowPositions());
 
       // Mise à jour des systèmes en jeu, en phase de répit ou en exploration d'accès.
-      if (this.isSimulationActive() && document.pointerLockElement === this.renderer.domElement) {
+      if (controlActive) {
+        if (wasControlActive && !isTabSwitch && (this.state === 'playing' || this.state === 'exploration' || this.state === 'respite')) this.runElapsedSeconds += rawDeltaSec;
         this.player.update(delta);
 
         // Simulation des zombies pendant le combat actif
@@ -586,7 +621,7 @@ export class Game {
           this.spitProjectiles = this.spitProjectiles.filter((projectile) => projectile.update(delta, this.scene, this.level, this.player.camera.position, (damage) => {
             const previousHealth = this.player.getHealth();
             this.player.takeDamage(damage);
-            this.tierDiagnostics?.recordDamageTaken(damage);
+            this.tierDiagnostics?.recordDamageTaken(previousHealth - this.player.getHealth());
             if (this.player.getHealth() < previousHealth) {
               this.damageEffectRemaining = this.damageEffectDuration;
               if (this.damageOverlay) this.damageOverlay.style.opacity = '1';
@@ -628,7 +663,7 @@ export class Game {
               zombie.update(delta, this.player.camera.position, this.zombies, (damage) => {
                 const previousHealth = this.player.getHealth();
                 this.player.takeDamage(damage);
-                this.tierDiagnostics?.recordDamageTaken(damage);
+                this.tierDiagnostics?.recordDamageTaken(previousHealth - this.player.getHealth());
                 if (this.player.getHealth() < previousHealth) {
                   this.damageEffectRemaining = this.damageEffectDuration;
                   if (this.damageOverlay) this.damageOverlay.style.opacity = '1';
@@ -643,7 +678,7 @@ export class Game {
             zombie.update(delta, this.player.camera.position, this.zombies.filter((z): z is Zombie => z instanceof Zombie), (damage) => {
               const previousHealth = this.player.getHealth();
               this.player.takeDamage(damage);
-              this.tierDiagnostics?.recordDamageTaken(damage);
+              this.tierDiagnostics?.recordDamageTaken(previousHealth - this.player.getHealth());
               if (this.player.getHealth() < previousHealth) {
                 this.damageEffectRemaining = this.damageEffectDuration;
                 if (this.damageOverlay) this.damageOverlay.style.opacity = '1';
@@ -657,7 +692,7 @@ export class Game {
         }
       }
 
-      if (this.isSimulationActive() && this.state === 'exploration' && this.pendingTierStart > 0 && document.pointerLockElement === this.renderer.domElement && !document.hidden && (document.hasFocus?.() ?? true)) {
+      if (controlActive && this.state === 'exploration' && this.pendingTierStart > 0) {
         this.advanceRespite(delta);
       }
 
@@ -674,94 +709,23 @@ export class Game {
         }
       }
 
-      let canInteract = false;
-      const cameraDir = this.player.camera.getWorldDirection(new THREE.Vector3());
-
-      if (this.isSimulationActive() && this.shotgunPickup.canInteract(this.player.camera.position, cameraDir)) {
-        canInteract = true;
-        if (this.promptDisplay) {
-          this.promptDisplay.textContent = '[E] RAMASSER LE FUSIL À POMPE';
-          this.promptDisplay.style.color = 'var(--gold, #dfba73)';
-        }
-      } else if (this.isSimulationActive() && this.state === 'exploration' && this.encounterBell.canInteract(this.player.camera.position, cameraDir)) {
-        canInteract = true;
-        if (this.promptDisplay) {
-          const prompt = this.encounterBell.getPrompt();
-          this.promptDisplay.textContent = prompt.text;
-          this.promptDisplay.style.color = prompt.color;
-        }
-      } else if (this.isSimulationActive() && this.state === 'exploration' && (this.upgradePedestals ?? []).some((p) => p.canInteract(this.player.camera.position, cameraDir))) {
-        const ped = (this.upgradePedestals ?? []).find((p) => p.canInteract(this.player.camera.position, cameraDir));
-        if (ped) {
-          canInteract = true;
-          if (this.promptDisplay) {
-            const prompt = ped.getPrompt();
-            this.promptDisplay.textContent = prompt.text;
-            this.promptDisplay.style.color = prompt.color;
-          }
-        }
-      } else {
-        for (const door of this.level.getDoors()) {
-          if (this.isSimulationActive() && door.canInteract(this.player.camera.position, cameraDir)) {
-            canInteract = true;
-            if (this.promptDisplay) {
-              const prompt = door.getPrompt();
-              this.promptDisplay.textContent = prompt.text;
-              this.promptDisplay.style.color = prompt.color;
-            }
-            break;
-          }
-        }
-      }
-
       for (const door of this.level.getDoors()) {
         door.update(delta, occupants);
-      }
-
-      if (this.promptDisplay) {
-        this.promptDisplay.hidden = !canInteract || !this.isSimulationActive() || document.pointerLockElement !== this.renderer.domElement;
       }
 
       // Animation du carillon d'arène et des stèles d'offrandes
       this.encounterBell?.update(delta);
       for (const p of (this.upgradePedestals ?? [])) p.update(delta, this.player.camera.position);
 
-      // Animation et ramassage du fusil à pompe
-      this.shotgunPickup.update(delta, this.player.camera.position);
-      if (this.isSimulationActive() && this.shotgunPickup.tryPickup(this.player.camera.position, this.weapon)) {
-        this.updateAmmoDisplay();
-      }
-
-      // Animation et ramassage des trousses de soin.
-      for (const medkit of this.medkits) {
-        medkit.update(delta, this.player.camera.position);
-        if (this.isSimulationActive() && medkit.tryPickup(this.player)) {
-          this.tierDiagnostics?.recordMedkit();
-          this.updateHealthDisplay();
-        }
-      }
-
-      // Animation et ramassage des boîtes de munitions.
-      for (const box of this.ammoBoxes) {
-        box.update(delta, this.player.camera.position);
-        if (this.isSimulationActive() && box.tryPickup(this.player.camera.position, this.weapon)) {
-          this.tierDiagnostics?.recordAmmoBox();
-          this.updateAmmoDisplay();
-        }
-      }
-      for (const box of this.ammoDrops) {
-        box.update(delta, this.player.camera.position);
-        if (this.isSimulationActive() && box.tryPickup(this.player.camera.position, this.weapon)) this.updateAmmoDisplay();
-      }
-      this.ammoDrops = this.ammoDrops.filter((box) => {
-        if (!box.isConsumed()) return true;
-        box.dispose();
-        return false;
-      });
+      // Les gains et leurs notifications partagent le même contrôle effectif.
+      const hudControlActive = controlActive && this.isSimulationActive();
+      this.updatePickups(delta, hudControlActive);
+      this.hud.setPrompt(hudControlActive ? this.getInteractionPrompt() : null);
+      this.hud.update(delta, hudControlActive);
 
       // Mise à jour de la balistique des douilles éjectées
       this.shellCasings = this.shellCasings.filter((casing) => casing.update(delta));
-      const effectsDelta = this.isSimulationActive() && document.pointerLockElement === this.renderer.domElement ? delta : 0;
+      const effectsDelta = controlActive ? delta : 0;
       this.hitEffects.update(effectsDelta, this.player.camera);
 
       this.updateHorrorAudio(delta);
@@ -784,6 +748,76 @@ export class Game {
 
       this.logPerformanceMetrics(delta);
     });
+  }
+
+  private getInteractionPrompt(): HudPrompt | null {
+    const position = this.player.camera.position;
+    const direction = this.player.camera.getWorldDirection(new THREE.Vector3());
+    if (this.shotgunPickup.canInteract(position, direction)) {
+      return { key: 'E', action: 'RAMASSER', object: 'FUSIL À POMPE' };
+    }
+    // Ces dispositifs restent inactifs dans la boucle actuelle.
+    if (this.state === 'exploration') {
+      if (this.encounterBell.canInteract(position, direction)) {
+        return { key: 'E', action: this.encounterBell.getPrompt().text.replace(/^\[E\]\s*/, '') };
+      }
+      const pedestal = this.upgradePedestals.find((entry) => entry.canInteract(position, direction));
+      if (pedestal) return { key: 'E', action: pedestal.getPrompt().text.replace(/^\[E\]\s*/, '') };
+    }
+    const door = this.level.getDoors().find((entry) => entry.canInteract(position, direction));
+    if (!door) return null;
+    if (door.isLocked()) {
+      const permanent = door.getType() === 'permanent_limit';
+      return {
+        action: permanent ? 'CONDAMNÉE' : 'VERROUILLÉE',
+        object: permanent ? door.getName() : `${door.getName()} · après le palier ${door.getUnlockAfterTier()}`,
+        locked: true,
+      };
+    }
+    const closingAction = door.getState() === 'OPEN' || door.getState() === 'OPENING';
+    return { key: 'E', action: closingAction ? 'FERMER' : 'OUVRIR', object: door.getName() };
+  }
+
+  private updatePickups(delta: number, controlActive: boolean): void {
+    // Même garde que le déplacement, notamment pendant Échap, alt-tab et le bilan.
+    if (!controlActive) return;
+    const position = this.player.camera.position;
+    this.shotgunPickup.update(delta, position);
+    if (this.shotgunPickup.tryPickup(position, this.weapon)) {
+      this.updateAmmoDisplay();
+      this.hud?.notifyWeapon();
+    }
+    for (const medkit of this.medkits) {
+      medkit.update(delta, position);
+      const before = this.player.getHealth();
+      if (medkit.tryPickup(this.player)) {
+        this.hud?.notifyGain('health', this.player.getHealth() - before);
+        this.tierDiagnostics?.recordMedkit();
+        this.updateHealthDisplay();
+      }
+    }
+    for (const box of this.ammoBoxes) {
+      box.update(delta, position);
+      if (this.collectAmmoBox(box)) this.tierDiagnostics?.recordAmmoBox();
+    }
+    for (const box of this.ammoDrops) {
+      box.update(delta, position);
+      this.collectAmmoBox(box);
+    }
+    this.ammoDrops = this.ammoDrops.filter((box) => {
+      if (!box.isConsumed()) return true;
+      box.dispose();
+      return false;
+    });
+  }
+
+  private collectAmmoBox(box: AmmoBox): boolean {
+    const kind = box.getWeaponType();
+    const before = this.weapon.getReserveAmmoFor(kind);
+    if (!box.tryPickup(this.player.camera.position, this.weapon)) return false;
+    this.hud?.notifyGain(kind, this.weapon.getReserveAmmoFor(kind) - before);
+    this.updateAmmoDisplay();
+    return true;
   }
 
   private perfTimer = 0;
@@ -847,11 +881,8 @@ export class Game {
   }
 
   private updateZombieRemains(delta: number): void {
-    if (this.debugMenuOpen) return;
-    // Le dernier coup ouvre le menu et libère la souris : sa chute reste visuelle.
-    // Échap en combat/exploration suspend en revanche les animations de mort.
-    const animate = this.state === 'respite' || this.state === 'won'
-      || ((this.state === 'playing' || this.state === 'exploration' || this.state === 'terminal')
+    if (this.debugMenuOpen || this.runSummaryOpen) return;
+    const animate = ((this.state === 'playing' || this.state === 'exploration' || this.state === 'terminal' || this.state === 'won' || this.state === 'respite')
         && document.pointerLockElement === this.renderer.domElement);
     if (!animate) return;
     for (const zombie of this.zombies) {
@@ -903,15 +934,18 @@ export class Game {
 
   private enterRespite(): void {
     if (this.state !== 'playing') return;
+    (this.completedTiers ??= new Set<number>()).add(this.currentTier);
     this.tierDiagnostics?.endTier();
 
     // 1. Déverrouiller la nouvelle aile accessible selon la rencontre validée
     const configs = this.encounterConfigs ?? (this as unknown as { tierCandidateSpawns?: EncounterSpec[] }).tierCandidateSpawns;
     const currentEncounter = configs?.[this.currentTier - 1];
+    const unlockedNames: string[] = [];
     if (currentEncounter?.unlockSectorTier) {
       const doors = this.level.getDoors();
       for (const door of doors) {
         if (door.getUnlockAfterTier() === currentEncounter.unlockSectorTier) {
+          if (door.isLocked()) unlockedNames.push(door.getName());
           door.unlock();
           if (door.getState() === 'CLOSED') door.toggle();
         }
@@ -926,14 +960,14 @@ export class Game {
     unlockSound.volume = 0.5;
     void unlockSound.play().catch(() => {});
 
-    // 4. Après P7, garder le prototype explorable jusqu'à la conception de la finale F6.
+    // Le bilan reste volontaire : terminer la finale ne libère pas la souris.
     const maxTiers = configs?.length ?? 4;
     if (this.currentTier >= maxTiers) {
       this.pendingTierStart = 0;
-      this.state = 'terminal';
+      this.respiteTimer = 0;
       this.encounterBell?.setActive(false);
       for (const pedestal of (this.upgradePedestals ?? [])) pedestal.close();
-      this.updateObjectiveDisplay();
+      this.endGame('won');
       return;
     }
 
@@ -942,6 +976,9 @@ export class Game {
     this.state = 'exploration';
     this.encounterBell?.setActive(false);
     this.respiteTimer = 10;
+    this.hud?.announce(unlockedNames.length > 0
+      ? `ACCÈS OUVERTS · ${unlockedNames.join(' · ')}`
+      : 'PALIER PURGÉ · RÉCUPÉREZ VOS RESSOURCES');
 
     // 6. Proposer jusqu'à deux bonus encore inédits ; le ravitaillement reste indépendant.
     const offers = drawTierUpgrades(this.appliedUpgrades ?? []);
@@ -1058,6 +1095,9 @@ export class Game {
 
     // 5. Basculer en phase de combat actif
     this.state = 'playing';
+    // Une nouvelle rencontre remplace les retours de la précédente.
+    this.hud?.clear();
+    if (config?.finalEncounter) this.hud?.announce('DERNIÈRE RENCONTRE · LE GARDIEN DU MANOIR');
     this.updateObjectiveDisplay();
     this.perfTracker?.recordTransition(tierNumber, performance.now() - t0);
   }
@@ -1254,7 +1294,8 @@ export class Game {
       ? new SpitterZombie(this.scene, this.level, chosen.x, chosen.z)
       : chosenKind === 'crawler'
       ? new CrawlerZombie(this.scene, this.level, chosen.x, chosen.z)
-      : new Zombie(this.scene, this.level, chosen.x, chosen.z, chosenKind);
+      : new Zombie(this.scene, this.level, chosen.x, chosen.z, chosenKind, Math.random,
+        { elite: config.finalEncounter === true && chosenKind === 'standard' && this.tierStandardSpawned === 1 });
     zombie.alert(playerPos);
     if (this.zombieGroanBuffer) {
       zombie.setupAudio(this.player.audioListener, this.zombieGroanBuffer);
@@ -1282,78 +1323,155 @@ export class Game {
   }
 
   private updateObjectiveDisplay(): void {
-    if (!this.objectiveDisplay) return;
     const livingZombies = this.zombies.filter((z) => z instanceof Zombie ? z.isThreat() : z.isAlive()).length;
-    const totalRemaining = livingZombies + this.spawnQueue;
-    if (this.state === 'won') {
-      const total = this.encounterConfigs.length;
-      this.objectiveDisplay.textContent = `TENTATIVE SURVÉCUE · ${total} RENCONTRES PURGÉES`;
-      this.objectiveDisplay.style.color = 'var(--sage)';
-    } else if (this.state === 'lost') {
-      this.objectiveDisplay.textContent = 'MISSION ÉCHOUÉE';
-      this.objectiveDisplay.style.color = 'var(--blood)';
-    } else if (this.state === 'terminal') {
-      this.objectiveDisplay.textContent = '7 RENCONTRES PURGÉES · FINALE F6 À VENIR';
-      this.objectiveDisplay.style.color = 'var(--gold, #dfba73)';
-    } else if (this.state === 'respite') {
-      this.objectiveDisplay.textContent = `PALIER ${this.currentTier} PURGÉ · ACCALMIE EN COURS`;
-      this.objectiveDisplay.style.color = 'var(--gold, #dfba73)';
-    } else if (this.state === 'exploration') {
-      this.objectiveDisplay.textContent = `PALIER ${this.currentTier} PURGÉ · PROCHAIN COMBAT DANS ${Math.ceil(this.respiteTimer)} S`;
-      this.objectiveDisplay.style.color = 'var(--gold, #dfba73)';
-    } else {
-      const plural = totalRemaining > 1 ? 'MENACES' : 'MENACE';
-      const encounter = this.encounterConfigs[this.currentTier - 1];
-      const sectorName = encounter?.sectorName ?? `SECTEUR ${this.currentTier}`;
-      this.objectiveDisplay.textContent = `PALIER ${this.currentTier} (${sectorName}) · ${totalRemaining} ${plural}`;
-      this.objectiveDisplay.style.color = 'var(--ivory)';
-    }
+    const encounter = this.encounterConfigs?.[this.currentTier - 1];
+    this.hud?.setProgression({
+      phase: this.state === 'playing' ? 'combat'
+        : this.state === 'exploration' || this.state === 'respite' ? 'respite' : this.state,
+      tier: this.currentTier,
+      total: this.encounterConfigs?.length ?? 0,
+      sector: encounter?.finalEncounter ? 'FINALE · LE GARDIEN' : encounter?.sectorName ?? `SECTEUR ${this.currentTier}`,
+      remaining: livingZombies + this.spawnQueue,
+      respiteSeconds: this.respiteTimer,
+    });
   }
 
   private updateAmmoDisplay(): void {
-    if (!this.ammoDisplay) return;
-    const { weaponName, magazine, capacity, reserve, isReloading } = this.weapon.getAmmoState();
-    if (isReloading) {
-      this.ammoDisplay.textContent = `${weaponName} · RECHARGEMENT… (${magazine} / ${capacity} · RÉSERVE : ${reserve})`;
-      this.ammoDisplay.style.color = 'var(--ivory)';
-    } else {
-      this.ammoDisplay.textContent = `${weaponName} · ${magazine} / ${capacity} · RÉSERVE : ${reserve}`;
-      this.ammoDisplay.style.color = magazine === 0 ? 'var(--blood)' : 'var(--brass)';
-    }
+    this.hud?.setAmmo(this.weapon.getAmmoState(), this.weapon.isWeaponUnlocked('shotgun'));
   }
 
   private updateHealthDisplay(): void {
-    if (this.healthDisplay) {
-      this.healthDisplay.textContent = `VIE : ${this.player.getHealth()} / ${this.player.getMaxHealth()}`;
-    }
+    this.hud?.setHealth(this.player.getHealth(), this.player.getMaxHealth());
   }
 
   private updateFlashlightDisplay(enabled: boolean): void {
-    if (this.flashlightDisplay) {
-      this.flashlightDisplay.textContent = `[F] LAMPE : ${enabled ? 'ALLUMÉE' : 'ÉTEINTE'}`;
-      this.flashlightDisplay.classList.toggle('off', !enabled);
-    }
+    this.hud?.setFlashlight(enabled);
   }
 
   private endGame(result: 'won' | 'lost'): void {
     if (this.state !== 'playing' && this.state !== 'respite' && this.state !== 'exploration') return;
     this.tierDiagnostics?.endTier();
     this.state = result;
+    this.runResult = result;
+    this.pendingTierStart = 0;
+    this.respiteTimer = 0;
     for (const projectile of (this.spitProjectiles ?? [])) projectile.dispose(this.scene);
     this.spitProjectiles = [];
     this.weapon.cancelReload();
-    this.syncAmbientAudio();
+    this.hud?.clear();
     this.updateObjectiveDisplay();
-    if (this.pauseDisplay) this.pauseDisplay.hidden = true;
     if (this.promptDisplay) this.promptDisplay.hidden = true;
+    if (this.victoryDisplay) this.victoryDisplay.hidden = true;
+    if (this.summaryOpenButton) this.summaryOpenButton.hidden = false;
+    this.horrorDirector?.suspend();
+    for (const zombie of this.zombies) zombie.stopAudio();
+    if (result === 'won') {
+      if (this.gameOverDisplay) this.gameOverDisplay.hidden = true;
+      if (this.pauseDisplay) this.pauseDisplay.hidden = document.pointerLockElement === this.renderer.domElement;
+      this.syncAmbientAudio();
+      return;
+    }
+    if (this.pauseDisplay) this.pauseDisplay.hidden = true;
     if (this.ambianceAudio && this.ambianceAudio.isPlaying) {
       this.ambianceAudio.stop();
     }
     if (this.musicAudio?.isPlaying) this.musicAudio.stop();
-    this.horrorDirector?.suspend();
-    const message = result === 'won' ? this.victoryDisplay : this.gameOverDisplay;
-    if (message) message.hidden = false;
+    if (this.gameOverDisplay) this.gameOverDisplay.hidden = false;
     if (document.pointerLockElement === this.renderer.domElement) document.exitPointerLock();
+    this.syncAmbientAudio();
+  }
+
+  public getRunSummary() {
+    const records = this.tierDiagnostics?.getRecords?.() ?? [];
+    return {
+      result: this.runResult ?? null,
+      elapsedSeconds: Math.round(this.runElapsedSeconds ?? 0),
+      completedTiers: this.completedTiers?.size ?? 0,
+      totalTiers: this.encounterConfigs.length,
+      shotsFired: records.reduce((sum, record) => sum + record.shotsFired, 0),
+      headHits: records.reduce((sum, record) => sum + record.headHits, 0),
+      bodyHits: records.reduce((sum, record) => sum + record.bodyHits, 0),
+      damageTaken: records.reduce((sum, record) => sum + record.damageTaken, 0),
+      debugUsed: this.debugRun ?? false,
+    };
+  }
+
+  public openRunSummary(): void {
+    if (!this.runResult || !this.summaryDisplay || this.disposed || this.runSummaryOpen) return;
+    if (this.debugMenuOpen) this.setDebugMenuOpen(false);
+    const summary = this.getRunSummary();
+    const minutes = Math.floor(summary.elapsedSeconds / 60);
+    const seconds = String(summary.elapsedSeconds % 60).padStart(2, '0');
+    const values: Record<string, string> = {
+      duration: `${minutes}:${seconds}`,
+      tiers: `${summary.completedTiers} / ${summary.totalTiers}`,
+      shots: String(summary.shotsFired),
+      hits: `${summary.headHits} tête · ${summary.bodyHits} corps`,
+      damage: `${summary.damageTaken} PV`,
+      mode: summary.debugUsed ? 'Essai avec sauts debug' : 'Tentative normale',
+    };
+    const title = this.summaryDisplay.querySelector<HTMLElement>('#run-summary-title');
+    if (title) title.textContent = this.runResult === 'won' ? 'LE MANOIR EST PURGÉ' : 'TENTATIVE INTERROMPUE';
+    const hint = this.summaryDisplay.querySelector<HTMLElement>('[data-summary-hint]');
+    if (hint) hint.textContent = this.runResult === 'won'
+      ? "Fermez le bilan puis cliquez dans le jeu pour reprendre l'exploration."
+      : 'Lancez une nouvelle tentative pour retourner dans le manoir.';
+    for (const field of this.summaryDisplay.querySelectorAll<HTMLElement>('[data-run-stat]')) {
+      field.textContent = values[field.dataset.runStat ?? ''] ?? '—';
+    }
+    this.runSummaryOpen = true;
+    this.summaryDisplay.hidden = false;
+    this.weapon.cancelReload();
+    if (this.pauseDisplay) this.pauseDisplay.hidden = true;
+    if (document.pointerLockElement === this.renderer.domElement) document.exitPointerLock();
+    this.syncAmbientAudio();
+    this.summaryDisplay.querySelector<HTMLButtonElement>('[data-summary-close]')?.focus();
+  }
+
+  public closeRunSummary(): void {
+    if (!this.runSummaryOpen) return;
+    this.runSummaryOpen = false;
+    if (this.summaryDisplay) this.summaryDisplay.hidden = true;
+    if (this.pauseDisplay) this.pauseDisplay.hidden = !this.isSimulationActive() || document.pointerLockElement === this.renderer.domElement;
+    this.syncAmbientAudio();
+    if (this.state === 'lost') this.gameOverDisplay?.querySelector<HTMLButtonElement>('.restart-button')?.focus();
+    else this.summaryOpenButton?.focus();
+  }
+
+  public restartRun(): void {
+    if (this.disposed) return;
+    this.runSummaryOpen = false;
+    this.debugMenuOpen = false;
+    for (const display of [this.summaryDisplay, this.debugDisplay, this.gameOverDisplay, this.victoryDisplay]) {
+      if (display) display.hidden = true;
+    }
+    if (this.summaryOpenButton) this.summaryOpenButton.hidden = true;
+    for (const drop of this.ammoDrops) drop.dispose();
+    for (const shell of this.shellCasings) shell.dispose();
+    this.ammoDrops = [];
+    this.shellCasings = [];
+    this.hitEffects.clear();
+    this.appliedUpgrades = [];
+    this.player.resetForNewRun();
+    this.weapon.resetForNewRun();
+    this.shotgunPickup.respawn();
+    for (const door of this.level.getDoors()) door.resetForNewRun();
+    this.tierDiagnostics.clear();
+    this.completedTiers = new Set<number>();
+    this.runElapsedSeconds = 0;
+    this.wasControlActive = false;
+    this.runResult = null;
+    this.debugRun = false;
+    this.damageEffectRemaining = 0;
+    if (this.damageOverlay) this.damageOverlay.style.opacity = '0';
+    this.stormController.resetForNewRun();
+    this.state = 'playing';
+    this.startTier(1);
+    this.updateHealthDisplay();
+    this.updateAmmoDisplay();
+    if (document.pointerLockElement === this.renderer.domElement) document.exitPointerLock();
+    if (this.pauseDisplay) this.pauseDisplay.hidden = false;
+    this.syncAmbientAudio();
   }
 
   private updateDamageEffect(delta: number): void {
@@ -1376,6 +1494,7 @@ export class Game {
       if (this.ambianceAudio && !this.ambianceAudio.isPlaying) this.ambianceAudio.play();
       if (this.musicAudio && !this.musicAudio.isPlaying) this.musicAudio.play();
     } else {
+      this.wasControlActive = false;
       if (this.ambianceAudio?.isPlaying) this.ambianceAudio.pause();
       if (this.musicAudio?.isPlaying) this.musicAudio.pause();
       this.horrorDirector?.suspend();
@@ -1390,6 +1509,7 @@ export class Game {
 
   public dispose(): void {
     this.disposed = true;
+    this.hud?.clear();
     window.removeEventListener('keydown', this.onDebugKeyDown);
     this.debugDisplay?.removeEventListener('click', this.onDebugClick);
     if (this.debugDisplay) this.debugDisplay.hidden = true;

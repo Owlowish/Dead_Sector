@@ -183,6 +183,15 @@ export class Player {
     this.health = Math.max(0, this.health - amount);
   }
 
+  public resetForNewRun(): void {
+    this.maxHealth = 100;
+    this.speedMultiplier = 1;
+    this.resetForDebug();
+    this.flashlightOn = true;
+    this.flashlight.intensity = this.flashlightIntensity;
+    this.onFlashlightToggle?.(true);
+  }
+
   public applyRecoil(pitch = 0.045, yaw = 0.012, roll = 0.008): void {
     this.recoilPitch += pitch;
     this.recoilYaw += (Math.random() - 0.5) * yaw;

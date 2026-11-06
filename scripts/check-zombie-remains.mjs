@@ -107,9 +107,18 @@ assert.equal(corpseB.geometry, firstFrameGeometry, 'Deuxième mort démarre à l
 assert.notEqual(corpseA.geometry, corpseB.geometry, 'Deux morts peuvent avoir des poses distinctes');
 assert.equal(corpseA.material.map, corpseB.material.map, 'Textures communes, UV indépendants dans la géométrie');
 
-// Menu du dernier ennemi et écran de victoire : les chutes finissent sans souris verrouillée.
+// La pause et le bilan suspendent la chute ; la victoire conserve le contrôle libre.
 document.pointerLockElement = null;
 session.game.state = 'respite';
+const pausedGeometry = corpseA.geometry;
+session.game.updateZombieRemains(zombieDeathDuration + 0.1);
+assert.equal(corpseA.geometry, pausedGeometry, 'Sans Pointer Lock la chute reste suspendue');
+document.pointerLockElement = session.canvas;
+session.game.runSummaryOpen = true;
+session.game.updateZombieRemains(zombieDeathDuration + 0.1);
+assert.equal(corpseA.geometry, pausedGeometry, 'Le bilan ouvert suspend aussi les cadavres');
+session.game.runSummaryOpen = false;
+session.game.state = 'won';
 session.game.updateZombieRemains(zombieDeathDuration + 0.1);
 assert.equal(corpseA.material.map.userData.url, '/assets/zombies/zombie_death.png');
 assert.equal(corpseB.material, corpseA.material, 'Matériau du corps partagé');
@@ -158,6 +167,7 @@ for (let tier = 0; tier < 3; tier++) {
   const f = makeSession(scene, actors);
   actors.forEach(actor => actor.takeDamage(100));
   f.game.state = 'won';
+  document.pointerLockElement = f.canvas;
   f.game.updateZombieRemains(0.15);
   assert.notEqual(remains(actors[0]).geometry, firstFrameGeometry);
   f.game.startTier(1);

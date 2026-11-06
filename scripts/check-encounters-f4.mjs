@@ -66,11 +66,11 @@ const { Game } = await import('../src/Game.ts');
 console.log('=== SUITE DE TESTS COMPORTEMENTAUX : PROGRESSION COMPLÈTE & IMPRÉVISIBILITÉ F4 ===\n');
 
 // ============================================================================
-// ÉPREUVE 1 : TABLE DES 7 RENCONTRES & ÉCHELONNEMENT DE MENACE
+// ÉPREUVE 1 : SEPT RENCONTRES ORDINAIRES PUIS FINALE
 // ============================================================================
-console.log('1. Test de la structure et des quotas de la table des 7 rencontres...');
+console.log('1. Test des sept rencontres ordinaires et de la finale...');
 
-assert.equal(ENCOUNTER_CONFIGS.length, 7, 'La progression F4 doit comporter exactement 7 rencontres complètes');
+assert.equal(ENCOUNTER_CONFIGS.length, 8, 'La tentative comporte sept rencontres puis une finale');
 
 for (let i = 0; i < ENCOUNTER_CONFIGS.length; i++) {
   const enc = ENCOUNTER_CONFIGS[i];
@@ -84,7 +84,7 @@ for (let i = 0; i < ENCOUNTER_CONFIGS.length; i++) {
 }
 
 // Vérifications spécifiques des intentions tactiques
-const [e1, e2, e3, e4, e5, e6, e7] = ENCOUNTER_CONFIGS;
+const [e1, e2, e3, e4, e5, e6, e7, e8] = ENCOUNTER_CONFIGS;
 
 // P1 : Apprentissage standard
 assert.equal(e1.unlockSectorTier, 1);
@@ -100,10 +100,10 @@ assert.equal(e3.unlockSectorTier, null);
 assert.equal(e3.maxAgile, 3);
 assert.equal(e3.maxSimultaneousAgile, 2);
 
-// P4 à P7 : Manoir entièrement ouvert, déclenchés par le carillon d'arène
-for (const e of [e4, e5, e6, e7]) {
+// Les dernières rencontres réutilisent le manoir ouvert ; le carillon reste inactif.
+for (const e of [e4, e5, e6, e7, e8]) {
   assert.equal(e.unlockSectorTier, null, `Palier ${e.tierNumber} doit avoir unlockSectorTier null (manoir déjà ouvert)`);
-  assert.equal(e.activationType, 'arena_signal', `Palier ${e.tierNumber} doit s'activer via le carillon d'arène`);
+  assert.equal(e.activationType, 'arena_signal', `Palier ${e.tierNumber} conserve ses métadonnées d'arène`);
   assert.equal(e.spawnPool, MANSION_OPEN_SPAWN_POOL, `Palier ${e.tierNumber} doit utiliser le pool ouvert multidirectionnel`);
 }
 
@@ -111,8 +111,15 @@ for (const e of [e4, e5, e6, e7]) {
 assert.deepEqual([e4, e5, e6, e7].map((e) => e.totalZombies), [8, 10, 12, 14]);
 assert.deepEqual([e4, e5, e6, e7].map((e) => e.maxSpitter), [1, 2, 3, 3]);
 assert.deepEqual([e4, e5, e6, e7].map((e) => e.maxAgile), [4, 5, 6, 7]);
+assert.ok(ENCOUNTER_CONFIGS.slice(0, 7).every((e) => !e.finalEncounter), 'Aucune victoire prématurée avant P8');
+assert.equal(e8.finalEncounter, true);
+assert.equal(e8.totalZombies, 6);
+assert.equal(e8.maxAgile, 3);
+assert.equal(e8.maxSpitter, 1);
+assert.equal(e8.maxCrawler ?? 0, 0);
+assert.equal(e8.maxActiveZombies, 4);
 
-console.log('   -> PASS : Structure des 7 rencontres et intentions tactiques conformes.\n');
+console.log('   -> PASS : Quotas P1–P7 préservés et finale P8 bornée.\n');
 
 // ============================================================================
 // ÉPREUVE 2 : POOL OUVERT MULTIDIRECTIONNEL ET COUVERTURE DES 4 POINTS CARDINAUX
@@ -149,9 +156,9 @@ assert.ok(atelierSpawns.length >= 3, 'Doit comporter des points au Nord-Est haut
 console.log('   -> PASS : 26 points validés couvrant tous les angles et étages du manoir.\n');
 
 // ============================================================================
-// ÉPREUVE 3 : CYCLE DE PROGRESSION INTÉGRAL 1 -> 7 ET DÉCLENCHEMENT PAR CARILLON
+// ÉPREUVE 3 : CYCLE DE PROGRESSION INTÉGRAL 1 -> 8 SANS MENU AUTOMATIQUE
 // ============================================================================
-console.log('3. Test du cycle complet (Paliers 1 à 7 -> exploration terminale)...');
+console.log('3. Test du cycle complet (Paliers 1 à 8 -> victoire explorable)...');
 
 const gameScene = new THREE.Scene();
 const gameLevel = new Level(gameScene);
@@ -182,6 +189,11 @@ Object.assign(game, {
   lastSpawnQuadrant: -1,
   maxSimultaneousZombies: 8,
   state: 'playing',
+  runElapsedSeconds: 0,
+  completedTiers: new Set(),
+  runResult: null,
+  runSummaryOpen: false,
+  debugRun: false,
   zombies: [],
   medkits: [],
   ammoBoxes: [],
@@ -210,13 +222,13 @@ game.startTier(1);
 assert.equal(game['currentTier'], 1);
 assert.equal(game['spawnQueue'], 4);
 assert.equal(horrorDirectorProbe.resetCount, 1, 'Le départ valide d’un combat réarme le directeur pour la prochaine accalmie');
-game.startTier(8);
+game.startTier(9);
 assert.equal(game['currentTier'], 1, 'Un numéro invalide ne modifie pas le palier courant');
 assert.equal(game['spawnQueue'], 4, 'Un numéro invalide ne détruit pas la file active');
 assert.equal(horrorDirectorProbe.resetCount, 1, 'Un palier invalide ne réarme pas le directeur');
 
-// Parcourir les 7 paliers
-for (let tier = 1; tier <= 7; tier++) {
+// Le même chemin de transition doit fonctionner jusqu'à la vraie finale.
+for (let tier = 1; tier <= 8; tier++) {
   assert.equal(game['currentTier'], tier, `Actuellement au Palier ${tier}`);
   assert.equal(game['state'], 'playing', `En combat actif au Palier ${tier}`);
 
@@ -224,14 +236,14 @@ for (let tier = 1; tier <= 7; tier++) {
   for (const z of game['zombies']) z.dispose(game['scene']);
   game['zombies'] = [];
   game['spawnQueue'] = 0;
-  if (tier === 7) {
+  if (tier === 8) {
     terminalPedestals[0].setOffer(UPGRADE_CATALOG.agility);
     terminalPedestals[1].setOffer(UPGRADE_CATALOG.vitality);
     game['encounterBell'].setActive(true);
   }
   game['checkTierCompletion']();
 
-  if (tier < 7) {
+  if (tier < 8) {
     // Doit passer en accalmie / exploration
     assert.equal(game['state'], 'exploration', `Après le Palier ${tier}, transition vers exploration`);
     assert.equal(game['pendingTierStart'], tier + 1, `Palier ${tier + 1} en attente`);
@@ -239,28 +251,28 @@ for (let tier = 1; tier <= 7; tier++) {
     assert.equal(game['encounterBell'].isActive(), false, 'Le carillon ne déclenche plus le combat');
     assert.equal(game['respiteTimer'], 10, 'Dix secondes de récupération avant le prochain palier');
 
-    // Lancer le palier suivant
-    game['launchPendingTier']();
+    game['advanceRespite'](9.5);
+    assert.equal(game['state'], 'exploration', 'La rencontre suivante attend les dix secondes');
+    game['advanceRespite'](0.5);
   } else {
-    // Après P7 : exploration terminale du prototype, sans menu ni capture de contrôle.
-    assert.equal(game['state'], 'terminal', 'Le prototype reste explorable après P7');
+    // Une victoire doit laisser le joueur explorer sans présenter automatiquement le bilan.
+    assert.equal(game['state'], 'won', 'La finale termine la tentative');
     assert.equal(game['pendingTierStart'], 0, 'Aucun palier suivant ne doit être en attente');
     assert.equal(game['isSimulationActive'](), true, 'Les contrôles restent actifs');
     assert.equal(globalThis.document.pointerLockElement, game.renderer.domElement, 'La souris reste capturée');
     assert.equal(globalThis.document.exitPointerLockCalls, 0, 'Aucune libération de souris demandée');
     assert.equal(game['victoryDisplay'].hidden, true, 'Aucun overlay de victoire ne doit apparaître');
     assert.equal(game['gameOverDisplay'].hidden, true, 'Aucun overlay de défaite ne doit apparaître');
-    assert.match(game['objectiveDisplay'].textContent, /7 RENCONTRES PURGÉES/i);
-    assert.match(game['objectiveDisplay'].textContent, /FINALE F6 À VENIR/i);
+    assert.equal(game.getRunSummary().result, 'won', 'Le résultat public correspond à la finale terminée');
     game['checkTierCompletion']();
-    assert.equal(game['state'], 'terminal', 'La transition terminale ne se répète pas');
-    assert.equal(game['spawnQueue'], 0, 'Aucune huitième apparition');
-    assert.ok(terminalPedestals.every((p) => !p.isActive()), 'Aucune offre ne reste active après P7');
-    assert.equal(game['encounterBell'].isActive(), false, 'Le carillon est fermé après P7');
+    assert.equal(game['state'], 'won', 'La victoire ne se répète pas');
+    assert.equal(game['spawnQueue'], 0, 'Aucune neuvième apparition');
+    assert.ok(terminalPedestals.every((p) => !p.isActive()), 'Aucune offre ne reste active après la finale');
+    assert.equal(game['encounterBell'].isActive(), false, 'Le carillon reste fermé après la finale');
   }
 }
 
-console.log('   -> PASS : Cycle complet 1->2->3->4->5->6->7 validé avec décompte.\n');
+console.log('   -> PASS : Cycle complet P1–P8, P7 ne gagne pas, décompte et contrôle conservés.\n');
 
 // L'appel public direct utilisé par l'instrumentation doit synchroniser son palier.
 game.startTier(7);
@@ -361,6 +373,38 @@ const secondSpawn = game['zombies'][0].getPosition();
 assert.equal(game['level'].isColliding(secondSpawn.x, secondSpawn.z, 0.45), false, 'La position représentative respecte aussi le filtre de collision');
 assert.ok(Math.hypot(secondSpawn.x + 19, secondSpawn.z - 14) >= 6, 'La position représentative respecte la distance de sécurité');
 Math.random = originalRandom;
+
+// Finale réelle : une élite unique et tous ses renforts consomment le même quota.
+game.startTier(8);
+const finalSpawned = [];
+Math.random = () => 0.1;
+try {
+  for (let frame = 0; frame < 30 && game.state === 'playing'; frame++) {
+    const active = () => game.zombies.filter((z) => typeof z.isThreat === 'function' ? z.isThreat() : z.isAlive());
+    if (game.spawnQueue > 0 && active().length < e8.maxActiveZombies) {
+      const before = game.zombies.length;
+      if (game.trySpawnZombie()) {
+        game.spawnQueue--; // La boucle Game consomme l'unité principale ; l'escorte consomme la sienne.
+        finalSpawned.push(...game.zombies.slice(before));
+      }
+    }
+    assert.ok(active().length <= 4, 'Élite et escorte respectent les quatre places de la finale');
+    if (game.spawnQueue > 0) {
+      game.checkTierCompletion();
+      assert.equal(game.state, 'playing', 'Les renforts en attente empêchent la victoire');
+    }
+    for (const zombie of active()) zombie.takeDamage(10000, true);
+    game.checkTierCompletion();
+  }
+} finally {
+  Math.random = originalRandom;
+}
+assert.equal(finalSpawned.length, 6, 'Les six menaces de la finale apparaissent exactement une fois');
+assert.equal(finalSpawned.filter((z) => z.getKind() === 'standard').length, 2);
+assert.equal(finalSpawned.filter((z) => z.getKind() === 'agile').length, 3);
+assert.equal(finalSpawned.filter((z) => z.getKind() === 'spitter').length, 1);
+assert.equal(finalSpawned.filter((z) => z.isElite?.()).length, 1, 'Un seul standard devient le Gardien');
+assert.equal(game.state, 'won', 'La victoire attend aussi les derniers renforts');
 
 // Nettoyage final
 game.dispose();
