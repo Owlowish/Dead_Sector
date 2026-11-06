@@ -12,6 +12,7 @@ export class EncounterBell {
   private readonly beaconLight: THREE.PointLight;
   private active = false;
   private pulseTimer = 0;
+  private effectsVolume = 1;
   private readonly position: THREE.Vector3;
 
   constructor(scene: THREE.Scene, x: number, z: number, floorY: number) {
@@ -87,8 +88,12 @@ export class EncounterBell {
     this.setActive(false);
     // Retour sonore immédiat de résonance métallique
     const bellSound = new Audio('/assets/sounds/empty-soft.wav');
-    bellSound.volume = 0.6;
+    bellSound.volume = 0.6 * this.effectsVolume;
     void bellSound.play().catch(() => {});
+  }
+
+  public setEffectsVolume(volume: number): void {
+    this.effectsVolume = THREE.MathUtils.clamp(volume, 0, 1);
   }
 
   public update(delta: number): void {

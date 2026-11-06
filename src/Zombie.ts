@@ -293,7 +293,7 @@ export class Zombie {
     return this.elite;
   }
 
-  public setupAudio(listener: THREE.AudioListener, buffer: AudioBuffer): void {
+  public setupAudio(listener: THREE.AudioListener, buffer: AudioBuffer, effectsVolume = 1): void {
     if (!this.alive || this.disposed) return;
     this.groanAudio = new THREE.PositionalAudio(listener);
     this.groanAudio.setBuffer(buffer);
@@ -303,11 +303,13 @@ export class Zombie {
     // Le Coureur a une tonalité légèrement plus haute
     if (this.kind === 'agile') {
       this.groanAudio.setPlaybackRate(1.25);
-      this.groanAudio.setVolume(0.25);
-    } else {
-      this.groanAudio.setVolume(0.3);
     }
+    this.setAudioVolume(effectsVolume);
     this.mesh.add(this.groanAudio);
+  }
+
+  public setAudioVolume(volume: number): void {
+    this.groanAudio?.setVolume((this.kind === 'agile' ? 0.25 : 0.3) * THREE.MathUtils.clamp(volume, 0, 1));
   }
 
   public getMesh(): THREE.Mesh {

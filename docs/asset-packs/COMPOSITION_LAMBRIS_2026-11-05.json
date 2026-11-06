@@ -1,0 +1,329 @@
+{
+  "documentType": "asset-pack",
+  "templateVersion": 1,
+  "id": "COMPOSITION_LAMBRIS_2026-11-05",
+  "request": "Reprendre le plan d’Astra : composition des six pièces, puis lambris et proportions, avec autonomie d’implémentation.",
+  "scope": {
+    "prepare": true,
+    "generate": true,
+    "integrate": true,
+    "authorizedDecisions": [
+      "Composition puis lambris et proportions",
+      "Choix et implémentation sans validation intermédiaire",
+      "Délégation déjà autorisée"
+    ],
+    "assumptions": [
+      "Emprises des murs, portes et escaliers conservées",
+      "Lambris à 1,05 m depuis le sol local",
+      "Un atlas et un matériau pour tous les murs concernés",
+      "Moins de doublons ; reliefs en géométrie native"
+    ],
+    "pendingDecisions": []
+  },
+  "style": {
+    "workflow": "docs/PIPELINE_ASSETS.md",
+    "references": [
+      {
+        "path": "public/assets/textures/mansion/salon-wall-v1.png",
+        "role": "Identité du damas et du bois calme",
+        "inspected": true
+      },
+      {
+        "path": "public/assets/textures/portrait_v2.png",
+        "role": "Palette, style pixel art et proportions 3:4",
+        "inspected": true
+      }
+    ],
+    "lockedIdentity": [
+      "Bordeaux, bois, laiton, ivoire",
+      "Un point focal et un repos mural par pièce",
+      "Détails hiérarchisés, sans microbruit"
+    ],
+    "humanApproval": "not_requested",
+    "assistantInspection": "Base, exports et pavage 3×3 inspectés ; pas de nouvelle observation WebGL."
+  },
+  "technicalContract": {
+    "usage": "Atlas de bandes papier/lambris, UV physiques, compositions et volumes statiques",
+    "sourceDimensions": {
+      "paper": [
+        1254,
+        1254
+      ],
+      "woodCrop": [
+        384,
+        300
+      ]
+    },
+    "exportDimensions": {
+      "paper": [
+        256,
+        256
+      ],
+      "wood": [
+        256,
+        256
+      ],
+      "atlas": [
+        256,
+        512
+      ]
+    },
+    "format": "PNG opaque",
+    "tileAxes": {
+      "paper": [
+        "X",
+        "Y"
+      ],
+      "wood": [
+        "X"
+      ]
+    },
+    "coordinateSpace": "Mètres ; sol 0 ou 2,4 ; lambris 1,05 ; répétition horizontale et papier 2,10.",
+    "atlasLayout": {
+      "paper": {
+        "rows": [
+          4,
+          251
+        ],
+        "vTexelCenters": [
+          0.5087890625,
+          0.9912109375
+        ]
+      },
+      "wood": {
+        "rows": [
+          260,
+          507
+        ],
+        "vTexelCenters": [
+          0.0087890625,
+          0.4912109375
+        ]
+      },
+      "verticalGuardRows": 4,
+      "wrapping": "Repeat S, ClampToEdge T",
+      "filtering": "Nearest / NearestMipmapNearest, sRGB"
+    },
+    "budget": {
+      "runtimeNewAtlasTextures": 1,
+      "atlasDiskBytes": 158051,
+      "rgbaBytes": 524288,
+      "rgbaBytesWithFullMipChain": 699052,
+      "materialsPerWall": 1,
+      "additionalLights": 0,
+      "additionalShadowCasters": 0,
+      "wallMeshes": 14,
+      "wallTriangles": 448,
+      "dressingMeshes": 9,
+      "dressingTriangles": 204,
+      "portraitMeshes": 4,
+      "portraitTriangles": 72,
+      "furnishingMeshes": 6,
+      "furnishingTriangles": 2152,
+      "mainColorDrawDeltaUpperBound": -10,
+      "triangleDeltaVersusPreviousSalonPass": 472,
+      "budgetCaveat": "Delta analytique si tous les éléments sont visibles, sans mesure GPU ni de FPS ; la visibilité réelle dépend des caméras et des ombres."
+    }
+  },
+  "assets": [
+    {
+      "id": "paper",
+      "required": true,
+      "purpose": "Papier calme pavable sans répéter les lambris en hauteur",
+      "productionStatus": "generated",
+      "tool": "ImageGen intégré (image_gen.imagegen)",
+      "internalModel": "non exposé",
+      "generationCalls": 1,
+      "rawToolFile": "C:/Users/Administrateur/.codex/generated_images/01a1ace9-b608-7983-8706-92d9bf693f5a/exec-162e3443-d76f-4cd8-8eeb-10d4094aa0dc.png",
+      "sourceFile": "docs/asset-packs/wall-bands-v1/source-paper.png",
+      "exportFile": "docs/asset-packs/wall-bands-v1/paper.png",
+      "tilingPreview": "docs/asset-packs/wall-bands-v1/paper-tiling.png",
+      "promptExact": "DEAD SECTOR retro Victorian horror FPS game texture. Image1 is identity reference: use ONLY its upper burgundy damask wallpaper, keeping its muted burgundy and dull ochre colors and broad floral scroll language. Image2 (portrait) is style reference for antique palette and deliberate pixel clusters, do not copy the face or frame. Generate ONE seamless square tile of WALLPAPER ONLY, with matching left/right AND top/bottom edges. Fill the entire canvas with wallpaper. Low contrast between the warm dark burgundy ground and the subdued brown-ochre floral pattern; broad clean simplified clusters and lots of calm negative space. Two interlocking damask repeats across the square, not dozens of tiny flowers. Controlled pixel art steps that survive export at256x256, no fine noise, no photographic grain. Uniform flat albedo, no directional lighting, shadows, vignette, glowing gold or gradients across the whole tile. No wood panels, rail, trim, border, furniture, portrait, text, logo or perspective. Matte aged wallpaper, restrained wear. The result will tile every2.1meters on tall walls, while separate existing wooden wainscoting stays1.05meters tall. Requested512x512, opaque background, true seamless texture.",
+      "referencesActuallyAttached": [
+        "public/assets/textures/mansion/salon-wall-v1.png",
+        "public/assets/textures/portrait_v2.png"
+      ],
+      "transformations": "Redimensionnement nearest-neighbor ; pavage 3×3 sans retouche.",
+      "validation": {
+        "file": "conforme",
+        "artistic": "inspecté hors jeu, palette et détail cohérents",
+        "continuity": "pavage 3×3 inspecté, aucun raccord visible à cette taille",
+        "game": "non vérifié"
+      }
+    },
+    {
+      "id": "wood",
+      "required": true,
+      "purpose": "Réemploi des lambris existants à hauteur fixe",
+      "productionStatus": "reused",
+      "sourceFile": "public/assets/textures/mansion/salon-wall-v1.png",
+      "sourceCrop": {
+        "x": 0,
+        "y": 468,
+        "width": 384,
+        "height": 300
+      },
+      "exportFile": "docs/asset-packs/wall-bands-v1/wainscot.png",
+      "transformations": "Extraction rectangulaire puis nearest-neighbor ; aucun redessin."
+    },
+    {
+      "id": "wall-atlas",
+      "required": true,
+      "productionStatus": "generated",
+      "exportFile": "public/assets/textures/mansion/wall-bands-v1.png",
+      "runtimeUrl": "/assets/textures/mansion/wall-bands-v1.png",
+      "composition": "Papier en moitié supérieure, bois en moitié inférieure ; quatre rangées de garde par bande, sans garde horizontale.",
+      "exportScript": "scripts/export-wall-bands.ps1",
+      "consumers": [
+        "src/MansionWallGeometry.ts",
+        "src/MansionWallMaterial.ts",
+        "src/Level.ts"
+      ],
+      "validation": {
+        "file": "conforme",
+        "uvGeometry": "conforme, 4 116 rayons de surface identiques aux boîtes d’origine",
+        "game": "non vérifié"
+      },
+      "limit": "Seul le dernier mip 1×1 mélange les deux bandes ; mélange négligeable à distance extrême."
+    },
+    {
+      "id": "composition",
+      "required": true,
+      "productionStatus": "generated",
+      "exportFile": "src/MansionComposition.ts",
+      "purpose": "Six intentions, six vrais segments muraux laissés libres, six portraits et douze panneaux.",
+      "consumers": [
+        "src/MansionPortraits.ts",
+        "scripts/make-composition-preview.mjs",
+        "scripts/check-room-composition.mjs"
+      ],
+      "roomFoci": {
+        "vestibule": "Pendule",
+        "salon": "Cheminée et feu",
+        "galerie": "Buste et portraits",
+        "grand_hall": "Lustre et piliers",
+        "bibliotheque": "Rayonnages et livres",
+        "atelier": "Établi et outils"
+      },
+      "validation": {
+        "supportsWindowsApproachesRoutes": "conforme",
+        "artisticInLevel": "non vérifié"
+      }
+    },
+    {
+      "id": "volumes",
+      "required": true,
+      "productionStatus": "generated",
+      "sourceFiles": [
+        "src/MansionDressing.ts",
+        "src/MansionPortraits.ts",
+        "src/MansionFurnishings.ts",
+        "src/MansionConfig.ts"
+      ],
+      "purpose": "Dos et chants rigides, socle 1,10 m, piliers 5,80 m, établi 3×1,35 m haut de 1 m.",
+      "reusedImages": [
+        "public/assets/decor/mansion-details-v1.png",
+        "public/assets/textures/portrait_v2.png"
+      ],
+      "shotBlocking": "Le batch existant Galerie arrête les tirs sur le buste et les corniches réelles, sans nouveau dessin ni géométrie. Retiré des solides avant destruction.",
+      "validation": {
+        "geometry": "conforme",
+        "shotRays": "six intersections depuis les côtés opposés ; trois rayons hors sculpture libres",
+        "navigation": "graphe, 45 chemins et 441 positions inchangés après retrait",
+        "game": "non vérifié"
+      }
+    },
+    {
+      "id": "animation-audio-gameplay",
+      "required": false,
+      "productionStatus": "not_applicable",
+      "reason": "Lot de composition et surfaces statiques ; pas de nouvelle mécanique, animation ou ressource sonore nécessaire."
+    }
+  ],
+  "handoff": {
+    "buildActuallyRun": true,
+    "build": {
+      "javascriptKB": 776.62,
+      "gzipKB": 200.15,
+      "cssKB": 13.79,
+      "warning": "Bundle historique supérieur à 500 kB."
+    },
+    "browserActuallyObserved": false,
+    "nativeScreenControlUsed": false,
+    "checks": [
+      {
+        "name": "wall-proportions",
+        "passed": true
+      },
+      {
+        "name": "room-composition",
+        "passed": true
+      },
+      {
+        "name": "mansion-dressing",
+        "passed": true
+      },
+      {
+        "name": "mansion-portraits",
+        "passed": true
+      },
+      {
+        "name": "mansion-furnishings",
+        "passed": true
+      },
+      {
+        "name": "salon-surfaces",
+        "passed": true
+      },
+      {
+        "name": "decor-surfaces",
+        "passed": true
+      },
+      {
+        "name": "tiers",
+        "passed": true
+      },
+      {
+        "name": "split-level",
+        "passed": true
+      },
+      {
+        "name": "navigation-perf",
+        "passed": true
+      },
+      {
+        "name": "audiovisual-pass",
+        "passed": true
+      },
+      {
+        "name": "visual-room-f3",
+        "passed": true
+      },
+      {
+        "name": "hearth-fire",
+        "passed": true
+      },
+      {
+        "name": "mansion-atmosphere",
+        "passed": true
+      }
+    ],
+    "independentReview": "Correction du buste, navigation, nettoyage et budgets contrôlés ; aucun défaut restant relevé.",
+    "preview": {
+      "generator": "node scripts/make-composition-preview.mjs",
+      "file": "tmp/composition-preview/index.html",
+      "views": 18,
+      "syntaxChecked": true,
+      "cameraPositionsChecked": true,
+      "opened": false
+    },
+    "remainingWork": [],
+    "limits": [
+      "Nouvelle partie WebGL et validation artistique en jeu non effectuées ; l’utilisateur a levé ce blocage pour l’implémentation.",
+      "Coût GPU et FPS non mesurés ; compteurs de structure seulement.",
+      "Cinq échecs historiques de la suite globale restent hors de ce lot ; suite globale non relancée.",
+      "Travail local non commité ni poussé ; modifications antérieures conservées."
+    ],
+    "nextUsefulCheck": "Observer les six pièces en mouvement et aux deux états de lampe, dans le cadre du lot déjà autorisé."
+  }
+}

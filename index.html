@@ -95,8 +95,13 @@
     </div>
     <div id="hud-notifications" class="hud-notifications" role="status" aria-live="polite" aria-atomic="false"></div>
     <div id="pause-message" class="message">Cliquez pour jouer · Clic droit : viser · [F] Lampe · [E] Ouvrir · Échap : pause · [K] Debug
-      <label class="horror-volume">Craquement lointain <input id="horror-volume" type="range" min="0" max="1" step="0.01" value="0.18" aria-label="Volume des craquements lointains"><output id="horror-volume-value">18 %</output></label>
-      <label class="horror-volume">Musique <input id="music-volume" type="range" min="0" max="1" step="0.01" value="0.4" aria-label="Volume de la musique"><output id="music-volume-value">40 %</output></label>
+      <fieldset class="audio-settings">
+        <legend>Réglages sonores</legend>
+        <label class="audio-volume"><span>Ambiance <small>Vent, pluie et tonnerre</small></span><input id="ambience-volume" type="range" min="0" max="1" step="0.01" value="1" aria-label="Volume de l’ambiance"><output id="ambience-volume-value" for="ambience-volume">100 %</output></label>
+        <label class="audio-volume"><span>Effets <small>Armes, impacts et ennemis</small></span><input id="effects-volume" type="range" min="0" max="1" step="0.01" value="1" aria-label="Volume des effets"><output id="effects-volume-value" for="effects-volume">100 %</output></label>
+        <label class="audio-volume"><span>Musique</span><input id="music-volume" type="range" min="0" max="1" step="0.01" value="0.4" aria-label="Volume de la musique"><output id="music-volume-value" for="music-volume">40 %</output></label>
+        <label class="audio-volume"><span>Craquement lointain <small>Suit aussi le volume Ambiance</small></span><input id="horror-volume" type="range" min="0" max="1" step="0.01" value="0.18" aria-label="Volume des craquements lointains"><output id="horror-volume-value" for="horror-volume">18 %</output></label>
+      </fieldset>
       <button id="run-summary-open" class="restart-button" type="button" hidden>Consulter le bilan · B</button>
     </div>
     <section id="debug-menu" class="debug-menu" role="dialog" aria-modal="true" aria-labelledby="debug-title" aria-describedby="debug-description" hidden>
@@ -104,6 +109,14 @@
         <h2 id="debug-title">DEBUG · CHOIX DU PALIER</h2>
         <p id="debug-description">Le jeu est en pause. Choisir un palier relance son combat au point de départ avec la vie restaurée. Votre équipement et vos munitions sont conservés.</p>
         <div class="debug-tiers" data-debug-tiers></div>
+        <div class="debug-section-title">INVOQUER DEVANT SOI (3M)</div>
+        <div class="debug-spawns">
+          <button type="button" data-debug-spawn="crawler">🕷️ Rampeuse (Sol)</button>
+          <button type="button" data-debug-spawn="crawler-ceiling">🕷️ Rampeuse (Plafond)</button>
+          <button type="button" data-debug-spawn="agile">⚡ Coureur</button>
+          <button type="button" data-debug-spawn="spitter">🧪 Cracheur</button>
+          <button type="button" data-debug-spawn="standard">🧟 Standard</button>
+        </div>
         <button type="button" data-debug-close>Fermer · K / Échap</button>
         <small>Après fermeture, cliquez dans le jeu pour reprendre le contrôle.</small>
       </div>

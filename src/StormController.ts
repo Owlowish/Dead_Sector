@@ -21,6 +21,7 @@ export class StormController {
   private selectedWindowIndex = -1;
   private suspended = true;
   private disposed = false;
+  private ambienceVolume = 1;
   private readonly lights: readonly THREE.PointLight[];
   private readonly random: () => number;
   private readonly audioReady: () => boolean;
@@ -40,6 +41,7 @@ export class StormController {
     this.rain?.disconnect();
     this.rain?.removeFromParent();
     this.rain = source;
+    source.setVolume(0.12 * this.ambienceVolume);
     if (!this.suspended && this.audioReady() && !source.isPlaying) source.play();
   }
 
@@ -47,6 +49,13 @@ export class StormController {
     this.thunder?.disconnect();
     this.thunder?.removeFromParent();
     this.thunder = source;
+    source.setVolume(0.32 * this.ambienceVolume);
+  }
+
+  public setAmbienceVolume(volume: number): void {
+    this.ambienceVolume = THREE.MathUtils.clamp(volume, 0, 1);
+    this.rain?.setVolume(0.12 * this.ambienceVolume);
+    this.thunder?.setVolume(0.32 * this.ambienceVolume);
   }
 
   public update(delta: number, active: boolean, playerPosition: THREE.Vector3, positions: readonly THREE.Vector3[]): void {

@@ -28,6 +28,9 @@ import { CrawlerZombie } from './CrawlerZombie.ts';
 import { SpitProjectile } from './SpitProjectile.ts';
 import { TierDiagnosticsTracker, type TierDiagnosticRecord } from './TierDiagnostics.ts';
 import { GameHud, type HudPrompt } from './GameHud.ts';
+import { AudioMix, type AudioChannel } from './AudioMix.ts';
+import { FootstepAudio } from './FootstepAudio.ts';
+import { WeaponMotion } from './WeaponMotion.ts';
 
 type GameState = 'playing' | 'respite' | 'exploration' | 'terminal' | 'won' | 'lost';
 
@@ -54,6 +57,7 @@ export class Game {
   private shellCasings: ShellCasing[] = [];
   private hitEffects: HitEffects;
   private weapon: Weapon;
+  private readonly weaponMotion = new WeaponMotion(document.querySelector<HTMLElement>('.weapon-view'));
   private state: GameState = 'playing';
   private currentTier = 1;
   private runElapsedSeconds = 0;
@@ -106,6 +110,7 @@ export class Game {
     if (!button || !this.debugDisplay?.contains(button)) return;
     if (button.hasAttribute('data-debug-close')) this.setDebugMenuOpen(false);
     else if (button.dataset.tier) this.jumpToDebugTier(Number(button.dataset.tier));
+    else if (button.dataset.debugSpawn) this.spawnDebugZombie(button.dataset.debugSpawn as ZombieKind | 'crawler-ceiling');
   };
   private pendingTierStart = 0;
   private spawnQueue = 0;
@@ -127,10 +132,6 @@ export class Game {
   private readonly summaryDisplay = document.querySelector<HTMLElement>('#run-summary');
   private readonly summaryOpenButton = document.querySelector<HTMLButtonElement>('#run-summary-open');
   private readonly pauseDisplay = document.querySelector<HTMLElement>('#pause-message');
-  private readonly horrorVolumeInput = document.querySelector<HTMLInputElement>('#horror-volume');
-  private readonly horrorVolumeValue = document.querySelector<HTMLOutputElement>('#horror-volume-value');
-  private readonly musicVolumeInput = document.querySelector<HTMLInputElement>('#music-volume');
-  private readonly musicVolumeValue = document.querySelector<HTMLOutputElement>('#music-volume-value');
   private readonly damageOverlay = document.querySelector<HTMLElement>('#damage-overlay');
   private readonly damageEffectDuration = 0.4;
   private damageEffectRemaining = 0;
@@ -139,7 +140,8 @@ export class Game {
   private readonly retroScale = 3;
   private ambianceAudio: THREE.Audio | null = null;
   private musicAudio: THREE.Audio | null = null;
-  private musicVolume = 0.4;
+  private readonly audioMix = new AudioMix();
+  private readonly footsteps: FootstepAudio;
   private readonly horrorDirector = new HorrorDirector();
   private stormController: StormController;
   private disposed = false;
@@ -188,6 +190,7 @@ export class Game {
 
     // Intégrer la caméra du joueur à la scène pour que ses enfants (lumières 3D, audio) soient rendus.
     this.scene.add(this.player.camera);
+    this.footsteps = new FootstepAudio(this.player.audioListener.context, this.player.audioListener.getInput());
     this.stormController = new StormController(
       this.level.getStormLights(),
       Math.random,
@@ -247,7 +250,7 @@ export class Game {
           const toggled = door.toggle();
           if (!toggled && door.isLocked()) {
             const clickSound = new Audio('/assets/sounds/empty-soft.wav');
-            clickSound.volume = 0.4;
+            clickSound.volume = 0.4 * this.getEffectsVolume();
             void clickSound.play().catch(() => {});
           }
           break;
@@ -305,16 +308,7 @@ export class Game {
       this.syncAmbientAudio();
     });
 
-    this.horrorVolumeInput?.addEventListener('input', () => {
-      const volume = Number(this.horrorVolumeInput?.value ?? 0);
-      this.horrorDirector.setVolume(volume);
-      if (this.horrorVolumeValue) this.horrorVolumeValue.value = `${Math.round(volume * 100)} %`;
-    });
-    this.musicVolumeInput?.addEventListener('input', () => {
-      this.musicVolume = Number(this.musicVolumeInput?.value ?? 0);
-      if (this.musicVolumeValue) this.musicVolumeValue.value = `${Math.round(this.musicVolume * 100)} %`;
-      this.updateMusicVolume();
-    });
+    this.setupAudioControls();
 
     // Ambiance sonore et audio spatial du manoir
     const audioLoader = new THREE.AudioLoader();
@@ -325,7 +319,7 @@ export class Game {
       const sound = new THREE.Audio(this.player.audioListener);
       sound.setBuffer(buffer);
       sound.setLoop(true);
-      sound.setVolume(0.15);
+      sound.setVolume(0.15 * this.audioMix.getVolume('ambience'));
       this.ambianceAudio = sound;
       this.syncAmbientAudio();
     }, undefined, (error) => console.warn('Chargement ambiance impossible :', error));
@@ -335,7 +329,7 @@ export class Game {
       const music = new THREE.Audio(this.player.audioListener);
       music.setBuffer(buffer);
       music.setLoop(true);
-      music.setVolume(0.3 * this.musicVolume);
+      music.setVolume(0.3 * this.audioMix.getVolume('music') * this.audioMix.getMusicPresence());
       this.musicAudio = music;
       this.syncAmbientAudio();
     }, undefined, (error) => console.warn('Chargement musique impossible :', error));
@@ -358,7 +352,6 @@ export class Game {
       const rain = new THREE.PositionalAudio(this.player.audioListener);
       rain.setBuffer(buffer);
       rain.setLoop(true);
-      rain.setVolume(0.12);
       rain.setRefDistance(4);
       rain.setMaxDistance(24);
       rain.setRolloffFactor(0.8);
@@ -372,7 +365,6 @@ export class Game {
       const thunder = new THREE.PositionalAudio(this.player.audioListener);
       thunder.setBuffer(buffer);
       thunder.setLoop(false);
-      thunder.setVolume(0.32);
       thunder.setRefDistance(6);
       thunder.setMaxDistance(36);
       thunder.setRolloffFactor(0.65);
@@ -382,9 +374,10 @@ export class Game {
 
     // 2. Grognements spatiaux des zombies en 3D
     audioLoader.load('/assets/sounds/zombie-groan-soft.wav', (buffer) => {
+      if (this.disposed) return;
       this.zombieGroanBuffer = buffer;
       for (const zombie of this.zombies) {
-        zombie.setupAudio(this.player.audioListener, buffer);
+        zombie.setupAudio(this.player.audioListener, buffer, this.getEffectsVolume());
       }
     }, undefined, (error) => console.warn('Chargement voix ennemie impossible :', error));
 
@@ -432,6 +425,8 @@ export class Game {
     );
 
     this.weapon.setOnImpact((impact) => this.hitEffects.emit(impact));
+    this.weapon.setupMechanicalAudio(this.player.audioListener.context, this.player.audioListener.getInput());
+    this.applyAudioMix();
 
     // Préchauffage des ressources graphiques partagées (Warmup standard, agile et cadavres)
     Zombie.warmup();
@@ -535,6 +530,47 @@ export class Game {
     this.syncAmbientAudio();
   }
 
+  private spawnDebugZombie(kind: ZombieKind | 'crawler-ceiling'): void {
+    if (this.disposed) return;
+    this.debugRun = true;
+    const forward = new THREE.Vector3();
+    this.player.camera.getWorldDirection(forward);
+    forward.y = 0;
+    if (forward.lengthSq() < 0.001) forward.set(0, 0, 1);
+    else forward.normalize();
+
+    const dist = kind === 'spitter' ? 5.0 : 3.2;
+    let targetX = this.player.camera.position.x + forward.x * dist;
+    let targetZ = this.player.camera.position.z + forward.z * dist;
+
+    if (this.level.isColliding(targetX, targetZ, 0.45)) {
+      targetX = this.player.camera.position.x + forward.x * 1.5;
+      targetZ = this.player.camera.position.z + forward.z * 1.5;
+    }
+
+    let zombie: Zombie | SpitterZombie | CrawlerZombie;
+    if (kind === 'crawler-ceiling') {
+      zombie = new CrawlerZombie(this.scene, this.level, targetX, targetZ, true);
+    } else if (kind === 'crawler') {
+      zombie = new CrawlerZombie(this.scene, this.level, targetX, targetZ);
+    } else if (kind === 'spitter') {
+      zombie = new SpitterZombie(this.scene, this.level, targetX, targetZ);
+    } else {
+      zombie = new Zombie(this.scene, this.level, targetX, targetZ, kind);
+    }
+
+    zombie.alert(this.player.camera.position);
+    if (this.zombieGroanBuffer) {
+      zombie.setupAudio(this.player.audioListener, this.zombieGroanBuffer, this.getEffectsVolume());
+    }
+    this.zombies.push(zombie);
+    if (this.weapon) {
+      this.weapon.setTargets(this.zombies.map((z) => z.getMesh()));
+    }
+    this.updateObjectiveDisplay();
+    this.setDebugMenuOpen(false);
+  }
+
   private jumpToDebugTier(tierNumber: number): void {
     if (!Number.isInteger(tierNumber) || !this.encounterConfigs[tierNumber - 1] || this.disposed) return;
     this.debugRun = true;
@@ -544,6 +580,8 @@ export class Game {
     if (this.summaryOpenButton) this.summaryOpenButton.hidden = true;
     this.weapon.cancelReload();
     this.player.resetForDebug();
+    this.footsteps?.reset();
+    this.weaponMotion?.reset();
     for (const drop of this.ammoDrops) drop.dispose();
     this.ammoDrops = [];
     for (const shell of this.shellCasings) shell.dispose();
@@ -602,14 +640,18 @@ export class Game {
       this.perfTracker?.recordFrame(rawDeltaMs, isCombat, isTabSwitch);
 
       this.updateDamageEffect(delta);
+      // Les réglages continuent de fondre dans le panneau de pause, sans avancer le combat.
+      this.updateAudioMix(Math.min(rawDeltaSec, 0.05));
 
       const stormActive = controlActive;
       this.stormController.update(delta, stormActive, this.player.camera.position, this.level.getStormWindowPositions());
+      if (!stormActive) this.footsteps?.reset();
 
       // Mise à jour des systèmes en jeu, en phase de répit ou en exploration d'accès.
       if (controlActive) {
         if (wasControlActive && !isTabSwitch && (this.state === 'playing' || this.state === 'exploration' || this.state === 'respite')) this.runElapsedSeconds += rawDeltaSec;
         this.player.update(delta);
+        this.footsteps?.update(delta, this.player.camera.position, stormActive);
 
         // Simulation des zombies pendant le combat actif
         if (this.state === 'playing') {
@@ -660,19 +702,33 @@ export class Game {
               continue;
             }
             if (zombie instanceof CrawlerZombie) {
-              zombie.update(delta, this.player.camera.position, this.zombies, (damage) => {
-                const previousHealth = this.player.getHealth();
-                this.player.takeDamage(damage);
-                this.tierDiagnostics?.recordDamageTaken(previousHealth - this.player.getHealth());
-                if (this.player.getHealth() < previousHealth) {
-                  this.damageEffectRemaining = this.damageEffectDuration;
-                  if (this.damageOverlay) this.damageOverlay.style.opacity = '1';
+              const forward = new THREE.Vector3();
+              this.player.camera.getWorldDirection(forward);
+              zombie.update(
+                delta,
+                this.player.camera.position,
+                this.zombies,
+                (damage, isAnkleGrab) => {
+                  const previousHealth = this.player.getHealth();
+                  this.player.takeDamage(damage);
+                  if (isAnkleGrab) {
+                    this.player.applyAnkleGrab(0.75, 0.4, 0.28);
+                  }
+                  this.tierDiagnostics?.recordDamageTaken(previousHealth - this.player.getHealth());
+                  if (this.player.getHealth() < previousHealth) {
+                    this.damageEffectRemaining = this.damageEffectDuration;
+                    if (this.damageOverlay) this.damageOverlay.style.opacity = '1';
+                  }
+                  this.updateHealthDisplay();
+                  if (!this.player.isAlive()) {
+                    this.endGame('lost');
+                  }
+                },
+                {
+                  isFlashlightOn: this.player.isFlashlightOn(),
+                  cameraDirection: forward,
                 }
-                this.updateHealthDisplay();
-                if (!this.player.isAlive()) {
-                  this.endGame('lost');
-                }
-              });
+              );
               continue;
             }
             zombie.update(delta, this.player.camera.position, this.zombies.filter((z): z is Zombie => z instanceof Zombie), (damage) => {
@@ -730,15 +786,15 @@ export class Game {
 
       this.updateHorrorAudio(delta);
 
-      this.level.update(delta);
+      this.level.update(delta, stormActive ? delta : 0);
 
       // Transmission de l'éclairage local ambiant du joueur à l'arme 2D (rehaussé par la lampe torche)
       const envLight = this.level.getLightingAt(this.player.camera.position);
       const flashlightBoost = this.player.isFlashlightOn() ? 0.08 : 0;
-      this.weapon.setEnvironmentalLighting(envLight.brightness + flashlightBoost, envLight.warmth);
+      this.weapon.setEnvironmentalLighting(envLight.brightness + flashlightBoost, envLight.warmth, envLight.stormFlash);
 
       this.weapon.update(delta);
-      this.updateMusicVolume();
+      this.weaponMotion?.update(delta, this.player.camera.position, stormActive, this.weapon.aimAmount, this.weapon.getIsReloading());
 
       // Affichage.
       this.renderer.render(
@@ -957,7 +1013,7 @@ export class Game {
 
     // 3. Déclic métallique sonore d'ouverture
     const unlockSound = new Audio('/assets/sounds/empty-soft.wav');
-    unlockSound.volume = 0.5;
+    unlockSound.volume = 0.5 * this.getEffectsVolume();
     void unlockSound.play().catch(() => {});
 
     // Le bilan reste volontaire : terminer la finale ne libère pas la souris.
@@ -1031,6 +1087,9 @@ export class Game {
   public startTier(tierNumber: number): void {
     const configs = this.encounterConfigs ?? (this as unknown as { tierCandidateSpawns?: EncounterSpec[] }).tierCandidateSpawns;
     if (!Number.isInteger(tierNumber) || tierNumber < 1 || tierNumber > (configs?.length ?? 0)) return;
+    this.footsteps?.reset();
+    this.weaponMotion?.reset();
+    this.weapon?.suspendMechanicalAudio?.();
     this.currentTier = tierNumber;
     this.pendingTierStart = 0;
     this.respiteTimer = 0;
@@ -1298,7 +1357,7 @@ export class Game {
         { elite: config.finalEncounter === true && chosenKind === 'standard' && this.tierStandardSpawned === 1 });
     zombie.alert(playerPos);
     if (this.zombieGroanBuffer) {
-      zombie.setupAudio(this.player.audioListener, this.zombieGroanBuffer);
+      zombie.setupAudio(this.player.audioListener, this.zombieGroanBuffer, this.getEffectsVolume());
     }
     this.zombies.push(zombie);
     this.tierDiagnostics?.recordSpawn(chosenKind, livingZombies.length + 1);
@@ -1306,7 +1365,7 @@ export class Game {
     if (escort) {
       const runner = new Zombie(this.scene, this.level, escort.x, escort.z, 'agile');
       runner.alert(playerPos);
-      if (this.zombieGroanBuffer) runner.setupAudio(this.player.audioListener, this.zombieGroanBuffer);
+      if (this.zombieGroanBuffer) runner.setupAudio(this.player.audioListener, this.zombieGroanBuffer, this.getEffectsVolume());
       this.zombies.push(runner);
       this.tierAgileSpawned++;
       this.spawnQueue--;
@@ -1499,12 +1558,51 @@ export class Game {
       if (this.musicAudio?.isPlaying) this.musicAudio.pause();
       this.horrorDirector?.suspend();
       this.stormController?.suspend();
+      this.footsteps?.reset();
+      this.weaponMotion?.reset();
+      this.weapon?.suspendMechanicalAudio?.();
       for (const zombie of this.zombies) zombie.stopAudio();
     }
   }
 
-  private updateMusicVolume(): void {
-    this.musicAudio?.setVolume(0.3 * this.musicVolume * (this.state === 'playing' ? 1 : 1 / 3));
+  private setupAudioControls(): void {
+    const channels: AudioChannel[] = ['ambience', 'effects', 'music', 'horror'];
+    for (const channel of channels) {
+      const input = document.querySelector<HTMLInputElement>(`#${channel}-volume`);
+      const output = document.querySelector<HTMLOutputElement>(`#${channel}-volume-value`);
+      if (!input) continue;
+      input.value = String(this.audioMix.getSetting(channel));
+      if (output) output.value = `${Math.round(Number(input.value) * 100)} %`;
+      input.addEventListener('input', () => {
+        if (this.disposed) return;
+        this.audioMix.setVolume(channel, Number(input.value));
+        this.audioMix.saveSettings();
+        if (output) output.value = `${Math.round(this.audioMix.getSetting(channel) * 100)} %`;
+      });
+    }
+  }
+
+  private getEffectsVolume(): number {
+    return this.audioMix?.getVolume('effects') ?? 1;
+  }
+
+  private updateAudioMix(delta: number): void {
+    if (!this.audioMix.update(delta, this.state === 'playing')) return;
+    this.applyAudioMix();
+  }
+
+  private applyAudioMix(): void {
+    const ambience = this.audioMix.getVolume('ambience');
+    const effects = this.getEffectsVolume();
+    this.ambianceAudio?.setVolume(0.15 * ambience);
+    this.stormController.setAmbienceVolume(ambience);
+    this.horrorDirector.setVolume(this.audioMix.getVolume('horror') * ambience);
+    this.musicAudio?.setVolume(0.3 * this.audioMix.getVolume('music') * this.audioMix.getMusicPresence());
+    this.weapon.setEffectsVolume(effects);
+    this.player.setEffectsVolume(effects);
+    this.footsteps?.setVolume(effects);
+    this.encounterBell.setEffectsVolume(effects);
+    for (const zombie of this.zombies) zombie.setAudioVolume(effects);
   }
 
   public dispose(): void {
@@ -1527,6 +1625,10 @@ export class Game {
     for (const p of (this.upgradePedestals ?? [])) p.dispose(this.scene);
     this.horrorDirector?.dispose();
     this.stormController?.dispose();
+    this.footsteps?.dispose();
+    this.weaponMotion?.dispose();
+    this.weapon?.dispose?.();
+    this.level?.disposeDecor();
     disposeAllZombieResources();
   }
 }

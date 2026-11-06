@@ -123,6 +123,7 @@ pickup.collect(weapon);
 weapon.upgradeAmmoCapacity(1.5); weapon.upgradeAccuracy(0.65);
 weapon.magazineAmmo = 0; weapon.reserveAmmo = 0;
 player.maxHealth = 140; player.health = 7; player.speedMultiplier = 1.12; player.flashlightOn = false;
+player.applyAnkleGrab();
 game.ammoDrops = [disposable()]; game.shellCasings = [disposable()]; game.spitProjectiles = [disposable()];
 game.appliedUpgrades = ['ammo_capacity']; game.debugRun = true;
 for (const door of level.getDoors()) {
@@ -141,6 +142,8 @@ assert.equal(disposed, 4, 'Corps, projectile, drop et douille sont nettoyés');
 assert.equal(clearedEffects, 1); assert.equal(resetStorm, 1);
 assert.equal(player.getHealth(), 100); assert.equal(player.getMaxHealth(), 100);
 assert.equal(player.getSpeedMultiplier(), 1); assert.equal(player.isFlashlightOn(), true);
+assert.equal(player.grabTimer, 0, 'Une nouvelle tentative efface un agrippement en cours');
+assert.equal(player.grabSlowFactor, 1, 'Le ralentissement de la Rampeuse ne traverse pas les tentatives');
 assert.deepEqual(player.camera.position.toArray(), [PLAYER_START_POSITION.x, 1.7, PLAYER_START_POSITION.z]);
 assert.equal(weapon.getActiveWeaponId(), 'pistol'); assert.equal(weapon.isWeaponUnlocked('shotgun'), false);
 assert.equal(weapon.getAmmo(), 10); assert.equal(weapon.getMaxAmmo(), 15); assert.equal(weapon.getReserveAmmo(), 30);

@@ -432,7 +432,9 @@ assert.equal(MANSION_BUDGET.bounds.depth, 40, 'La profondeur totale doit être d
 assert.ok(MANSION_BUDGET.currentRooms <= MANSION_BUDGET.maxRooms, `Nombre de pièces (${MANSION_BUDGET.currentRooms}) <= max (${MANSION_BUDGET.maxRooms})`);
 assert.equal(MANSION_BUDGET.maxSimultaneousZombies, 8, 'Budget de 8 zombies simultanés');
 assert.equal(MANSION_BUDGET.maxShadowCastingLights, 2, 'Budget de 2 lumières avec ombres');
-assert.equal(MANSION_BUDGET.maxPointLights, 6, 'Budget de 6 lumières ponctuelles');
+let actualPointLights = 0;
+scene.traverse(object => { if (object.isPointLight) actualPointLights++; });
+assert.ok(actualPointLights <= MANSION_BUDGET.maxPointLights, 'Le budget couvre le nombre réel de lumières ponctuelles du niveau');
 
 console.log('   -> PASS : Données de budget centralisées et conformes aux limites.\n');
 

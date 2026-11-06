@@ -120,7 +120,7 @@ export const MANSION_BUDGET = {
   currentRooms: 6, // 1A. Vestibule, 1B. Grand Salon, 1C. Galerie Ouest, 2. Grand Hall Nord, 3A. Grande Bibliothèque, 3B. Atelier d'Art
   maxSimultaneousZombies: 8,
   maxShadowCastingLights: 2, // 1 clair de lune directionnel + 1 lustre Grand Hall
-  maxPointLights: 6,
+  maxPointLights: 10, // Éclairage de Level : 8 sources existantes (orage inclus) + 2 appoints du Salon, hors arme/balise.
 } as const;
 
 // Emplacements stables dans des pièces réellement praticables, jamais choisis dans les murs.
@@ -278,18 +278,18 @@ export const MANSION_WALLS: BoxCollider[] = [
   { x: -14, y: 1.5, z: 13, width: 2.4, height: 3.0, depth: 4.0, materialType: 'obstacle' },
 
   // 1C. Galerie Ouest : Piédestal de sculpture adossé au mur ouest
-  { x: -18, y: 1.2, z: 0.0, width: 2.4, height: 2.4, depth: 2.4, materialType: 'obstacle', surface: 'stone' },
+  { x: -18, y: 0.55, z: 0.0, width: 1.4, height: 1.1, depth: 1.4, materialType: 'obstacle', surface: 'stone' },
 
   // 2. Grand Hall Nord : Deux colonnes monumentales bordant l'allée centrale (dégagement complet devant l'escalier Est)
-  { x: 5.0, y: 2.0, z: -2.5, width: 1.4, height: 4.0, depth: 1.4, materialType: 'obstacle', surface: 'stone' },
-  { x: 5.0, y: 2.0, z: 2.5, width: 1.4, height: 4.0, depth: 1.4, materialType: 'obstacle', surface: 'stone' },
+  { x: 5.0, y: 2.9, z: -2.5, width: 1.4, height: 5.8, depth: 1.4, materialType: 'obstacle', surface: 'stone' },
+  { x: 5.0, y: 2.9, z: 2.5, width: 1.4, height: 5.8, depth: 1.4, materialType: 'obstacle', surface: 'stone' },
 
   // 3A. Grande Bibliothèque (+2.4m) : Deux rangées de rayonnages hauts
   { x: -13, y: 4.2, z: -12.0, width: 7.0, height: 3.6, depth: 1.2, materialType: 'obstacle', surface: 'books' },
   { x: -13, y: 4.2, z: -16.0, width: 7.0, height: 3.6, depth: 1.2, materialType: 'obstacle', surface: 'books' },
 
   // 3B. Atelier d'Art (+2.4m) : Établi et générateur industriel
-  { x: 12, y: 3.6, z: -14.0, width: 3.2, height: 2.4, depth: 3.2, materialType: 'obstacle', surface: 'workbench' },
+  { x: 12, y: MANSION_ELEVATION.plateauHeight + 0.5, z: -14.0, width: 3.0, height: 1.0, depth: 1.35, materialType: 'obstacle', surface: 'workbench' },
 ];
 
 // 5. Portes de progression et accès du manoir demi-niveau

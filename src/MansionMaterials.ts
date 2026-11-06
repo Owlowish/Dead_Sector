@@ -11,6 +11,33 @@ export type MansionSurface = keyof typeof mansionSurfaceAssets;
 
 const textures = new Map<MansionSurface, THREE.Texture>();
 const materials = new Map<string, THREE.MeshStandardMaterial>();
+const salonTextures = new Map<'wall' | 'wood', THREE.Texture>();
+const salonMaterials = new Map<string, THREE.MeshStandardMaterial>();
+
+export function salonMaterial(kind: 'wall' | 'wood', original: THREE.MeshStandardMaterial): THREE.MeshStandardMaterial {
+  const key = `${kind}:${original.map!.repeat.x}:${original.map!.repeat.y}`;
+  const cached = salonMaterials.get(key);
+  if (cached) return cached;
+  let texture = salonTextures.get(kind);
+  if (!texture) {
+    texture = new THREE.TextureLoader().load(`/assets/textures/mansion/salon-${kind}-v1.png`);
+    texture.name = `salon-${kind}`;
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = kind === 'wall' ? THREE.ClampToEdgeWrapping : THREE.RepeatWrapping;
+    texture.magFilter = THREE.NearestFilter;
+    texture.minFilter = THREE.NearestMipmapNearestFilter;
+    texture.colorSpace = THREE.SRGBColorSpace;
+    salonTextures.set(kind, texture);
+  }
+  const map = texture.clone();
+  map.repeat.copy(original.map!.repeat);
+  const material = original.clone();
+  material.map = map;
+  material.name = `salon-${kind}`;
+  material.userData.salonOriginalMap = original.map;
+  salonMaterials.set(key, material);
+  return material;
+}
 
 // Matériaux et transformations UV partagés entre les pièces et les portes.
 export function mansionMaterial(surface: MansionSurface, repeatX = 1, repeatY = 1): THREE.MeshStandardMaterial {

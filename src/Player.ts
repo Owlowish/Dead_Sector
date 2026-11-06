@@ -12,6 +12,8 @@ export class Player {
   public maxHealth = 100;
   private health = 100;
   private speedMultiplier = 1.0;
+  private grabTimer = 0;
+  private grabSlowFactor = 1.0;
   private canPlay: () => boolean;
   private onInteract: (() => void) | null = null;
   private onFlashlightToggle: ((enabled: boolean) => void) | null = null;
@@ -132,6 +134,10 @@ export class Player {
     this.onInteract = callback;
   }
 
+  public setEffectsVolume(volume: number): void {
+    this.flashlightClick.volume = 0.35 * THREE.MathUtils.clamp(volume, 0, 1);
+  }
+
   public toggleFlashlight(): boolean {
     this.flashlightOn = !this.flashlightOn;
     // Garder le nombre de lumières stable évite de recompiler les shaders au premier arrêt.
@@ -164,8 +170,18 @@ export class Player {
     return this.health;
   }
 
+  public applyAnkleGrab(duration = 0.75, slowFactor = 0.35, pullDownAngle = 0.28): void {
+    this.grabTimer = Math.max(this.grabTimer, duration);
+    this.grabSlowFactor = slowFactor;
+    // Baisse forcée du regard vers les pieds (vers le bas = pitch négatif)
+    this.pitch = Math.max(-Math.PI / 2 + 0.05, this.pitch - pullDownAngle);
+    this.camera.rotation.x = this.pitch + this.recoilPitch;
+  }
+
   public resetForDebug(): void {
     this.keys.clear();
+    this.grabTimer = 0;
+    this.grabSlowFactor = 1;
     this.health = this.maxHealth;
     this.yaw = 0;
     this.pitch = 0;
@@ -231,10 +247,15 @@ export class Player {
     this.camera.rotation.x = this.pitch + this.recoilPitch;
     this.camera.rotation.z = this.recoilRoll;
 
+    if (this.grabTimer > 0) {
+      this.grabTimer -= delta;
+      if (this.grabTimer <= 0) this.grabSlowFactor = 1.0;
+    }
+
     const speed = ((
       this.keys.has('ShiftLeft') ||
       this.keys.has('ShiftRight')
-    ) ? this.runSpeed : this.walkSpeed) * this.speedMultiplier;
+    ) ? this.runSpeed : this.walkSpeed) * this.speedMultiplier * this.grabSlowFactor;
 
     this.direction.set(0, 0, 0);
 

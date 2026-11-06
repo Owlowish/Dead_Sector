@@ -74,17 +74,21 @@ export class SpitterZombie {
     }
   }
 
-  setupAudio(listener: THREE.AudioListener, buffer: AudioBuffer): void {
+  setupAudio(listener: THREE.AudioListener, buffer: AudioBuffer, effectsVolume = 1): void {
     if (!this.alive || this.disposed) return;
     this.groanAudio = new THREE.PositionalAudio(listener);
     this.groanAudio.setBuffer(buffer);
     this.groanAudio.setRefDistance(3.0);
     this.groanAudio.setMaxDistance(20);
     this.groanAudio.setRolloffFactor(1.2);
-    this.groanAudio.setVolume(0.35);
+    this.setAudioVolume(effectsVolume);
     // Timbre guttural, lourd et plus grave que les zombies ordinaires
     this.groanAudio.setPlaybackRate(0.72);
     this.mesh.add(this.groanAudio);
+  }
+
+  setAudioVolume(volume: number): void {
+    this.groanAudio?.setVolume(0.35 * THREE.MathUtils.clamp(volume, 0, 1));
   }
 
   alert(_targetPosition: THREE.Vector3): void {}
@@ -199,7 +203,9 @@ export class SpitterZombie {
     this.alive = false;
     this.stopAudio();
     if (this.groanAudio) {
-      this.mesh.remove(this.groanAudio);
+      this.groanAudio.disconnect();
+      this.groanAudio.gain.disconnect();
+      this.groanAudio.removeFromParent();
       this.groanAudio = null;
     }
     this.remains.dispose();

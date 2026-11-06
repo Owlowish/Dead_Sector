@@ -1,0 +1,287 @@
+{
+  "documentType": "asset-pack",
+  "templateVersion": 1,
+  "id": "FEU_CHEMINEE_2026-11-05",
+  "request": "Feu animé dans l'âtre indiqué par capture utilisateur, effet de GIF intégré au jeu.",
+  "scope": {
+    "prepare": true,
+    "generate": true,
+    "integrate": true,
+    "authorizedDecisions": [
+      "Demande directe feu animé",
+      "Autonomie et délégation déjà reçues"
+    ],
+    "assumptions": [
+      "Atlas animé Three.js pour rendu stable ; GIF d'aperçu possible",
+      "Pas de lumière ou son supplémentaire, collisions inchangées"
+    ],
+    "pendingDecisions": []
+  },
+  "style": {
+    "workflow": "docs/PIPELINE_ASSETS.md",
+    "references": [
+      {
+        "path": "C:/Users/ADMINI~1/AppData/Local/Temp/codex-clipboard-3aed5d06-f700-49ad-b53d-fb186fdca6d1.png",
+        "role": "composition/contexte de l'âtre",
+        "inspected": true
+      },
+      {
+        "path": "public/assets/textures/mansion/hearth-brick-v1.png",
+        "role": "style/pixelart",
+        "inspected": true
+      }
+    ],
+    "lockedIdentity": [
+      "Feu large et bas, racine stable, 5langues asymétriques",
+      "Palette rouge/orange/ambre/jaune, sansblancpur"
+    ],
+    "humanApproval": "not_requested",
+    "acceptedBaseFile": "docs/asset-packs/hearth-fire-v1/base.png"
+  },
+  "technicalContract": {
+    "usage": "Plan fixe dansl'âtre,normal+X,2triangles,MeshBasicMaterial transparent",
+    "exportDimensions": {
+      "base": [
+        128,
+        128
+      ],
+      "atlas": [
+        512,
+        256
+      ],
+      "cells": [
+        128,
+        128
+      ]
+    },
+    "format": "PNG RGBA,alpha réel",
+    "anchors": [
+      {
+        "canvas": "Chaque cellule128×128 de l'atlas",
+        "name": "racine",
+        "x": 64,
+        "y": 114.5,
+        "measuredAlphaThreshold": 102
+      }
+    ],
+    "fixedParts": [
+      "Position/baseline de la racine"
+    ],
+    "movingParts": [
+      "Langues deflamme, fentes et pointes"
+    ],
+    "phases": [
+      "8poses enboucle 0.8s,10images/s ; racine stable etlangues oscillantes"
+    ],
+    "tileAxes": [],
+    "budget": {
+      "textures": 1,
+      "rgbaBytes": 524288,
+      "mipmaps": false,
+      "atlasDiskBytes": 169697,
+      "meshes": 1,
+      "triangles": 2,
+      "maxMainDrawCalls": 1,
+      "newLights": 0,
+      "castsShadows": false
+    },
+    "sharedAnimationModule": "src/HearthFireAnimation.ts"
+  },
+  "assets": [
+    {
+      "id": "base",
+      "purpose": "Base unique d'identité",
+      "required": true,
+      "productionStatus": "generated",
+      "plannedFile": "docs/asset-packs/hearth-fire-v1/base.png",
+      "promptExact": "Create ONE base sprite for a looping fireplace fire in DEAD SECTOR, a retro horror FPS in a Victorian mansion. Attached image1 is CONTEXT ONLY: the actual dark stone fireplace and scale where the fire will sit; do NOT redraw the room, bricks, lantern, gun, HUD or fireplace. Attached image2 is STYLE ONLY: the game's coarse pixel texture language. Output ONLY the orange fire itself on genuinely transparent alpha, no logs or coals (already present in game). A low broad cluster of five interlocking flame tongues, front view orthographic, centered, broad red-orange root along y=88% of canvas, flame tips reach y=18%, margins left/right 12%, bottom12%. Keep the whole flame cluster inside a square canvas. Use clear stepped pixel clusters readable after downscale to128x128; limited burnt red, orange, amber, pale warm yellow cores, no pure white. Lower root stable, middle tongues curling upward with asymmetric gaps between, outer edges dark red, yellow confined to cores. No glow haze outside alpha silhouette, no smoke or flying particles, no text, no borders, no grid, no checkerboard painted in. Matte retro pixel art sprite with crisp contours, no photorealism or smooth vector gradient. This is the identity base before making8animation poses. Requested512x512 opaque flame silhouette on transparent background.",
+      "referencesActuallyAttached": [
+        "C:/Users/ADMINI~1/AppData/Local/Temp/codex-clipboard-3aed5d06-f700-49ad-b53d-fb186fdca6d1.png",
+        "public/assets/textures/mansion/hearth-brick-v1.png"
+      ],
+      "sourceFile": "C:/Users/Administrateur/.codex/generated_images/01a1ace9-b608-7983-8706-92d9bf693f5a/exec-f499ff9a-3e4a-4856-b151-45fabf71e25c.png",
+      "exportFile": "docs/asset-packs/hearth-fire-v1/base.png",
+      "measuredDimensions": {
+        "source": [
+          1254,
+          1254
+        ],
+        "export": [
+          128,
+          128
+        ]
+      },
+      "toolAndModelActuallyUsed": {
+        "tool": "image_gen.imagegen",
+        "model": "non exposé"
+      },
+      "transformations": [
+        "Redimensionnement nearest-neighbor du canevas entier, alpha conservé"
+      ],
+      "validation": {
+        "file": "pass",
+        "art": "pass",
+        "continuity": "not_checked",
+        "integration": "not_applicable",
+        "gameplay": "not_applicable"
+      },
+      "evidence": [
+        "Base inspectée après export à128×128 ; identité retenue par assistant"
+      ]
+    },
+    {
+      "id": "cycle",
+      "purpose": "8poses feu enboucle",
+      "required": true,
+      "productionStatus": "generated",
+      "plannedFile": "public/assets/effects/hearth-fire-v1.png",
+      "cellsAndOrder": "4colonnes×2rangées ; gaucheàdroite puis rangée suivante,8cellules",
+      "durationSeconds": 0.8,
+      "promptExact": "Create an animation sprite sheet for DEAD SECTOR fireplace fire. FIRST attached image is the exact identity BASE sprite to animate. SECOND is STYLE ONLY, coarse dark brick texture, do not include bricks. Produce ONE transparent PNG atlas with EXACTLY FOUR equal square columns and TWO equal square rows, eight animation cells, no gutters, labels, borders or checkerboard paint. Output aspect ratio2:1. Reading order left to right then next row is time0..7 of a seamless0.8second loop (10fps). In EVERY cell, same broad low fire cluster, same scale, same colors, same baseline y88% of that cell, root centered at x50%, same root breadth, tips within y12..30%, left/right margins at least10%. Keep the root planted and stable; ONLY the flame tongues and inner yellow streaks move. The eight successive poses should show gentle continuous upward curling, splitting and merging: small new curls emerge low, rise through middle, the highest thin tips vanish as lower curls take over. Pose7 should lead naturally back to pose0. Avoid alternating giant/small silhouettes or flashing intensity. Maintain five main asymmetrical red/orange/amber tongues with modest pale warm yellow cores, large clean stepped pixel clusters. Render each pose front orthographic like the base; no perspective. Genuinely transparent alpha outside flames including gaps. No hearth, coals, wood, groundline, lantern, scenery, smoke, floating sparks, glow halo, white background, purewhite hotspots, text or decorations. All eight cells must be occupied by distinct consecutive poses, not copies of a static flame. Requested atlas1024x512, exact4x2 square grid; must remain readable when exported512x256(cell128x128).",
+      "acceptanceCriteria": [
+        "Contours pixelart",
+        "Pasdedébordementcellules",
+        "Racine stable",
+        "Cycle partagé10fps",
+        "Alpha etpavagenonapplicable"
+      ],
+      "sourceFile": "C:/Users/Administrateur/.codex/generated_images/01a1ace9-b608-7983-8706-92d9bf693f5a/exec-5434cdf7-20b0-4d53-a6b8-9bfcdb5ff315.png",
+      "exportFile": "public/assets/effects/hearth-fire-v1.png",
+      "runtimeUrl": "/assets/effects/hearth-fire-v1.png",
+      "referencesActuallyAttached": [
+        "C:/Users/Administrateur/.codex/generated_images/01a1ace9-b608-7983-8706-92d9bf693f5a/exec-f499ff9a-3e4a-4856-b151-45fabf71e25c.png",
+        "public/assets/textures/mansion/hearth-brick-v1.png"
+      ],
+      "measuredDimensions": {
+        "source": [
+          1774,
+          887
+        ],
+        "export": [
+          512,
+          256
+        ],
+        "cell": [
+          128,
+          128
+        ]
+      },
+      "toolAndModelActuallyUsed": {
+        "tool": "image_gen.imagegen",
+        "model": "non exposé"
+      },
+      "transformations": [
+        "Redimensionnement nearest-neighbor du canevas complet vers512×256, alpha conservé ; export-hearth-fire.ps1"
+      ],
+      "validation": {
+        "file": "pass",
+        "art": "not_checked",
+        "continuity": "not_checked",
+        "integration": "pass",
+        "gameplay": "not_checked"
+      },
+      "evidence": [
+        "Atlas et ses8poses inspectés àtailleexport",
+        "8poses distinctes ; marges etracine stable ligne114 contrôlées",
+        "Cycle logique etUV contrôlés30/144Hz, pause etdispose",
+        "Observation du mouvement en scène non effectuée"
+      ],
+      "knownDefects": [
+        "Boucle visuelle non observée en temps réel ; GIF livré pour consultation, aucune validation WebGL prétendue"
+      ]
+    },
+    {
+      "id": "existing-scene",
+      "required": false,
+      "productionStatus": "reused",
+      "reason": "Cheminée,braises,lumière chaude,sons etcolliders existants"
+    },
+    {
+      "id": "preview-gif",
+      "required": true,
+      "purpose": "GIF de consultation demandé, même cadence que le jeu",
+      "productionStatus": "generated",
+      "sourceFile": "public/assets/effects/hearth-fire-v1.png",
+      "exportFile": "docs/asset-packs/hearth-fire-v1/preview.gif",
+      "measuredDimensions": [
+        128,
+        128
+      ],
+      "durationSeconds": 0.8,
+      "diskBytes": 149753,
+      "transformations": [
+        "make-hearth-fire-gif.mjs lit HearthFireAnimation pourcellules/fps",
+        "GIF RGB332,8poses,transparencealpha<128,loopinfini ; le jeu utilisePNGpalettecomplète"
+      ],
+      "validation": {
+        "file": "pass",
+        "art": "not_checked",
+        "continuity": "not_checked"
+      },
+      "evidence": [
+        "Décodeur System.Drawing :8poses128×128 décodées",
+        "Image du GIF inspectée, sans affirmer lecture temporelle"
+      ]
+    }
+  ],
+  "handoff": {
+    "sharedAnimationModule": "src/HearthFireAnimation.ts",
+    "previewCommand": "node scripts/make-hearth-fire-gif.mjs",
+    "previewLocation": "docs/asset-packs/hearth-fire-v1/preview.gif",
+    "checksActuallyRun": [
+      {
+        "name": "check-hearth-fire",
+        "status": "fulfilled",
+        "exit": 0
+      },
+      {
+        "name": "check-visual-room-f3",
+        "status": "fulfilled",
+        "exit": 0
+      },
+      {
+        "name": "check-audiovisual-pass",
+        "status": "fulfilled",
+        "exit": 0
+      },
+      {
+        "name": "check-mansion-furnishings",
+        "status": "fulfilled",
+        "exit": 0
+      },
+      {
+        "name": "check-mansion-atmosphere",
+        "status": "fulfilled",
+        "exit": 0
+      },
+      {
+        "name": "check-salon-surfaces",
+        "status": "fulfilled",
+        "exit": 0
+      }
+    ],
+    "buildActuallyRun": true,
+    "browserActuallyObserved": false,
+    "buildBundle": {
+      "jsKB": 767.61,
+      "gzipKB": 197.57
+    },
+    "integrationPlacement": {
+      "center": [
+        -13.3,
+        0.645,
+        13
+      ],
+      "size": [
+        2.2,
+        1.28
+      ],
+      "normal": "+X",
+      "rootHeight": 0.14
+    },
+    "remainingWork": [
+      "Observation en partie et continuité visuelle du cycle non effectuées ; non bloquantes selon demande d'autonomie"
+    ],
+    "lastSpecificDefect": "Revue : forceSinglePass activé pour tenir1draw ; ancrage ajusté surlesbraises. Aucun défaut bloquant restant."
+  }
+}

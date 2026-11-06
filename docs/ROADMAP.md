@@ -1,10 +1,10 @@
 # DEAD SECTOR — Travaux restants
 
-Plan actualisé le 6 novembre 2026 depuis le code local. État et vérifications dans `ETAT_PROJET.md` ; conception gameplay, compositions chiffrées et boss dans `ORIENTATION_JEU.md`. UI1–UI3 sont implémentés ; G1–G4 et UI4–UI6 restent des propositions à réaliser.
+Plan actualisé le 6 novembre 2026 depuis la version fusionnée et contrôlée. État et vérifications dans `ETAT_PROJET.md` ; conception gameplay, compositions chiffrées et boss dans `ORIENTATION_JEU.md`. UI1–UI3 sont implémentés ; G1–G4 et UI4–UI6 restent des propositions à réaliser.
 
 ## Socle présent
 
-Manoir progressif, deux armes, quatre types d'ennemis, relèves, drops, transitions automatiques, rendu rétro, orage et diagnostics. Le travail local ajoute P8 avec élite, victoire libre, bilan B, nouvelle tentative sans rechargement de page et impacts bois/pierre/métal. Leur présence dans le code ne vaut pas validation en partie.
+Manoir progressif et décor des six pièces (lambris/relief/feu/poussières), deux armes avec manipulations et balancement, quatre types d'ennemis, relèves, drops, transitions automatiques, rendu rétro, orage et diagnostics. Les quatre volumes audio sont déjà persistants. Le travail local ajoute P8 avec élite, victoire libre, bilan B, nouvelle tentative sans rechargement de page et impacts bois/pierre/métal. Leur présence dans le code ne vaut pas validation en partie.
 
 ## Priorité gameplay — lots proposés
 
@@ -37,7 +37,7 @@ Accueil avec titre, Entrer dans le manoir, Réglages et Commandes. Pause distinc
 
 ### UI5 — Réglages persistants et lisibilité · priorité moyenne
 
-Échelle HUD 80–150 %, taille/contraste du réticule, sensibilité, luminosité calibrée et bornée ; volumes musique, ambiance, effets et craquement. Réduction des éclairs, du voile rouge et des scanlines sans supprimer les vrais signaux d'attaque. Libellés français, contraste et états lisibles sans dépendre seulement d'une couleur ; annonces d'accessibilité brèves sans lecture à chaque cartouche. Valeurs validées et persistantes, bouton rétablir les valeurs initiales.
+Échelle HUD 80–150 %, taille/contraste du réticule, sensibilité, luminosité calibrée et bornée ; reprendre les quatre volumes déjà persistants dans le panneau commun, sans dupliquer `AudioMix`. Réduction des éclairs, du voile rouge et des scanlines sans supprimer les vrais signaux d'attaque. Libellés français, contraste et états lisibles sans dépendre seulement d'une couleur ; annonces d'accessibilité brèves sans lecture à chaque cartouche. Valeurs validées et persistantes, bouton rétablir les valeurs initiales.
 
 **Acceptation :** effet réel de chaque réglage, persistance après recharge et redémarrage, stockage indisponible toléré. Vérifier notamment les deux chemins audio (`Audio` et Three.js). Tester 1280 × 720, 1920 × 1080, 1024 × 768 et ultralarge, échelle maximale comprise. Conserver le recul de deux secondes.
 
@@ -51,12 +51,12 @@ Habiller le bilan existant comme un rapport : résultat/paliers d'abord, durée 
 
 Ordre gameplay : G1 → G2 avec le HUD UI1–UI3 livré → G3 → G4. Dans l'UI, valider ce socle en partie avant UI4 → UI5 pour le confort ; UI6 termine la cohérence des écrans. Valider chaque lot avant extension, sans tout livrer d'un coup.
 
-Points d'entrée UI : `index.html` / `src/style.css`, `GameHud.ts` et callbacks de `Game.ts`. Garder la progression dans `Game`, sans bus ni framework. Les futurs réglages demandent de vrais points d'application dans le joueur, le rendu et les sources audio. Préserver les sélecteurs/calques d'armes consommés par le jeu et les scripts d'aperçu.
+Points d'entrée UI : `index.html` / `src/style.css`, `GameHud.ts` et callbacks de `Game.ts`. Garder la progression dans `Game`, sans bus ni framework. Les futurs réglages visuels et de contrôle demandent de vrais points d'application dans le joueur et le rendu ; les niveaux audio passent déjà par `AudioMix`. Préserver les sélecteurs/calques d'armes consommés par le jeu et les scripts d'aperçu.
 
 Après code : `npm.cmd run build`, contrôles ciblés des états/transferts/pause, puis captures aux formats cibles et essais au Pointer Lock : tir/recharge, dégâts/soins, accalmie interrompue, finale, mort et nouvelle tentative. Comparer le temps d'image avant/après dans les mêmes conditions. Distinguer compilation, logique, rendu observé et partie jouée.
 
 ## Autres travaux encore ouverts
 
-- Écouter horreur et impacts, vérifier reprise après K et performances en partie avec les nouvelles compositions ; conserver ces contrôles dans G2–G4.
+- Observer les six pièces et le HUD réunis, feu/poussières ; écouter horreur/impacts/pas/manipulations ; vérifier reprise après K et performances en partie, sans déduire un gain des seuls budgets techniques.
 - Actualiser les anciens tests attachés aux caisses/carillon/piédestaux lorsqu'ils sont concernés ; adapter les tests P8 au duel lors de G3.
 - Plus tard : silhouette d'horreur contextuelle, variantes reproductibles et démo ; objectif spatial facultatif seulement après petit prototype utile.

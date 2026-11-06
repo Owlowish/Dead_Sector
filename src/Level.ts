@@ -1,8 +1,16 @@
 import * as THREE from 'three';
 import { Door } from './Door.ts';
 import { createStormWindowVisuals, type StormWindowVisuals } from './StormWindow.ts';
-import { visualColors } from './VisualStyle.ts';
-import { mansionMaterial, mansionBoxGeometry } from './MansionMaterials.ts';
+import { visualColors, salonLighting } from './VisualStyle.ts';
+import { mansionMaterial, mansionBoxGeometry, salonMaterial } from './MansionMaterials.ts';
+import { mansionWallGeometry } from './MansionWallGeometry.ts';
+import { mansionWallMaterial } from './MansionWallMaterial.ts';
+import { MansionDressing } from './MansionDressing.ts';
+import { MansionAtmosphere } from './MansionAtmosphere.ts';
+import { MansionFurnishings } from './MansionFurnishings.ts';
+import { HearthFire } from './HearthFire.ts';
+import { MansionPortraits } from './MansionPortraits.ts';
+import { SALON_RUNNERS } from './MansionFloorSurfaces.ts';
 import { setImpactSurface } from './ImpactSurface.ts';
 import {
   MANSION_BUDGET,
@@ -11,13 +19,17 @@ import {
   MANSION_WAYPOINTS,
   MANSION_RAMPS,
   MANSION_HORROR_POINTS,
-  MANSION_UPGRADE_PEDESTALS,
   MANSION_STORM_WINDOWS,
   getMansionFloorHeight,
 } from './MansionConfig.ts';
 
 export class Level {
   private scene: THREE.Scene;
+  private readonly dressing: MansionDressing;
+  private readonly atmosphere: MansionAtmosphere;
+  private readonly furnishings: MansionFurnishings;
+  private readonly portraits: MansionPortraits;
+  private hearthFire: HearthFire | null = null;
 
   // Collisions physiques du joueur et du zombie.
   private colliders: THREE.Box3[] = [];
@@ -26,6 +38,7 @@ export class Level {
   private solidMeshes: THREE.Mesh[] = [];
   private doors: Door[] = [];
   private candles: { light: THREE.PointLight; baseIntensity: number; phase: number }[] = [];
+  private readonly salonFills: { light: THREE.PointLight; warm: boolean }[] = [];
   private readonly stormLights: THREE.PointLight[] = [];
   private stormWindowVisuals: StormWindowVisuals | null = null;
   private readonly stormWindowPositions = MANSION_STORM_WINDOWS.map(({ x, y, z, rotationY }) =>
@@ -40,19 +53,24 @@ export class Level {
   constructor(scene: THREE.Scene) {
     this.scene = scene;
     this.createEnvironment();
-    this.createUpgradePedestalColliders();
+    this.dressing = new MansionDressing(scene);
+    this.portraits = new MansionPortraits(scene);
+    this.furnishings = new MansionFurnishings(scene);
+    this.solidMeshes.push(...this.furnishings.getShotBlockers());
+    this.atmosphere = new MansionAtmosphere(scene);
     this.initNavigationGraph();
   }
 
-  private createUpgradePedestalColliders(): void {
-    const footprint = 0.55;
-    const height = 0.9;
-    for (const point of MANSION_UPGRADE_PEDESTALS) {
-      const floorY = getMansionFloorHeight(point.x, point.z);
-      const center = new THREE.Vector3(point.x, floorY + height / 2, point.z);
-      const size = new THREE.Vector3(footprint, height, footprint);
-      this.colliders.push(new THREE.Box3().setFromCenterAndSize(center, size));
+  public disposeDecor(): void {
+    this.dressing.dispose();
+    this.portraits.dispose();
+    for (const mesh of this.furnishings.getShotBlockers()) {
+      const index = this.solidMeshes.indexOf(mesh);
+      if (index >= 0) this.solidMeshes.splice(index, 1);
     }
+    this.furnishings.dispose();
+    this.atmosphere.dispose();
+    this.hearthFire?.dispose();
   }
 
   private createEnvironment(): void {
@@ -185,30 +203,6 @@ export class Level {
     addCeilingBeam(-7.0, 6.25);  // Au-dessus de la balustrade de surplomb
     addCeilingBeam(-14.0, 6.25); // Au-dessus de la Bibliothèque et de l'Atelier
 
-    // 2. Texture murale du manoir : lambris de chêne et papier damassé rouge
-    const wallBaseTexture = textureLoader.load('/assets/textures/mansion_wall_v2.png');
-    wallBaseTexture.wrapS = THREE.RepeatWrapping;
-    wallBaseTexture.wrapT = THREE.ClampToEdgeWrapping;
-    wallBaseTexture.magFilter = THREE.NearestFilter;
-    wallBaseTexture.minFilter = THREE.NearestMipmapNearestFilter;
-    wallBaseTexture.colorSpace = THREE.SRGBColorSpace;
-
-    const createWallMaterial = (length: number): THREE.MeshStandardMaterial => {
-      const tex = wallBaseTexture.clone();
-      tex.wrapS = THREE.RepeatWrapping;
-      tex.wrapT = THREE.ClampToEdgeWrapping;
-      tex.repeat.set(Math.max(1, Math.round(length / 2)), 1);
-      tex.magFilter = THREE.NearestFilter;
-      tex.minFilter = THREE.NearestMipmapNearestFilter;
-      tex.colorSpace = THREE.SRGBColorSpace;
-      tex.needsUpdate = true;
-      return setImpactSurface(new THREE.MeshStandardMaterial({
-        map: tex,
-        roughness: 0.88,
-        metalness: 0.0,
-      }), 'stone');
-    };
-
     const obstacleMaterial = mansionMaterial('wood');
 
     const ironMaterial = new THREE.MeshStandardMaterial({
@@ -226,7 +220,7 @@ export class Level {
         continue;
       }
       let mat: THREE.Material | THREE.Material[];
-      let geometry: THREE.BoxGeometry | undefined;
+      let geometry: THREE.BufferGeometry | undefined;
       if (wall.surface === 'books' || wall.surface === 'workbench') {
         mat = [mansionMaterial('wood'), mansionMaterial(wall.surface)];
         geometry = mansionBoxGeometry(wall.width, wall.height, wall.depth, 2, wall.surface);
@@ -238,7 +232,8 @@ export class Level {
       } else if (wall.materialType === 'metal') {
         mat = ironMaterial;
       } else {
-        mat = createWallMaterial(Math.max(wall.width, wall.depth));
+        mat = setImpactSurface(mansionWallMaterial(), 'stone');
+        geometry = mansionWallGeometry(wall);
       }
       this.createSolidBox(wall.x, wall.y, wall.z, wall.width, wall.height, wall.depth, mat, geometry);
     }
@@ -265,51 +260,6 @@ export class Level {
     );
     exitMarker.position.set(0, 4.0, -19.45);
     this.scene.add(exitMarker);
-
-    // 6. Tableaux d'art baroque victorien sur les murs d'enceinte
-    const portraitTexture = textureLoader.load('/assets/textures/portrait_v2.png');
-    portraitTexture.magFilter = THREE.NearestFilter;
-    portraitTexture.minFilter = THREE.NearestMipmapNearestFilter;
-    portraitTexture.colorSpace = THREE.SRGBColorSpace;
-
-    const portraitMaterial = new THREE.MeshStandardMaterial({
-      map: portraitTexture,
-      roughness: 0.9,
-      metalness: 0.0,
-    });
-
-    const addPainting = (x: number, y: number, z: number, rotY: number) => {
-      const painting = new THREE.Mesh(
-        new THREE.PlaneGeometry(1.4, 1.8),
-        portraitMaterial
-      );
-      painting.position.set(x, y, z);
-      painting.rotation.y = rotY;
-      painting.receiveShadow = true;
-      this.scene.add(painting);
-    };
-
-    // Tableaux dans le Vestibule Sud
-    addPainting(14, 2.3, 19.48, Math.PI);
-    addPainting(2, 2.3, 19.48, Math.PI);
-
-    // Tableaux dans le Grand Salon
-    addPainting(-14, 2.3, 19.48, Math.PI);
-    addPainting(-23.48, 2.3, 13, Math.PI / 2);
-
-    // Tableaux dans la Galerie Ouest
-    addPainting(-23.48, 2.3, 0, Math.PI / 2);
-
-    // Tableaux dans le Grand Hall Nord
-    addPainting(23.48, 2.3, 0, -Math.PI / 2);
-
-    // Tableaux dans la Grande Bibliothèque (+2.4m)
-    addPainting(-23.48, 4.7, -14, Math.PI / 2);
-    addPainting(-14, 4.7, -19.48, 0);
-
-    // Tableaux dans l'Atelier d'Art (+2.4m)
-    addPainting(23.48, 4.7, -14, -Math.PI / 2);
-    addPainting(14, 4.7, -19.48, 0);
 
     // 7. Ambiance lumineuse d'horreur victorienne
     // Lumière d'ambiance tamisée
@@ -345,19 +295,30 @@ export class Level {
     this.candles.push({ light: chandelierHall, baseIntensity: 3.2, phase: 4.3 });
 
     // Bougies d'ambiance fixes douces sans ombres (très légères en calcul GPU)
-    const addSoftCandle = (x: number, y: number, z: number, intensity: number, radius: number, phase: number) => {
-      const candle = new THREE.PointLight(0xff9d3b, intensity, radius, 1.5);
+    const addSoftCandle = (x: number, y: number, z: number, intensity: number, radius: number, phase: number, decay = 1.5, name = '') => {
+      const candle = new THREE.PointLight(0xff9d3b, intensity, radius, decay);
+      candle.name = name;
       candle.position.set(x, y, z);
       this.scene.add(candle);
       this.candles.push({ light: candle, baseIntensity: intensity, phase });
     };
 
     addSoftCandle(8, 2.6, 13, 2.4, 12, 0.0);   // Vestibule
-    addSoftCandle(-14, 2.6, 13, 2.4, 12, 1.5); // Grand Salon
+    // Devant l'ouverture de l'âtre : la source rejoint sa lanterne et éclaire les jambages.
+    const hearth = salonLighting.hearthPosition;
+    addSoftCandle(hearth.x, hearth.y, hearth.z, salonLighting.hearthIntensity, salonLighting.hearthRadius, 1.5, salonLighting.hearthDecay, 'salon-hearth');
     addSoftCandle(-13, 2.6, 0, 2.4, 12, 3.9);  // Galerie Ouest
     addSoftCandle(13, 2.6, -2, 2.5, 13, 2.7);  // Grand Hall
     addSoftCandle(-13, 5.0, -14, 2.5, 14, 2.7);// Grande Bibliothèque (+2.4m)
     addSoftCandle(12, 5.0, -14, 2.4, 13, 5.1); // Atelier d'Art (+2.4m)
+
+    for (const fill of salonLighting.fills) {
+      const light = new THREE.PointLight(fill.color, fill.intensity, fill.radius, fill.decay);
+      light.name = fill.name;
+      light.position.set(fill.x, fill.y, fill.z);
+      this.scene.add(light);
+      this.salonFills.push({ light, warm: fill.warm });
+    }
 
     this.createLightFixtures();
 
@@ -383,7 +344,7 @@ export class Level {
     height: number,
     depth: number,
     material: THREE.Material | THREE.Material[],
-    geometry?: THREE.BoxGeometry
+    geometry?: THREE.BufferGeometry
   ): void {
     const mesh = new THREE.Mesh(
       geometry ?? new THREE.BoxGeometry(width, height, depth),
@@ -473,6 +434,9 @@ export class Level {
     embers.position.set(x + 0.25, 0.07, z);
     embers.receiveShadow = true;
     this.scene.add(embers);
+    // À l'intérieur de la bouche, devant la brique et derrière les jambages.
+    // La racine commune des huit poses (ligne114) rejoint le haut du lit de braises à0,14m.
+    this.hearthFire = new HearthFire(this.scene, new THREE.Vector3(x + width / 2 - 0.5, 0.645, z), depth - 1.8, 1.28);
   }
 
   private createSalonCarpetAndFrames(): void {
@@ -484,12 +448,14 @@ export class Level {
       metalness: 0.2,
     });
 
-    // Segment 1 : Traverse Sud (reliant l'arche Sud Z=16.5 au passage ouest)
-    const southCarpet = new THREE.Mesh(new THREE.PlaneGeometry(12, 2.6), carpetMat);
-    southCarpet.position.set(-10, 0.005, 16.5);
-    southCarpet.rotation.x = -Math.PI / 2;
-    southCarpet.receiveShadow = true;
-    this.scene.add(southCarpet);
+    const runners = SALON_RUNNERS.map(spec => {
+      const runner = new THREE.Mesh(new THREE.PlaneGeometry(spec.width, spec.depth), carpetMat);
+      runner.position.set(spec.x, 0.005, spec.z);
+      runner.rotation.x = -Math.PI / 2;
+      runner.receiveShadow = true;
+      this.scene.add(runner);
+      return runner;
+    });
 
     const southBorder = new THREE.Mesh(new THREE.PlaneGeometry(12.2, 2.8), goldBorderMat);
     southBorder.position.set(-10, 0.004, 16.5);
@@ -497,22 +463,8 @@ export class Level {
     southBorder.receiveShadow = true;
     this.scene.add(southBorder);
 
-    // Segment 2 : Couloir Est longeant la cheminée (reliant Z=16.5 à Z=9.5 vers l'arche Nord)
-    const eastCarpet = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 9), carpetMat);
-    eastCarpet.position.set(-8.5, 0.005, 13.0);
-    eastCarpet.rotation.x = -Math.PI / 2;
-    eastCarpet.receiveShadow = true;
-    this.scene.add(eastCarpet);
-
-    // Segment 3 : Couloir Nord menant vers le passage Galerie (Z in [6, 9.5])
-    const northCarpet = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 6), carpetMat);
-    northCarpet.position.set(-12, 0.005, 7.5);
-    northCarpet.rotation.x = -Math.PI / 2;
-    northCarpet.receiveShadow = true;
-    this.scene.add(northCarpet);
-
     // Même repère UV mondial sur les trois segments : le motif coïncide à leurs intersections.
-    for (const runner of [southCarpet, eastCarpet, northCarpet]) {
+    for (const runner of runners) {
       runner.updateMatrixWorld(true);
       const vertices = runner.geometry.getAttribute('position');
       const uv = runner.geometry.getAttribute('uv');
@@ -527,7 +479,7 @@ export class Level {
 
     // 2. Encadrements sculptés des passages du Grand Salon (linteaux en relief)
     const addPassageTrim = (x: number, y: number, z: number, w: number, h: number, d: number) => {
-      const trim = new THREE.Mesh(mansionBoxGeometry(w, h, d), mansionMaterial('wood'));
+      const trim = new THREE.Mesh(mansionBoxGeometry(w, h, d), salonMaterial('wood', mansionMaterial('wood')));
       trim.position.set(x, y, z);
       trim.castShadow = true;
       trim.receiveShadow = true;
@@ -556,8 +508,6 @@ export class Level {
         }
       } else {
         const fixture = position.clone();
-        // Décaler la lanterne devant la cheminée, sans changer sa lumière existante.
-        if (position.x === -14 && position.z === 13) fixture.x += 1.6;
         positions.push(fixture);
       }
     }
@@ -593,7 +543,9 @@ export class Level {
     this.scene.add(ring);
   }
 
-  public update(delta: number): void {
+  public update(delta: number, atmosphereDelta = delta): void {
+    this.atmosphere.update(atmosphereDelta);
+    this.hearthFire?.update(atmosphereDelta);
     this.candleTimer += delta;
     for (const candle of this.candles) {
       const flicker =
@@ -615,8 +567,9 @@ export class Level {
     }
   }
 
-  public getLightingAt(position: THREE.Vector3): { brightness: number; warmth: number } {
+  public getLightingAt(position: THREE.Vector3): { brightness: number; warmth: number; stormFlash: number } {
     let warmIntensity = 0;
+    let coolIntensity = 0;
     for (const candle of this.candles) {
       const dx = position.x - candle.light.position.x;
       const dy = position.y - candle.light.position.y;
@@ -628,22 +581,42 @@ export class Level {
         warmIntensity += candle.light.intensity * falloff * falloff;
       }
     }
+    for (const { light, warm } of this.salonFills) {
+      const falloff = Math.max(0, 1 - position.distanceTo(light.position) / light.distance);
+      const contribution = light.intensity * falloff * falloff;
+      if (warm) warmIntensity += contribution;
+      else coolIntensity += contribution;
+    }
+
+    let stormFlash = 0;
+    for (const light of this.stormLights) {
+      if (light.intensity <= 0) continue;
+      const falloff = Math.max(0, 1 - position.distanceTo(light.position) / light.distance);
+      // Un éclair situé derrière un mur ne doit pas illuminer l'arme du joueur.
+      if (falloff > 0 && this.hasLineOfSight(light.position, position)) {
+        stormFlash = Math.max(stormFlash, Math.min(1, light.intensity / 18) * falloff * falloff);
+      }
+    }
 
     // Zone éclairée par le clair de lune (grand hall nord, z < -8)
     const moonFactor = position.z < -8 ? Math.min(1, (-8 - position.z) / 6) * 0.45 : 0.05;
 
     // Luminosité perçue totale : base tamisée rehaussée près des bougies et de la lune
     const baseBrightness = 0.45;
-    const brightness = THREE.MathUtils.clamp(baseBrightness + warmIntensity * 0.22 + moonFactor, 0.40, 1.35);
+    const brightness = THREE.MathUtils.clamp(baseBrightness + warmIntensity * 0.22 + coolIntensity * 0.22 + moonFactor, 0.40, 1.35);
 
     // Teinte : plus chaude (sepia doré) près des bougies, plus froide dans l'ombre et sous la lune
-    const warmth = THREE.MathUtils.clamp(warmIntensity * 0.25 - moonFactor * 0.2, 0.0, 0.45);
+    const warmth = THREE.MathUtils.clamp(warmIntensity * 0.25 - moonFactor * 0.2 - coolIntensity * 0.12, 0.0, 0.45);
 
-    return { brightness, warmth };
+    return { brightness, warmth, stormFlash };
   }
 
   public getFloorHeightAt(x: number, z: number): number {
     return getMansionFloorHeight(x, z);
+  }
+
+  public getCeilingHeightAt(_x: number, z: number): number {
+    return z > 6 ? 4.0 : 6.4;
   }
 
   public getAccessibleHorrorPoints(): { x: number; y: number; z: number }[] {

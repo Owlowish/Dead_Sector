@@ -203,7 +203,7 @@ Object.assign(game, {
   stormController: { update() {}, resetForNewRun() {} },
   hitEffects: { update() {}, clear() {} },
   ambianceAudio: null, musicAudio: null,
-  syncAmbientAudio() {}, updateHorrorAudio() {}, logPerformanceMetrics() {},
+  syncAmbientAudio() {}, updateAudioMix() {}, updateHorrorAudio() {}, logPerformanceMetrics() {},
 });
 
 // Le compteur traduit la vraie file et la vraie sémantique de relève de Zombie.

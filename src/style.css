@@ -46,6 +46,19 @@
 }
 .debug-panel button:hover, .debug-panel button[aria-current="true"] { background: #454334; }
 .debug-panel button:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+.debug-section-title {
+  margin: 18px 0 8px;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  color: var(--brass);
+  font-weight: bold;
+}
+.debug-spawns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 16px;
+}
 
 /* Supprimer les marges du navigateur */
 body {
@@ -282,9 +295,17 @@ canvas {
   .objective { width: 256px; }
 }
 .message { top: 20%; left: 50%; transform: translateX(-50%); text-align: center; padding: 16px 22px; width: max-content; max-width: 85vw; box-sizing: border-box; background: var(--panel); border-block: 1px solid var(--brass); }
-.horror-volume { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 12px; color: var(--ivory); font: 12px 'Courier New', monospace; pointer-events: auto; }
-.horror-volume input { width: 110px; accent-color: var(--brass); cursor: pointer; }
-.horror-volume output { min-width: 36px; text-align: right; }
+.audio-settings { margin: 20px auto 0; padding: 12px 0 0; border: 0; border-top: 1px solid #b69a6040; max-width: 460px; min-width: 0; text-align: left; }
+.audio-settings legend { padding: 0 10px 0 0; color: var(--brass); font: bold 12px 'Courier New', monospace; }
+.audio-volume { display: grid; grid-template-columns: minmax(130px, 1fr) minmax(80px, 140px) 48px; align-items: center; gap: 12px; margin-top: 12px; color: var(--ivory); font: 12px 'Courier New', monospace; pointer-events: auto; }
+.audio-settings .audio-volume small { margin-top: 4px; color: var(--ivory); font: 10px 'Courier New', monospace; opacity: 0.65; }
+.audio-volume input { width: 100%; min-width: 0; margin: 0; accent-color: var(--brass); cursor: pointer; }
+.audio-volume input:focus-visible { outline: 2px solid var(--brass); outline-offset: 4px; }
+.audio-volume output { text-align: right; font-variant-numeric: tabular-nums; }
+#pause-message { max-height: 75dvh; overflow-y: auto; }
+@media (max-width: 520px) {
+  .audio-volume { grid-template-columns: minmax(90px, 1fr) minmax(60px, 100px) 42px; gap: 8px; }
+}
 .game-over { color: var(--blood); font-size: clamp(24px, 4vw, 36px); }
 .victory { color: var(--sage); }
 .respite { color: var(--gold, #dfba73); border-block-color: var(--gold, #dfba73); font-size: clamp(20px, 3.2vw, 30px); }
@@ -418,6 +439,8 @@ canvas {
   position: absolute;
   inset: 0;
   pointer-events: none;
+  transform: translate(var(--weapon-bob-x, 0px), var(--weapon-bob-y, 0px)) rotate(var(--weapon-bob-roll, 0deg));
+  transform-origin: center bottom;
   /* Intégration lumineuse réactive : luminosité et teinte ambrée / froide */
   filter: brightness(var(--weapon-brightness, 0.35)) sepia(var(--weapon-warmth, 0));
 }

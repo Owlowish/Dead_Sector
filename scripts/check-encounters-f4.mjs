@@ -78,7 +78,7 @@ for (let i = 0; i < ENCOUNTER_CONFIGS.length; i++) {
   assert.ok(enc.totalZombies >= 4, `La rencontre ${i + 1} doit proposer au moins 4 menaces`);
   assert.ok(enc.maxAgile <= enc.totalZombies, `Le quota d'agiles ne peut dépasser le total d'ennemis`);
   assert.ok(enc.maxSimultaneousAgile <= 4, `Plafond d'agiles simultanés borné à 4`);
-  assert.ok(enc.maxSpitter + enc.maxAgile < enc.totalZombies, `Au moins un zombie standard au palier ${enc.tierNumber}`);
+  assert.ok(enc.maxSpitter + enc.maxAgile + (enc.maxCrawler ?? 0) <= enc.totalZombies, `Les quotas tiennent dans le total au palier ${enc.tierNumber}`);
   assert.ok(enc.maxSimultaneousSpitter <= 3, `Pas plus de trois cracheurs simultanés`);
   assert.ok(enc.maxActiveZombies <= 8, `Plafond global par rencontre borné à huit`);
 }
@@ -287,22 +287,24 @@ assert.equal(game['spawnQueue'], e7.totalZombies, 'Un numéro direct invalide ne
 // ============================================================================
 console.log('4. Test des points d’apparition sûrs et de l’escorte du Cracheur...');
 
-// Les offres du premier répit sont dans une pièce du secteur 1, sans obstacle.
+// Les présentoirs ont été retirés : leurs anciens emplacements ne doivent plus bloquer le salon.
 const placementLevel = new Level(new THREE.Scene());
 const salon = MANSION_ROOMS.find((room) => room.id === 'salon');
 assert.ok(salon);
 for (const pedestal of MANSION_UPGRADE_PEDESTALS) {
   assert.ok(pedestal.x >= salon.bounds.minX && pedestal.x <= salon.bounds.maxX, 'Présentoir dans le Grand Salon X');
   assert.ok(pedestal.z >= salon.bounds.minZ && pedestal.z <= salon.bounds.maxZ, 'Présentoir dans le Grand Salon Z');
-  assert.equal(placementLevel.isColliding(pedestal.x, pedestal.z, 0.45), true, 'Le socle bloque les déplacements qui le traversent');
+  assert.equal(placementLevel.isColliding(pedestal.x, pedestal.z, 0.45), false, 'Aucune collision invisible à la place du présentoir retiré');
   assert.equal(placementLevel.isColliding(pedestal.x, pedestal.z - 0.85, 0.4), false, 'Un joueur peut se placer devant le présentoir');
   const route = placementLevel.findNextWaypoint(
     new THREE.Vector3(PLAYER_START_POSITION.x, PLAYER_START_POSITION.y, PLAYER_START_POSITION.z),
     new THREE.Vector3(pedestal.x, 1.1, pedestal.z),
     0.4
   );
-  assert.ok(route, 'Un chemin relie le départ à chaque offre avant la porte P2');
+  assert.ok(route, 'Un chemin relie le départ aux anciens emplacements d’offre');
 }
+assert.equal(placementLevel.isColliding(-12, 16, 0.4), false, 'Le départ du test Coureur reste libre');
+assert.equal(placementLevel.isPathClear(new THREE.Vector3(-5.5, 1, 16.5), new THREE.Vector3(-14, 1, 17), 0.4), true, 'La traversée du salon ne contourne plus les socles retirés');
 
 // Réinitialiser le jeu au Palier 4 (manoir ouvert) avec le joueur au centre du Grand Hall
 game['currentTier'] = 4;
