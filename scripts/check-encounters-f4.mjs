@@ -385,7 +385,8 @@ game.startTier(8);
 const finalSpawned = [];
 Math.random = () => 0.1;
 try {
-  for (let frame = 0; frame < 30 && game.state === 'playing'; frame++) {
+  let finalActiveSeconds = 0;
+  for (let frame = 0; frame < 2600 && game.state === 'playing'; frame++) {
     const active = () => game.zombies.filter((z) => typeof z.isThreat === 'function' ? z.isThreat() : z.isAlive());
     if (game.spawnQueue > 0 && active().length < e8.maxActiveZombies) {
       const before = game.zombies.length;
@@ -399,7 +400,12 @@ try {
       game.checkTierCompletion();
       assert.equal(game.state, 'playing', 'Le boss encore en attente empêche la victoire');
     }
-    for (const zombie of active()) zombie.takeDamage(10000, true);
+    for (const zombie of active()) {
+      zombie.update(0.05, game.player.camera.position, [], () => {}, () => {});
+      finalActiveSeconds += 0.05;
+      zombie.takeDamage(10000, true);
+      if (finalActiveSeconds < 119.99) assert.equal(zombie.isAlive(), true, 'Aucune victoire avant deux minutes actives');
+    }
     game.checkTierCompletion();
   }
 } finally {
@@ -407,7 +413,7 @@ try {
 }
 assert.equal(finalSpawned.length, 1, 'Le duel ne crée qu’une menace');
 assert.ok(finalSpawned[0] instanceof GuardianZombie, 'La vraie classe du boss est instanciée');
-assert.equal(finalSpawned[0].getMaxHealth(), 800, 'Le duel utilise le budget de PV prévu');
+assert.equal(finalSpawned[0].getMaxHealth(), 2400, 'Le duel utilise le budget de PV renforcé');
 assert.equal(finalSpawned[0].isThreat(), false, 'Le Gardien mort ne programme aucune relève');
 assert.equal(game.state, 'won', 'La mort du Gardien termine le duel');
 

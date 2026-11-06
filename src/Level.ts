@@ -10,6 +10,7 @@ import { MansionAtmosphere } from './MansionAtmosphere.ts';
 import { MansionFurnishings } from './MansionFurnishings.ts';
 import { SalonFireplace } from './SalonFireplace.ts';
 import { PianoRoomDecor } from './PianoRoomDecor.ts';
+import { DemonicAltar } from './DemonicAltar.ts';
 import { MansionPortraits } from './MansionPortraits.ts';
 import { SALON_RUNNERS } from './MansionFloorSurfaces.ts';
 import { setImpactSurface } from './ImpactSurface.ts';
@@ -33,6 +34,7 @@ export class Level {
   private readonly furnishings: MansionFurnishings;
   private readonly portraits: MansionPortraits;
   private fireplace: SalonFireplace | null = null;
+  private demonicAltar: DemonicAltar | null = null;
   private readonly pianoRoom: PianoRoomDecor;
 
   // Collisions physiques du joueur et du zombie.
@@ -73,12 +75,17 @@ export class Level {
   }
 
   public disposeDecor(): void {
+    for (const mesh of this.demonicAltar?.getShotBlockers() ?? []) {
+      const index = this.solidMeshes.indexOf(mesh);
+      if (index >= 0) this.solidMeshes.splice(index, 1);
+    }
+    this.demonicAltar?.dispose();
     for (const mesh of this.pianoRoom.getSolidMeshes()) {
       const index = this.solidMeshes.indexOf(mesh);
       if (index >= 0) this.solidMeshes.splice(index, 1);
     }
     this.pianoRoom.dispose();
-    this.stormWindowVisuals?.disposeDrapery();
+    this.stormWindowVisuals?.dispose();
     this.dressing.dispose();
     this.portraits.dispose();
     for (const mesh of this.furnishings.getShotBlockers()) {
@@ -235,6 +242,14 @@ export class Level {
 
     // 3. Construction physique des murs et obstacles à partir de MansionConfig
     for (const wall of MANSION_WALLS) {
+      if (wall.materialType === 'obstacle' && wall.x === -18 && wall.z === 0) {
+        this.colliders.push(new THREE.Box3().setFromCenterAndSize(
+          new THREE.Vector3(wall.x, wall.y, wall.z), new THREE.Vector3(wall.width, wall.height, wall.depth),
+        ));
+        this.demonicAltar = new DemonicAltar(this.scene);
+        this.solidMeshes.push(...this.demonicAltar.getShotBlockers());
+        continue;
+      }
       if (wall.materialType === 'obstacle' && wall.x === -14 && wall.z === 13) {
         // Cheminée monumentale d'apparat du Grand Salon (Salle témoin F3)
         this.createSalonFireplace(wall.x, wall.y, wall.z, wall.width, wall.height, wall.depth);
@@ -329,7 +344,9 @@ export class Level {
     // Devant l'ouverture de l'âtre : la source rejoint sa lanterne et éclaire les jambages.
     const hearth = salonLighting.hearthPosition;
     addSoftCandle(hearth.x, hearth.y, hearth.z, salonLighting.hearthIntensity, salonLighting.hearthRadius, 1.5, salonLighting.hearthDecay, 'salon-hearth');
-    addSoftCandle(-13, 2.6, 0, 2.4, 12, 3.9);  // Galerie Ouest
+    // Légèrement devant le cristal pour révéler aussi la façade sans la lampe du joueur.
+    addSoftCandle(-17.3, 2.15, 1.8, 8.5, 12, 3.9, 1.3, 'gallery-altar');
+    this.candles[this.candles.length - 1]!.light.color.setHex(0xf47650);
     addSoftCandle(13, 2.6, -2, 2.5, 13, 2.7);  // Grand Hall
     addSoftCandle(-13, 5.0, -14, 2.5, 14, 2.7);// Grande Bibliothèque (+2.4m)
     addSoftCandle(12, 5.0, -14, 2.4, 13, 5.1); // Atelier d'Art (+2.4m)
@@ -464,8 +481,8 @@ export class Level {
     const glow = new THREE.MeshBasicMaterial({ color: 0xe9aa58 });
     const positions: THREE.Vector3[] = [];
     for (let i = 0; i < this.candles.length; i++) {
-      // Le salon de musique possède son propre lustre à bougies en géométrie fusionnée.
-      if (this.candles[i].light.name === 'music-room-chandelier') continue;
+      // Le salon de musique et l'autel possèdent leurs propres bougies fusionnées.
+      if (['music-room-chandelier', 'gallery-altar'].includes(this.candles[i].light.name)) continue;
       const position = this.candles[i].light.position;
       if (i === 0) {
         for (const [x, z] of [[0.75, 0], [-0.75, 0], [0, 0.75], [0, -0.75]]) {
@@ -509,8 +526,10 @@ export class Level {
   }
 
   public update(delta: number, atmosphereDelta = delta): void {
+    this.stormWindowVisuals?.update(atmosphereDelta);
     this.atmosphere.update(atmosphereDelta);
     this.fireplace?.update(atmosphereDelta);
+    this.demonicAltar?.update(atmosphereDelta);
     this.candleTimer += delta;
     for (const candle of this.candles) {
       const flicker =
@@ -522,7 +541,10 @@ export class Level {
     const flash = this.stormLights[0];
     if (flash && this.stormWindowVisuals) {
       const strength = Math.min(1, flash.intensity / 18);
-      this.stormWindowVisuals.glass.color.setRGB(0.60 + strength * 0.40, 0.66 + strength * 0.34, 0.74 + strength * 0.26);
+      for (const pane of this.stormWindowVisuals.panes) {
+        const local = flash.position.distanceToSquared(pane.position) < 0.05 ? strength : 0;
+        pane.material.color.setRGB(0.60 + local * 0.40, 0.66 + local * 0.34, 0.74 + local * 0.26);
+      }
       for (const projection of this.stormWindowVisuals.projections) {
         projection.material.opacity = flash.position.distanceToSquared(projection.position) < 0.05 ? strength * 0.42 : 0;
       }

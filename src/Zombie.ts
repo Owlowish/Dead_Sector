@@ -6,6 +6,7 @@ import { ZombieRemains } from './ZombieRemains.ts';
 import { SpitterZombie } from './SpitterZombie.ts';
 import { prepareSpriteHitMask } from './SpriteHitMask.ts';
 import { finalEliteConfig } from './FinaleConfig.ts';
+import { EnemyImpact, type EnemyShotImpact } from './EnemyImpact.ts';
 import {
   agileZombieConfig,
   agileAnimationsData,
@@ -151,6 +152,7 @@ export class Zombie {
   private material: THREE.MeshStandardMaterial;
   private level: Level;
   private remains: ZombieRemains;
+  private readonly shotReaction = new EnemyImpact();
   private disposed = false;
   private readonly kind: 'standard' | 'agile';
   private readonly elite: boolean;
@@ -282,7 +284,7 @@ export class Zombie {
       this.material.color.setHex(visualColors.brass);
     }
     scene.add(this.mesh);
-    this.remains = new ZombieRemains(scene, this.kind);
+    this.remains = new ZombieRemains(scene, this.kind, level);
   }
 
   public getKind(): 'standard' | 'agile' {
@@ -339,6 +341,7 @@ export class Zombie {
       this.groanAudio.removeFromParent();
       this.groanAudio = null;
     }
+    this.shotReaction.dispose();
     this.remains.dispose();
     scene.remove(this.mesh);
 
@@ -378,17 +381,36 @@ export class Zombie {
     }
   }
 
-  public takeDamage(amount: number, headHit = false): void {
+  /** La hache brise le geste engagé ; la reprise exige une nouvelle préparation. */
+  public stun(seconds: number): void {
+    if (!this.alive || this.disposed || this.elite || !Number.isFinite(seconds) || seconds <= 0) return;
+    this.hurtRemaining = Math.max(this.hurtRemaining, seconds);
+    this.attackWindupRemaining = 0;
+    this.attackAnimationTime = null;
+    this.state = 'IDLE';
+    this.isWalking = false;
+    this.stopAudio();
+    if (this.kind === 'agile') this.showAgileFrame('hurt', 0);
+    else this.showStandardFrame('hurt', 0);
+  }
+
+  public takeDamage(amount: number, headHit = false, _impactForce = 0, impact?: EnemyShotImpact): void {
     if (!this.alive) return;
 
     this.health = Math.max(0, this.health - amount);
     console.log(`Zombie [${this.kind}] HP: ${this.health}`);
 
     if (this.health <= 0) {
-      this.die(headHit);
+      this.shotReaction.clear();
+      if (impact) {
+        if (this.kind === 'agile') this.showAgileFrame('hurt', 0);
+        else this.showStandardFrame('hurt', 0);
+      }
+      this.die(headHit, impact);
     } else {
+      this.shotReaction.start(impact, this.elite ? 0.4 : this.kind === 'agile' ? 1.15 : 1);
       this.hitFlashRemaining = this.hitFlashDuration;
-      this.hurtRemaining = this.hurtDuration;
+      this.hurtRemaining = Math.max(this.hurtRemaining, this.hurtDuration, impact ? 0.26 * impact.power : 0);
       if (this.elite) this.material.emissiveIntensity = 0;
       // Une blessure interrompt la préparation d'attaque
       this.attackWindupRemaining = 0;
@@ -405,7 +427,7 @@ export class Zombie {
     }
   }
 
-  private die(headHit = false): void {
+  private die(headHit = false, impact?: EnemyShotImpact): void {
     const revivalChance = this.kind === 'agile' ? 0.12 : 0.2;
     this.revivalPending = !this.elite && !headHit && (this.kind === 'standard' || this.kind === 'agile') && !this.hasRevived && this.random() < revivalChance;
     this.revivalDelay = this.revivalPending ? (this.kind === 'agile' ? 2.0 : 2.5) : 0;
@@ -416,7 +438,7 @@ export class Zombie {
     this.hurtRemaining = 0;
     this.isWalking = false;
     this.stopAudio();
-    this.remains.start(this.mesh.position, this.mesh.rotation.y, this.displayScale);
+    this.remains.start(this.mesh.position, this.mesh.rotation.y, this.displayScale, impact, this.mesh);
 
     console.log(`Zombie [${this.kind}] éliminé !`);
   }
@@ -424,6 +446,7 @@ export class Zombie {
   public updateDeath(delta: number, viewerPosition: THREE.Vector3): void {
     if (this.alive || this.disposed) return;
     this.remains.update(delta, viewerPosition);
+    this.mesh.position.copy(this.remains.getPosition());
     if (!this.revivalPending) return;
     if (!this.reviving) {
       const prevDelay = this.revivalDelay;
@@ -473,6 +496,8 @@ export class Zombie {
     onAttack: (damage: number) => void
   ): void {
     if (!this.alive) return;
+    this.shotReaction.update(delta, this.mesh.position, this.level, this.radius, this.displayScale);
+    this.shotReaction.apply(this.mesh, -1);
 
     // Râle spatial périodique
     if (this.groanAudio) {
@@ -502,7 +527,7 @@ export class Zombie {
     if (this.hurtRemaining > 0) {
       this.hurtRemaining = Math.max(0, this.hurtRemaining - delta);
       if (this.hurtRemaining < 1e-6) this.hurtRemaining = 0;
-      const elapsed = this.hurtDuration - this.hurtRemaining;
+      const elapsed = Math.max(0, this.hurtDuration - this.hurtRemaining);
       const frame = Math.min(1, Math.floor(elapsed / (this.hurtDuration / 2)));
       if (this.kind === 'agile') {
         this.showAgileFrame('hurt', frame);
@@ -511,6 +536,7 @@ export class Zombie {
       }
       this.material.color.setHex(this.hitFlashRemaining > 0 ? visualColors.blood : 0xffffff);
       this.mesh.rotation.y = Math.atan2(playerPosition.x - this.mesh.position.x, playerPosition.z - this.mesh.position.z);
+      this.shotReaction.apply(this.mesh, -1);
       return; // Ni poursuite, ni séparation, ni attaque pendant la réaction de douleur
     }
 
@@ -691,6 +717,7 @@ export class Zombie {
 
     this.mesh.customDepthMaterial = this.standardResources.depthMaterials[animKey];
     this.mesh.customDistanceMaterial = this.standardResources.distanceMaterials[animKey];
+    this.shotReaction.apply(this.mesh, -1);
   }
 
   private updateAgileAnimation(delta: number): void {
@@ -731,6 +758,7 @@ export class Zombie {
       this.mesh.customDepthMaterial = this.agileResources.depthMaterials[animKey];
       this.mesh.customDistanceMaterial = this.agileResources.distanceMaterials[animKey];
     }
+    this.shotReaction.apply(this.mesh, -1);
   }
 
   private computeSeparation(otherZombies: Zombie[], delta: number): { x: number; z: number } {

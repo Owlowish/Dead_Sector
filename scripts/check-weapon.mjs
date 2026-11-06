@@ -32,6 +32,8 @@ const weapon = new Weapon(camera, canvas, [], [], () => {}, () => active, (amoun
   camera.fov = 75 + (58 - 75) * amount;
   camera.updateProjectionMatrix();
 });
+// Cette suite exerce le pistolet après son acquisition ; la hache initiale est couverte séparément.
+weapon.unlockWeapon('pistol');
 
 weapon.setOnAmmoChange((mag, cap, res, isRel) => {
   ammoState = { mag, cap, res, isRel };

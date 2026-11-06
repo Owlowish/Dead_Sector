@@ -8,6 +8,7 @@ export const WEAPON_MECHANICAL_DURATIONS = {
   'shell-insert': 0.11,
   'pump-back': 0.2,
   'pump-forward': 0.18,
+  'axe-swing': 0.28,
 } as const;
 
 const timbres: Record<WeaponMechanicalSoundId, { seed: number; scrape: number; clickAt: number; body: number }> = {
@@ -17,6 +18,7 @@ const timbres: Record<WeaponMechanicalSoundId, { seed: number; scrape: number; c
   'shell-insert': { seed: 643, scrape: 0.32, clickAt: 0.046, body: 270 },
   'pump-back': { seed: 827, scrape: 0.74, clickAt: 0.13, body: 240 },
   'pump-forward': { seed: 1019, scrape: 0.63, clickAt: 0.132, body: 320 },
+  'axe-swing': { seed: 1237, scrape: 0.8, clickAt: 1, body: 120 },
 };
 
 /** Frottement filtré et contact amorti, sans oscillateur aigu ni impulsion abrupte. */

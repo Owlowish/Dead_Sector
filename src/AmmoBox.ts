@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { Weapon, WeaponId } from './Weapon';
+import type { Weapon, FirearmId } from './Weapon';
 import { createPickupSprite } from './PickupSprite.ts';
 
 export class AmmoBox {
@@ -10,7 +10,7 @@ export class AmmoBox {
   private baseY: number;
   private ammoCount: number;
   private readonly initialAmmoCount: number;
-  private weaponType: WeaponId;
+  private weaponType: FirearmId;
   private consumed = false;
   private floatTimer = 0;
   private readonly pickupRadius = 1.2;
@@ -20,7 +20,7 @@ export class AmmoBox {
     x: number,
     z: number,
     ammoCount = 8,
-    weaponType: WeaponId = 'pistol',
+    weaponType: FirearmId = 'pistol',
     floorY = 0
   ) {
     this.scene = scene;
@@ -81,7 +81,7 @@ export class AmmoBox {
     return this.consumed;
   }
 
-  public getWeaponType(): WeaponId {
+  public getWeaponType(): FirearmId {
     return this.weaponType;
   }
 

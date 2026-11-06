@@ -3,6 +3,7 @@ import type { Level } from './Level.ts';
 import { ZombieRemains } from './ZombieRemains.ts';
 import { spitterAnimation, type SpitterPose } from './SpitterAnimation.ts';
 import { prepareSpriteHitMask } from './SpriteHitMask.ts';
+import { EnemyImpact, type EnemyShotImpact } from './EnemyImpact.ts';
 
 const WIDTH = 1.6;
 const HEIGHT = 2.7;
@@ -47,6 +48,8 @@ export class SpitterZombie {
   private healthLeft = this.health;
   private groanAudio: THREE.PositionalAudio | null = null;
   private windupDamageAccumulated = 0;
+  private stunRemaining = 0;
+  private readonly shotReaction = new EnemyImpact();
 
   constructor(scene: THREE.Scene, level: Level, x: number, z: number) {
     this.level = level;
@@ -56,7 +59,7 @@ export class SpitterZombie {
     this.mesh.castShadow = true;
     this.mesh.receiveShadow = true;
     scene.add(this.mesh);
-    this.remains = new ZombieRemains(scene, 'spitter');
+    this.remains = new ZombieRemains(scene, 'spitter', level);
   }
 
   getKind(): 'spitter' { return 'spitter'; }
@@ -93,15 +96,25 @@ export class SpitterZombie {
 
   alert(_targetPosition: THREE.Vector3): void {}
 
-  takeDamage(amount: number, _headHit = false, impactForce = amount): void {
+  stun(seconds: number): void {
+    if (!this.alive || this.disposed || !Number.isFinite(seconds) || seconds <= 0) return;
+    this.stunRemaining = Math.max(this.stunRemaining, seconds);
+    this.stopAudio();
+    this.windupDamageAccumulated = 0;
+    this.cooldown = Math.max(this.cooldown, 0.4);
+    this.setPose('recovery');
+  }
+
+  takeDamage(amount: number, _headHit = false, impactForce = amount, impact?: EnemyShotImpact): void {
     if (!this.alive) return;
     this.healthLeft = Math.max(0, this.healthLeft - amount);
     if (this.healthLeft === 0) {
       this.alive = false;
       this.mesh.visible = false;
       this.stopAudio();
+      this.shotReaction.clear();
+      this.remains.start(this.mesh.position, this.mesh.rotation.y, 1, impact, this.mesh);
       this.setPose('death');
-      this.remains.start(this.mesh.position, this.mesh.rotation.y);
     } else if (this.pose === 'windup' || this.pose === 'release') {
       this.windupDamageAccumulated += impactForce;
       // Règle de gros choc : un coup lourd (fusil >= 55) ou dégâts cumulés (2 balles pistolet >= 75)
@@ -114,11 +127,26 @@ export class SpitterZombie {
         this.windupDamageAccumulated = 0;
       }
     }
+    if (this.alive) {
+      this.shotReaction.start(impact, 0.55);
+      this.shotReaction.apply(this.mesh, -HEIGHT / 2);
+    }
   }
 
   update(delta: number, playerPosition: THREE.Vector3, _others: Array<{ getPosition(): THREE.Vector3; isAlive(): boolean }>, spit: (origin: THREE.Vector3, target: THREE.Vector3) => void): void {
     if (!this.alive) return;
+    this.shotReaction.update(delta, this.mesh.position, this.level, this.radius, HEIGHT / 2);
     this.cooldown = Math.max(0, this.cooldown - delta);
+    if (this.stunRemaining > 0) {
+      this.stunRemaining = Math.max(0, this.stunRemaining - Math.max(0, delta));
+      if (this.stunRemaining < 1e-6) {
+        this.stunRemaining = 0;
+        this.setPose('idle');
+      }
+      this.mesh.rotation.y = Math.atan2(playerPosition.x - this.mesh.position.x, playerPosition.z - this.mesh.position.z);
+      this.shotReaction.apply(this.mesh, -HEIGHT / 2);
+      return;
+    }
     this.poseTime += delta;
     const dx = playerPosition.x - this.mesh.position.x;
     const dy = playerPosition.y - (this.mesh.position.y - 0.25);
@@ -193,9 +221,15 @@ export class SpitterZombie {
       this.setPose('idle');
     }
     this.mesh.rotation.y = Math.atan2(playerPosition.x - this.mesh.position.x, playerPosition.z - this.mesh.position.z);
+    this.shotReaction.apply(this.mesh, -HEIGHT / 2);
   }
 
-  updateDeath(delta: number, viewer: THREE.Vector3): void { if (!this.alive && !this.disposed) this.remains.update(delta, viewer); }
+  updateDeath(delta: number, viewer: THREE.Vector3): void {
+    if (!this.alive && !this.disposed) {
+      this.remains.update(delta, viewer);
+      this.mesh.position.copy(this.remains.getPosition());
+    }
+  }
 
   dispose(scene: THREE.Scene): void {
     if (this.disposed) return;
@@ -208,6 +242,7 @@ export class SpitterZombie {
       this.groanAudio.removeFromParent();
       this.groanAudio = null;
     }
+    this.shotReaction.dispose();
     this.remains.dispose();
     scene.remove(this.mesh);
   }

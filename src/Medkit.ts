@@ -10,6 +10,7 @@ export class Medkit {
   private baseY: number;
   private healAmount: number;
   private consumed = false;
+  private disposed = false;
   private floatTimer = 0;
   private readonly pickupRadius = 1.2;
 
@@ -50,10 +51,10 @@ export class Medkit {
     const dz = player.camera.position.z - this.z;
     const hDist = Math.hypot(dx, dz);
 
-    const playerFloorY = player.camera.position.y < 2.5 ? 0.0 : 2.4;
-    const itemFloorY = this.baseY >= 2.0 ? 2.4 : 0.0;
+    const playerFloorY = player.camera.position.y - 1.7;
+    const itemFloorY = this.baseY - 0.35;
 
-    if (hDist <= this.pickupRadius && Math.abs(playerFloorY - itemFloorY) < 1.0) {
+    if (hDist <= this.pickupRadius && Math.abs(playerFloorY - itemFloorY) < 0.8) {
       const healed = player.heal(this.healAmount);
       if (healed) {
         this.consumed = true;
@@ -70,9 +71,23 @@ export class Medkit {
   }
 
   public respawn(): void {
+    if (this.disposed) return;
     if (this.consumed) {
       this.consumed = false;
       this.scene.add(this.group);
     }
+  }
+
+  public dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
+    this.consumed = true;
+    this.scene.remove(this.group);
+    this.group.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) return;
+      object.geometry.dispose();
+      if (Array.isArray(object.material)) object.material.forEach((material) => material.dispose());
+      else object.material.dispose();
+    });
   }
 }

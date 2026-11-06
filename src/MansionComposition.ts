@@ -33,8 +33,8 @@ export const roomCompositions: readonly RoomComposition[] = [
   },
   {
     roomId: 'galerie',
-    focus: { label: 'Buste et rythme des portraits', x: -18, z: 0, y: 2 },
-    secondary: 'Trois portraits espacés entre les fenêtres et sur le mur sud ; une seule tapisserie à l’écart.',
+    focus: { label: 'Autel démoniaque et cristaux suspendus', x: -18, z: 0, y: 2.2 },
+    secondary: 'Pierre maculée, sceau rouge, bougies et volutes discrètes ; deux bannières entre les fenêtres et les portraits.',
     calmWall: { axis: 'x', plane: -3.5, low: 1.6, high: 4.8 },
   },
   {

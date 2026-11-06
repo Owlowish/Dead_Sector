@@ -1,0 +1,744 @@
+{
+  "documentType": "asset-pack",
+  "templateVersion": 1,
+  "updatedAt": "2026-11-07",
+  "id": "HACHE_RUSTIQUE_2026-11-06",
+  "request": "Hache de départ lente, frappe étourdissante. Correction utilisateur : manche strictement droit, frappe verticale du haut vers le bas, prises et poses cohérentes. Le concept est une inspiration de design. Correctif 7 novembre : la tête en position de repos aussi doit être redressée.",
+  "scope": {
+    "prepare": true,
+    "generate": true,
+    "integrate": true,
+    "authorizedDecisions": [
+      "Hache rustique fer/bois/bandage clair",
+      "Aucune nouvelle mécanique pour des variantes décoratives",
+      "Repos conservé, quatre poses dédiées au geste overhead avec perspective et pivots aux prises"
+    ],
+    "assumptions": [
+      "Gants noirs fermés et manches gris bleuté selon les armes existantes",
+      "Pas d'ADS, recharge, douille ou flash pour la hache"
+    ],
+    "pendingDecisions": []
+  },
+  "style": {
+    "workflow": "docs/PIPELINE_ASSETS.md",
+    "references": [
+      {
+        "path": "docs/asset-packs/references/hache-rustique-concept.png",
+        "role": "design uniquement",
+        "inspected": true,
+        "attachedToGenerator": true,
+        "observations": "Fer usé, bois brun, bandage ivoire. Les poses et mains du concept ne constituent pas un contrat."
+      },
+      {
+        "path": "public/assets/weapons/shotgun/hip-rest-v2.png",
+        "role": "style et tenue FPS",
+        "inspected": true,
+        "attachedToGenerator": true,
+        "observations": "Gants noirs fermés, manches gris bleuté, grandes ombres en pixels."
+      },
+      {
+        "path": "public/assets/weapons/pistol_actions_v3.png",
+        "role": "style inspecté",
+        "inspected": true,
+        "attachedToGenerator": false,
+        "observations": "Planche examinée pour la tenue et l'échelle des détails ; non jointe aux trois générations finales."
+      },
+      {
+        "path": "public/assets/weapons/shotgun/ads_pump_v2.png",
+        "role": "style inspecté",
+        "inspected": true,
+        "attachedToGenerator": false,
+        "observations": "Perspective FPS examinée, sans reprise d'une pose d'arme à feu."
+      }
+    ],
+    "lockedIdentity": [
+      "Un seul fer à deux boulons, tranchant gris clair usé et rouille sobre",
+      "Manche en bois strictement droit et rigide",
+      "Main gauche haute au-dessus du bandage, main droite basse au-dessous",
+      "Gants noirs fermés, aucune peau exposée, manches gris bleuté",
+      "Frappe verticale ; aucune coupe ou rotation latérale"
+    ],
+    "acceptedBaseFile": "docs/asset-packs/sources/axe/vertical-idle-source.png",
+    "humanApproval": "not_requested"
+  },
+  "technicalContract": {
+    "usage": "Un sprite DOM préchargé, mêmes données jeu/aperçu ; Weapon reste propriétaire de l’impact.",
+    "displaySize": "Repos conservé : largeur min(90vh,120vw), bottom -18vh, left calc(50% +15vh). Chaque sprite est recalé sur le même centre de prise ; son échelle est normalisée par la distance entre mains mesurée dans le canevas. Le sprite armé plus haut garde le manche hors champ.",
+    "exportDimensions": "384×384 sauf overhead384×576",
+    "format": "PNG RGBA8, alpha binaire",
+    "gripPivotsPercent": {
+      "idle": [
+        54.817708333333336,
+        66.40625
+      ],
+      "lift": [
+        54.947916666666664,
+        66.66666666666666
+      ],
+      "overhead": [
+        53.125,
+        60.763888888888886
+      ],
+      "chop": [
+        54.036458333333336,
+        69.921875
+      ],
+      "impact": [
+        53.385416666666664,
+        82.94270833333334
+      ]
+    },
+    "motionKeys": [
+      {
+        "time": 0,
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "frame": "idle",
+        "phase": "préparation"
+      },
+      {
+        "time": 0.12,
+        "x": -3,
+        "y": -2,
+        "scale": 1,
+        "frame": "idle",
+        "phase": "préparation"
+      },
+      {
+        "time": 0.12,
+        "x": -3,
+        "y": -2,
+        "scale": 1,
+        "frame": "lift",
+        "phase": "levée"
+      },
+      {
+        "time": 0.28,
+        "x": -12,
+        "y": -25,
+        "scale": 1.5,
+        "frame": "lift",
+        "phase": "levée"
+      },
+      {
+        "time": 0.28,
+        "x": -12,
+        "y": -25,
+        "scale": 1.5,
+        "frame": "overhead",
+        "phase": "levée"
+      },
+      {
+        "time": 0.48,
+        "x": -19,
+        "y": -53,
+        "scale": 1.5,
+        "frame": "overhead",
+        "phase": "armée"
+      },
+      {
+        "time": 0.525,
+        "x": -19,
+        "y": -20.5,
+        "scale": 1.2,
+        "frame": "overhead",
+        "phase": "frappe"
+      },
+      {
+        "time": 0.525,
+        "x": -19,
+        "y": -20.5,
+        "scale": 1.2,
+        "frame": "chop",
+        "phase": "frappe"
+      },
+      {
+        "time": 0.58,
+        "x": -19,
+        "y": -4,
+        "scale": 0.75,
+        "frame": "chop",
+        "phase": "frappe"
+      },
+      {
+        "time": 0.58,
+        "x": -19,
+        "y": -4,
+        "scale": 0.75,
+        "frame": "impact",
+        "phase": "frappe"
+      },
+      {
+        "time": 0.62,
+        "x": -19,
+        "y": -1,
+        "scale": 0.65,
+        "frame": "impact",
+        "phase": "impact"
+      },
+      {
+        "time": 0.66,
+        "x": -19,
+        "y": -1,
+        "scale": 0.65,
+        "frame": "impact",
+        "phase": "retour du choc"
+      },
+      {
+        "time": 0.72,
+        "x": -19,
+        "y": -3,
+        "scale": 0.67,
+        "frame": "impact",
+        "phase": "récupération"
+      },
+      {
+        "time": 0.92,
+        "x": -15,
+        "y": -4,
+        "scale": 0.75,
+        "frame": "impact",
+        "phase": "récupération"
+      },
+      {
+        "time": 0.92,
+        "x": -15,
+        "y": -4,
+        "scale": 0.75,
+        "frame": "chop",
+        "phase": "récupération"
+      },
+      {
+        "time": 1.1,
+        "x": -7,
+        "y": -4,
+        "scale": 1,
+        "frame": "chop",
+        "phase": "récupération"
+      },
+      {
+        "time": 1.1,
+        "x": -7,
+        "y": -4,
+        "scale": 1,
+        "frame": "lift",
+        "phase": "récupération"
+      },
+      {
+        "time": 1.3,
+        "x": -2,
+        "y": -1,
+        "scale": 1,
+        "frame": "lift",
+        "phase": "récupération"
+      },
+      {
+        "time": 1.3,
+        "x": -2,
+        "y": -1,
+        "scale": 1,
+        "frame": "idle",
+        "phase": "récupération"
+      },
+      {
+        "time": 1.45,
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "frame": "idle",
+        "phase": "repos"
+      }
+    ],
+    "damageEventSeconds": 0.62,
+    "visualHitstopSeconds": [
+      0.62,
+      0.66
+    ],
+    "durationSeconds": 1.45,
+    "budget": {
+      "pngBytes": 446213,
+      "rgba8Bytes": 3244032
+    },
+    "invariants": [
+      "Manche droit",
+      "Main gauche au-dessus de la droite",
+      "Repos exact préservé",
+      "Gants fermés et manches gris bleuté",
+      "Bras reliés au bas du viewport paysage pendant toute la frappe"
+    ],
+    "frameGeometry": {
+      "idle": {
+        "height": 384,
+        "grip": [
+          210.5,
+          255
+        ],
+        "span": 90.67
+      },
+      "lift": {
+        "height": 384,
+        "grip": [
+          211,
+          256
+        ],
+        "span": 104
+      },
+      "overhead": {
+        "height": 576,
+        "grip": [
+          204,
+          350
+        ],
+        "span": 91
+      },
+      "chop": {
+        "height": 384,
+        "grip": [
+          207.5,
+          268.5
+        ],
+        "span": 86.98
+      },
+      "impact": {
+        "height": 384,
+        "grip": [
+          205,
+          318.5
+        ],
+        "span": 59.54
+      }
+    }
+  },
+  "assets": [
+    {
+      "id": "idle",
+      "purpose": "Repos et prise de départ",
+      "required": true,
+      "productionStatus": "generated",
+      "sourceFile": "docs/asset-packs/sources/axe/vertical-idle-upright-source.png",
+      "exportFile": "public/assets/weapons/axe/idle.png",
+      "runtimeUrl": "/assets/weapons/axe/idle.png",
+      "measuredDimensions": {
+        "source": [
+          1254,
+          1254
+        ],
+        "export": [
+          384,
+          384
+        ],
+        "alphaBounds": {
+          "x": 44,
+          "y": 23,
+          "width": 282,
+          "height": 361
+        }
+      },
+      "bytes": 73127,
+      "sha256": "d6022456ca231e31eb5f54481877c37b483f154da050031497110fa771b3b23e",
+      "anchors": [
+        {
+          "id": "shaft-axis",
+          "x": 209.5,
+          "space": "export 384"
+        }
+      ],
+      "referencesActuallyAttached": [
+        "public/assets/weapons/axe/idle.png (ancien repos : cible à corriger)",
+        "public/assets/weapons/axe/lift.png (orientation du métal)"
+      ],
+      "promptExact": "Use case: precise-object-edit.\nImage 1 is the exact current first-person IDLE axe sprite to correct. Image 2 is the corrected LIFT sprite, for the desired upright axe-head orientation and material identity only.\nProduce ONE isolated square RGBA sprite with transparent background, same canvas, same pixel-art rendering and scale as image 1. Keep the idle position and EVERY element below the metal head unchanged: the two gloved hands, straight vertical wooden shaft, off-white wrapping, both blue-grey sleeves, hand spacing and bottom-edge continuation. Do not move, bend or tilt the shaft or hands.\nChange the AXE HEAD ONLY: instead of a broad fan projecting horizontally far left, show the same iron blade turned in depth so it appears slender, upright and nearly vertical, or slightly oblique, like image 2. Its cutting edge points downward and forward for a later overhead chop; the socket remains attached at the exact existing top of the shaft and retains its rivets, rusty iron and worn silver edge. Keep the upright head visible at rest, but visually consistent with image 2 when the arms lift. The outside silhouette must no longer resemble a horizontal crescent. No lateral swing, no extra objects, no effects, no text, no background. Preserve actual transparency and coarse crisp pixel clusters.",
+      "toolAndModelActuallyUsed": "Outil intégré image_gen.imagegen, modèle non exposé par l'outil.",
+      "transformations": [
+        "Réduction nearest-neighbor uniforme1254→384, sans recadrage",
+        "Alpha<128→0, sinon255 ; RGB conservés"
+      ],
+      "validation": {
+        "file": "pass",
+        "art": "pass",
+        "continuity": "pass",
+        "integration": "pass",
+        "gameplay": "not_checked"
+      },
+      "evidence": [
+        "7 novembre : lame de repos redressée et largeur de silhouette réduite à 52 px sur la zone supérieure du PNG384.",
+        "Vrai Game/P1 : capture tmp/axe-game-review/repos-lame-redressee.png ; raccords0,119→0,12 et1,299→1,3 inspectés, prises visuellement calées."
+      ],
+      "knownDefects": [],
+      "humanApproval": "not_requested",
+      "gripPivotPercent": [
+        54.817708333333336,
+        66.40625
+      ]
+    },
+    {
+      "id": "lift",
+      "productionStatus": "generated",
+      "sourceFile": "docs/asset-packs/sources/axe/overhead-lift-upright-source.png",
+      "exportFile": "public/assets/weapons/axe/lift.png",
+      "runtimeUrl": "/assets/weapons/axe/lift.png",
+      "exportDimensions": [
+        384,
+        384
+      ],
+      "bytes": 108725,
+      "sha256": "5944912d1c452af197095adf2cc19e93b5cb288b6c02809e6843e43d05a5743b",
+      "gripPivotPercent": [
+        54.947916666666664,
+        66.66666666666666
+      ],
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "generation": {
+        "tool": "image_gen built-in",
+        "date": "2026-11-07",
+        "prompt": "Edit target: image 1, the FIRST LIFT/PREPARATION sprite of a retro FPS axe attack. Image 2 is a reference ONLY for the edge-on blade orientation in the following chop.\nChange ONLY the iron axe HEAD at the top of image 1. Preserve EXACTLY the entire existing hands, gloves, sleeves, shaft, straight handle position and tilt, wrapping, canvas framing, pixel art style, palette and scale. Do not move the hands or change the pose. Keep the shaft rigid and straight.\nCurrent problem: the head presents a broad horizontal fan projecting left, which reads as a lateral swing/rest pose. Replace that horizontal broadside silhouette with an upright, narrow, slightly oblique head seen in depth for an OVERHEAD DOWNWARD CHOP. Turn the blade's plane into the vertical forward/back swing plane. The blade should visually extend mostly up/down, not stick far out to the left: emphasize the long vertical sharpened edge, narrow top/oblique side surfaces, coherent perspective around the same iron socket at the end of the handle. The sharpened edge points forward and down, poised to descend toward the target, mechanically credible two-handed axe. Preserve rusty iron, worn silver cutting edge, socket attachment and rivets. This is a perspective correction, not a different weapon or a bent head. No broad horizontal crescent silhouette, no scythe, no extra blade, no effects.\nReturn ONE isolated square sprite on real transparent background, exact same composition as image 1, arms continue through bottom edge. Not a sheet, no text or labels. Preserve all pixels outside the axe-head region as faithfully as possible.",
+        "references": [
+          "public/assets/weapons/axe/lift.png (ancienne pose, cellule haut-gauche de overhead-action-source.png)",
+          "public/assets/weapons/axe/chop.png"
+        ],
+        "transformations": "Canevas 1254² entier réduit uniformément à384², nearest neighbor et alpha seuil128. Aucun recadrage.",
+        "observations": "Lame plus verticale et étroite, orientation oblique en profondeur ; manche droit et prises conservées visuellement. Export 384 inspecté ; continuité animée de cette retouche non revue."
+      }
+    },
+    {
+      "id": "overhead",
+      "productionStatus": "generated",
+      "sourceFile": "docs/asset-packs/sources/axe/overhead-overscan-source.png",
+      "exportFile": "public/assets/weapons/axe/overhead.png",
+      "runtimeUrl": "/assets/weapons/axe/overhead.png",
+      "exportDimensions": [
+        384,
+        576
+      ],
+      "bytes": 125509,
+      "sha256": "1b6a82713f4888d4c9410b973c7d6ee396c7786c69edef32d797cc9cee0b00f9",
+      "gripPivotPercent": [
+        53.125,
+        60.763888888888886
+      ],
+      "sourceDimensions": [
+        1024,
+        1536
+      ],
+      "generation": {
+        "tool": "image_gen built-in",
+        "date": "2026-11-07",
+        "prompt": "Edit target: first-person axe sprite attached. EXTEND CANVAS UPWARDS ONLY by 50% of original square height, resulting in a 2:3 portrait canvas. Keep original artwork exactly in the LOWER TWO THIRDS at its original scale and coordinates relative to the bottom: identical hands, fingers, straight handle, bluegrey sleeves, black gloves, texture and pixel art. In the new TOP THIRD, continue ONLY the straight wooden shaft up to and through the top edge. The shaft is one uninterrupted straight rigid line, width follows the existing top shaft; do not add axe blade, head, hands or other objects in this extension. This is an overscan patch for an overhead pose: the head remains above the field of view. Transparent background everywhere else. Do not crop or zoom original figure, do not reposition hands, do not alter original lower two thirds. No text.",
+        "reference": "Ancien overhead.png : cellule haut-droite de overhead-action-source.png",
+        "transformations": "Canevas entier 1024×1536 réduit uniformément en384×576, nearest neighbor et alpha seuil128. Extension supérieure dédiée, sans masque cachant une coupe au milieu de l’écran."
+      }
+    },
+    {
+      "id": "chop",
+      "productionStatus": "generated",
+      "sourceFile": "docs/asset-packs/sources/axe/overhead-action-source.png",
+      "exportFile": "public/assets/weapons/axe/chop.png",
+      "runtimeUrl": "/assets/weapons/axe/chop.png",
+      "cell": [
+        0,
+        1,
+        627,
+        627
+      ],
+      "exportDimensions": [
+        384,
+        384
+      ],
+      "bytes": 84421,
+      "sha256": "6315ff77f621c16f00ce0bcd69b4bff1595a66691a5288ca62bd4183898f7399",
+      "gripPivotPercent": [
+        54.036458333333336,
+        69.921875
+      ]
+    },
+    {
+      "id": "impact",
+      "productionStatus": "generated",
+      "sourceFile": "docs/asset-packs/sources/axe/overhead-action-source.png",
+      "exportFile": "public/assets/weapons/axe/impact.png",
+      "runtimeUrl": "/assets/weapons/axe/impact.png",
+      "cell": [
+        1,
+        1,
+        627,
+        627
+      ],
+      "exportDimensions": [
+        384,
+        384
+      ],
+      "bytes": 54431,
+      "sha256": "a647c9dae41023e3daa1feaae889e38e8c49d2f320085c6b50f54b0894ce0897",
+      "gripPivotPercent": [
+        53.385416666666664,
+        82.94270833333334
+      ]
+    }
+  ],
+  "handoff": {
+    "sharedAnimationModule": "src/AxeAnimation.ts",
+    "presentationModule": "src/AxeView.ts",
+    "exportCommand": "powershell -ExecutionPolicy Bypass -File scripts/export-axe-sprites.ps1",
+    "previewCommand": "node scripts/make-axe-preview.mjs",
+    "checksActuallyRun": [
+      "npm.cmd run build",
+      "node scripts/check-axe.mjs",
+      "node scripts/check-axe-art.mjs",
+      "git diff --check"
+    ],
+    "observations": "7 novembre : vrai Game/Hall,1280×720, contrôle virtuel. Raccord lift→overhead inspecté avant/après ; cycle suivi en RAF à1× et0,25× jusqu’au repos ; captures des phases inspectées, trois raccords de récupération comparés avant/après. Stun observé après impact uniquement, aucune erreur JS ni ressource absente. Captures et temps : tmp/axe-game-review/cycle-observations.json, slow-*.png, recovery-*.png, raccords-verifies.png. 7 novembre : repos du vrai Game/P1 inspecté, lame verticale, capture repos-lame-redressee.png ; raccords repos/levée et retour comparés des deux côtés, sans erreur JS.",
+    "limits": [
+      "Observation par captures du cycle et poses arrêtées, pas de film continu visionné",
+      "Pas de partie complète jouée ni validation du confort sous pression"
+    ]
+  },
+  "historicalAssets": [
+    {
+      "id": "windup",
+      "purpose": "Anticipation verticale, bras levés",
+      "required": true,
+      "productionStatus": "superseded",
+      "sourceFile": "docs/asset-packs/sources/axe/vertical-windup-source.png",
+      "exportFile": "public/assets/weapons/axe/windup.png",
+      "runtimeUrl": null,
+      "measuredDimensions": {
+        "source": [
+          1254,
+          1254
+        ],
+        "export": [
+          384,
+          384
+        ],
+        "alphaBounds": {
+          "x": 29,
+          "y": 22,
+          "width": 320,
+          "height": 362
+        }
+      },
+      "bytes": 89555,
+      "sha256": "af4f496eb90b1b64757fd2fc109eca632f228fe4c21101c9365f6f60f1ddea93",
+      "anchors": [
+        {
+          "id": "shaft-axis",
+          "x": 209.5,
+          "space": "export 384"
+        }
+      ],
+      "referencesActuallyAttached": [
+        "docs/asset-packs/sources/axe/vertical-idle-source.png",
+        "docs/asset-packs/sources/axe/vertical-contact-source.png"
+      ],
+      "promptExact": "Use case: identity-preserve.\nAsset type: ONE transparent first-person VERTICAL AXE OVERHEAD WINDUP sprite, DEAD SECTOR.\nImage1 is the exact approved upright base and permanent identity; image2 is the end contact pose. Preserve same rustic axe head, two-bolt iron socket, PERFECTLY STRAIGHT rigid wood shaft, off-white wrap, exact closed black gloves and muted blue-grey long sleeves. This pose is the raised preparation before the axe falls STRAIGHT DOWN towards image2. Never a sideways chop or diagonal sweep.\nAnatomy invariant: LEFT hand UPPER grip above wrap, RIGHT hand LOWER grip below wrap; same spots on shaft as base, never swap hands, never curve shaft or cross arms. Keep hand sizes, natural thumbs and fingers, sleeves. Left arm enters from lower-left, right arm from lower-right.\nChange only pose: lift the arms and axe vertically upwards in front of the player, elbows bending naturally towards chest, axe shaft still exactly VERTICAL centred at x=690. Axe head at x=630,y=160, cutting blade on left, upper wood end at y=40. Head entirely visible at x=445..785,y=45..305 with at least40px transparent top margin, same head size and detail as base. The left upper gloved hand is now at x=690,y=515, right lower glove x=690,y=720. Pale cloth wrap visibly follows the straight shaft between grips. This raises both hands by about180px relative to base without lateral displacement. Both full gloves visible, uncrossed arms, forearms extending down to bottom-left and bottom-right. Long sleeves fill lower quarter to edge so moving image up in game never reveals cut-off wrists.\nComposition: same1254x1254 square RGBA, true transparent background, no camera angle change, same scale, x=690 rigid shaft axis, all axe visible and at least40px clear top/side margins except sleeves at bottom. Keep upper-left target area clear.\nStyle exactly image1: broad coarse retro pixel clusters, stepped contours, dull grey worn iron, pale silver blade, warm brown wood, off-white wrap, matte black closed gloves, blue-grey sleeves. No exposed skin or bloody new details.\nConstraints: ONE axe, TWO normal hands, no extra fingers, no missing grip, no curve in wood, no lateral motion trails, no blur, no enemy or impact FX, no background, shadow, checkerboard, text, HUD, border or sheet. One raised vertical windup pose.",
+      "toolAndModelActuallyUsed": "Outil intégré image_gen.imagegen, modèle non exposé par l'outil.",
+      "transformations": [
+        "Réduction nearest-neighbor uniforme1254→384, sans recadrage",
+        "Alpha<128→0, sinon255 ; RGB conservés"
+      ],
+      "validation": {
+        "file": "pass",
+        "art": "pass",
+        "continuity": "pass",
+        "integration": "pass",
+        "gameplay": "not_checked"
+      },
+      "evidence": [
+        "Source et export réellement inspectés",
+        "scripts/check-axe-art.mjs : dimensions, alpha, budget, segment droit dans les pixels et axe partagé",
+        "Agent principal : repos/armée/contact inspectés dans le vrai Game/Hall ; manche droit, prise gauche haute/droite basse et abattement vers le bas.",
+        "Animation1× et0,25× : échantillons RAF et poses inspectés, sans film continu visionné.",
+        "Manches raccordées au bas de l'écran, centre dégagé après calage left calc(50% + 15vh) ; aucune exception JS ni ressource absente."
+      ],
+      "knownDefects": [],
+      "humanApproval": "not_requested"
+    },
+    {
+      "id": "contact",
+      "purpose": "Contact vertical, bras tendus et manche raccourci en perspective",
+      "required": true,
+      "productionStatus": "superseded",
+      "sourceFile": "docs/asset-packs/sources/axe/vertical-contact-source.png",
+      "exportFile": "public/assets/weapons/axe/contact.png",
+      "runtimeUrl": null,
+      "measuredDimensions": {
+        "source": [
+          1254,
+          1254
+        ],
+        "export": [
+          384,
+          384
+        ],
+        "alphaBounds": {
+          "x": 50,
+          "y": 165,
+          "width": 295,
+          "height": 219
+        }
+      },
+      "bytes": 55714,
+      "sha256": "69a037f0d27df78be606c2c799cdb056d16201c868904c811bcb48a261ded985",
+      "anchors": [
+        {
+          "id": "shaft-axis",
+          "x": 209,
+          "space": "export 384"
+        }
+      ],
+      "referencesActuallyAttached": [
+        "docs/asset-packs/sources/axe/vertical-idle-source.png"
+      ],
+      "promptExact": "Use case: identity-preserve.\nAsset type: ONE transparent first-person VERTICAL AXE CHOP CONTACT pose for DEAD SECTOR.\nImage 1 is permanent identity base. Keep EXACT axe head, straight wooden shaft, off-white wrap, iron two-bolt socket, matte closed black gloves, blue-grey jacket sleeves. This is a real posed frame of the same player. Preserve LEFT hand as UPPER grip above wrap and RIGHT hand as LOWER grip below wrap. Never swap hands or grip points.\nChange ONLY pose to the follow-through of a VERTICAL top-to-bottom chop, arms reaching forward and slightly downward. Absolutely NO lateral sweep: axe blade head remains at the SAME horizontal centre x=640, shaft remains near-vertical on same x=690 axis, no diagonally left/right shaft. Head now lower on canvas at x=640,y=580, rather than at y=200. The axe points FORWARD into the scene and slightly DOWN after the chop, so the perfectly straight shaft is naturally foreshortened in perspective. Blade head upright frontal three-quarter side is still recognisable and not rotated sideways; its cutting edge faces forward/down-left as an axe edge, but motion is strictly vertical.\nShow axe head approximately 290px wide and 210px high at x=520..810 y=450..660. Wood shaft runs on ONE STRAIGHT projected centreline from x=700,y=650 to x=700,y=1070. Projected shaft is shorter because arms extend forward, never bent, bowed, broken or curving. Left gloved hand grips at x=700,y=820 above the wrap, right gloved hand grips at x=700,y=1000 below the wrap. Left arm enters from lower-left and right arm from lower-right; uncrossed, natural wrists following the same grips as base, no floating hands.\nComposition: same square1254x1254 RGBA true transparent canvas, camera same player eyes, identity proportions physically unchanged; perspective changes only because axe extends away during chop. Both full gloves visible, long blue-grey sleeve forearms extend off bottom. Upper third and lateral sides remain empty to see the target. Axe head must stay centred horizontally, never at left edge.\nStyle invariant: exact coarse retro pixel clusters and stepped contours of image1, muted grey iron with pale cutting edge, brown wood, off-white wrap, black gloves, blue-grey fabric. Broad shadows, no glossy photo or detailed noisy painting.\nNo extra axe, head, fingers or limbs. No lateral motion arcs, no blur, no blood spray, no enemy, no background, shadow, checkerboard, text, HUD or sheet. Only one naturally posed vertical strike contact sprite.",
+      "toolAndModelActuallyUsed": "Outil intégré image_gen.imagegen, modèle non exposé par l'outil.",
+      "transformations": [
+        "Réduction nearest-neighbor uniforme1254→384, sans recadrage",
+        "Alpha<128→0, sinon255 ; RGB conservés",
+        "Décalage contact +4px horizontal pour caler l'axe du manche"
+      ],
+      "validation": {
+        "file": "pass",
+        "art": "pass",
+        "continuity": "pass",
+        "integration": "pass",
+        "gameplay": "not_checked"
+      },
+      "evidence": [
+        "Source et export réellement inspectés",
+        "scripts/check-axe-art.mjs : dimensions, alpha, budget, segment droit dans les pixels et axe partagé",
+        "Agent principal : repos/armée/contact inspectés dans le vrai Game/Hall ; manche droit, prise gauche haute/droite basse et abattement vers le bas.",
+        "Animation1× et0,25× : échantillons RAF et poses inspectés, sans film continu visionné.",
+        "Manches raccordées au bas de l'écran, centre dégagé après calage left calc(50% + 15vh) ; aucune exception JS ni ressource absente."
+      ],
+      "knownDefects": [],
+      "humanApproval": "not_requested"
+    },
+    {
+      "id": "lift",
+      "productionStatus": "superseded",
+      "sourceFile": "docs/asset-packs/sources/axe/overhead-action-source.png",
+      "exportFile": "public/assets/weapons/axe/lift.png",
+      "runtimeUrl": null,
+      "cell": [
+        0,
+        0,
+        627,
+        627
+      ],
+      "exportDimensions": [
+        384,
+        384
+      ],
+      "bytes": 122640,
+      "sha256": "ef60872fd519575b6c2d26901a8b634098d7b6c8fd504c8153585e3b0d10864c",
+      "gripPivotPercent": [
+        55,
+        62
+      ]
+    },
+    {
+      "id": "overhead",
+      "productionStatus": "superseded",
+      "sourceFile": "docs/asset-packs/sources/axe/overhead-action-source.png",
+      "exportFile": "public/assets/weapons/axe/overhead.png",
+      "runtimeUrl": null,
+      "cell": [
+        1,
+        0,
+        627,
+        627
+      ],
+      "exportDimensions": [
+        384,
+        384
+      ],
+      "bytes": 118413,
+      "sha256": "3b1f4ace33a85e698c478bf01308b691f637a2c2390e28d749b56bd89072d203",
+      "gripPivotPercent": [
+        53,
+        35
+      ]
+    },
+    {
+      "id": "idle",
+      "purpose": "Repos et prise de départ",
+      "required": true,
+      "productionStatus": "superseded",
+      "sourceFile": "docs/asset-packs/sources/axe/vertical-idle-source.png",
+      "exportFile": "public/assets/weapons/axe/idle.png",
+      "runtimeUrl": null,
+      "measuredDimensions": {
+        "source": [
+          1254,
+          1254
+        ],
+        "export": [
+          384,
+          384
+        ],
+        "alphaBounds": {
+          "x": 43,
+          "y": 23,
+          "width": 285,
+          "height": 361
+        }
+      },
+      "bytes": 79575,
+      "sha256": "a27c67b583484cb593e502555919d4c86f0e0896cb2233502a1709a63178a95a",
+      "anchors": [
+        {
+          "id": "shaft-axis",
+          "x": 209.5,
+          "space": "export 384"
+        }
+      ],
+      "referencesActuallyAttached": [
+        "docs/asset-packs/references/hache-rustique-concept.png",
+        "public/assets/weapons/shotgun/hip-rest-v2.png"
+      ],
+      "promptExact": "Use case: stylized-concept.\nAsset type: ONE transparent first-person wooden axe gameplay sprite for DEAD SECTOR, retro horror FPS.\nReference images: image 1 is rustic axe DESIGN inspiration only: iron chopping head, plain wood and pale wrap. Ignore the sheet poses and exposed hands. Image 2 is actual game shotgun: preserve CLOSED BLACK GLOVES, long BLUE-GREY jacket sleeves, coarse pixel shading style, no exposed skin.\nImportant correction: axe wooden handle must be PERFECTLY STRAIGHT and RIGID along one continuous straight centreline, no curve, bow, banana shape, bend, hook or flexible shaft. It can taper in thickness but both shaft edges and axis remain straight. The cloth wrap follows that same straight axis. This axe will move VERTICALLY from UP to DOWN, never side to side. Do not draw a diagonal lateral swing.\nComposition: square 1254x1254 RGBA canvas with true transparent background. First person from player's eyes. Axe held ready with its straight shaft almost VERTICAL, shaft centreline exactly x=720 from top to bottom. The head is at upper-centre-right (blade spans x=500..850, y=150..430), cutting edge on LEFT, plain narrow butt on right, no spike. Wood shaft runs straight down to x=720,y=1100.\nExactly TWO hands grip this same straight shaft: LEFT hand above (fingers wrap in from the left around shaft at x=720,y=690), RIGHT hand below (fingers wrap in from right around shaft at x=720,y=900). Hands show plausible thumb positions and five closed gloved fingers each; no duplication, no detached wrist. Both blue-grey sleeves extend downwards towards bottom-left and bottom-right and leave through the bottom edge, so no open cut wrists. Arms are not crossed. Keep identical hand gripping angles, stable comfortable two-handed forward-ready stance. No sideways tilt. Axe shaft remains visibly straight between hands and above hands.\nShow enough long lower forearm sleeve below both gloves to allow the entire rigid silhouette to rise vertically in game while sleeve ends stay outside the viewport. Bottom quarter is sleeves only, no extra handle extension.\nStyle: match the actual in-game sprite's matte black gloves, blue-grey fabric, crisp broad pixel clusters, stepped edges, dull grey iron with silver worn edge, warm dark wood and off-white cloth wrap. Restrained iron wear and rust, no fresh blood. Readable medium detail at 400px display size. No fine-noisy dithering or smooth glossy painting.\nConstraints: ONE axe and TWO hands only, absolutely straight shaft, no curved weapon, no alternate poses or panels, no text/HUD/border, no motion trail, no blood spray, no enemy, no background floor, no shadow, no checkerboard baked in. Clear 40px transparent margin around axe and hands except sleeve ends leaving bottom. This is neutral base identity, not a swing pose.",
+      "toolAndModelActuallyUsed": "Outil intégré image_gen.imagegen, modèle non exposé par l'outil.",
+      "transformations": [
+        "Réduction nearest-neighbor uniforme1254→384, sans recadrage",
+        "Alpha<128→0, sinon255 ; RGB conservés"
+      ],
+      "validation": {
+        "file": "pass",
+        "art": "pass",
+        "continuity": "pass",
+        "integration": "pass",
+        "gameplay": "not_checked"
+      },
+      "evidence": [
+        "Source et export réellement inspectés",
+        "scripts/check-axe-art.mjs : dimensions, alpha, budget, segment droit dans les pixels et axe partagé",
+        "Agent principal : repos/armée/contact inspectés dans le vrai Game/Hall ; manche droit, prise gauche haute/droite basse et abattement vers le bas.",
+        "Animation1× et0,25× : échantillons RAF et poses inspectés, sans film continu visionné.",
+        "Manches raccordées au bas de l'écran, centre dégagé après calage left calc(50% + 15vh) ; aucune exception JS ni ressource absente."
+      ],
+      "knownDefects": [],
+      "humanApproval": "not_requested",
+      "gripPivotPercent": [
+        54.817708333333336,
+        66.40625
+      ]
+    }
+  ],
+  "overheadGeneration": {
+    "tool": "image_gen built-in",
+    "prompt": "Use case: precise-object-edit. Create ONE animation sprite sheet for the attached first-person two-handed axe, 2 columns x 2 rows of equal square cells, transparent background. Reference 1 is the EXACT idle identity to preserve: straight wooden shaft, rusty iron blade to left, white lower wrap, closed black gloves, blue grey sleeves. Reference 2 is the OLD BAD contact pose: do NOT copy its upright axe orientation. All cells are same camera, same scale, hands attached to bottom corners; no text, dividers, shadows, effects or background. Crisp retro pixel art clusters.\nThis must depict rotation IN DEPTH around the two gripping hands during a vertical overhead chop, absolutely NO sideways swing or bending handle. Left hand stays above right on shaft.\nTOP LEFT: lifting/backward retraction halfway to overhead; elbows bent, fists close to camera around cell center; axe shaft tilts back into depth, axe head high near top edge, top surface/bottom surface perspective changes clearly.\nTOP RIGHT: fully overhead cocked pose; fists at upper center (around x52%,y30%), both sleeves extend from bottom corners up to wrists; straight shaft extends upward behind camera and OUT THROUGH TOP EDGE; blade is OUTSIDE the cell. Anatomically coherent arms raising above view, no detached limbs.\nBOTTOM LEFT: midway in the very fast downward chop, axe now rotating FORWARD away from camera; hands around x52%,y60%; show foreshortened straight shaft extending UP and FORWARD from hands to small head at x50%,y35%. Head seen from ABOVE in depth, blade is a narrow oblique iron wedge rather than full broadside, retain identity.\nBOTTOM RIGHT: low forward IMPACT/follow-through; fists around x52%,y78%; shaft points FORWARD and DOWN from hands, strongly foreshortened, head around x49%,y65%, seen obliquely from above, sharpened edge aimed down. The head is small through distance, with visible top of iron socket and wood running exactly straight to both hands. This is an axe embedded ahead near waist height, NOT an upright axe merely lowered. Sleeves continue to bottom corners with no cut wrist. Full subject stays within each cell except sleeves through bottom and overhead shaft through top. FOUR distinct mechanically correct perspective poses. Same geometry/materials/hand order in every cell. No curved shaft, no extra hands, no smeared motion.",
+    "references": [
+      "public/assets/weapons/axe/idle.png",
+      "public/assets/weapons/axe/contact.png"
+    ],
+    "roles": [
+      "Identité exacte du repos",
+      "Ancienne pose à corriger, pas une référence mécanique"
+    ],
+    "transformations": "Planche 1254², quatre cellules fixes 627² ; réduction nearest 384² uniforme, alpha seuil128. Aucun recadrage par silhouette."
+  }
+}

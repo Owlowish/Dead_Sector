@@ -101,13 +101,6 @@ function buildParts(): FurnishingPart[] {
   book('salon', hearth.index, -14.1, mantleTop + 0.07, 13.0, 0.62, visualColors.carpet, 0.08);
   book('salon', hearth.index, -14.13, mantleTop + 0.21, 13.0, 0.52, visualColors.olive, -0.12);
 
-  const pedestal = obstacle('galerie', -18, 0);
-  const bustBase = pedestal.wall.y + pedestal.wall.height / 2;
-  add('galerie', 'bust-plinth', pedestal.index, 'cylinder', [-18, bustBase + 0.07, 0], [0.88, 0.14, 0.88], 0x80786c);
-  add('galerie', 'bust-shoulders', pedestal.index, 'octahedron', [-18, bustBase + 0.43, 0], [0.65, 0.38, 0.34], 0x938778);
-  add('galerie', 'bust-neck', pedestal.index, 'cylinder', [-18, bustBase + 0.68, 0], [0.20, 0.28, 0.20], 0x938778);
-  add('galerie', 'bust-head', pedestal.index, 'octahedron', [-18, bustBase + 0.98, 0], [0.28, 0.37, 0.29], 0xa49a89);
-
   for (const z of [-2.5, 2.5]) {
     const column = obstacle('grand_hall', 5, z);
     const top = column.wall.y + column.wall.height / 2;
@@ -200,8 +193,6 @@ export class MansionFurnishings {
     mesh.receiveShadow = true;
     mesh.matrixAutoUpdate = false;
     this.group.add(mesh);
-    // Le socle bas laisse le buste exposé : sa surface réelle doit arrêter les tirs.
-    if (room.id === 'galerie') this.shotBlockers.push(mesh);
   }
 
   public getShotBlockers(): readonly THREE.Mesh[] {

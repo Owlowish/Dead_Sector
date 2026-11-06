@@ -1,359 +1,402 @@
 {
   "documentType": "asset-pack",
   "id": "rampeuse-v2",
-  "updatedAt": "2026-11-04",
-  "request": "Remplacer les six sprites de la Rampeuse jugés insatisfaisants, sans changer ses caractéristiques de combat.",
+  "revision": 3,
+  "updatedAt": "2026-11-06",
+  "request": "Renforcer la peur provoquée par la Rampeuse : nouveau sprite plus inquiétant et traque au regard, sans changer ses PV ni dégâts.",
   "scope": {
     "generate": true,
     "replace": true,
-    "gameplayChanges": false
+    "integrate": true,
+    "gameplayChanges": true,
+    "behaviorModule": "src/CrawlerZombie.ts"
+  },
+  "provenance": {
+    "previousProduction": "Six sprites ImageGen du 4 novembre remplacés. Prompts et transformations de cette version restent dans Git, manifeste au commit 0e6589b194f916cf9bf7becd8d6e0247f7d0cce3.",
+    "currentTool": "built-in image_gen",
+    "originalGeneratedDirectory": "C:/Users/Administrateur/.codex/generated_images/01a1b1c3-f6bf-7250-8335-3d0c416c4ec6",
+    "sourceCopies": "docs/asset-packs/sources/rampeuse-v3/"
   },
   "references": [
     {
       "path": "public/assets/zombies/crawler/idle.png",
-      "role": "identity and framing, not drawing quality",
-      "generationInputWas": "Old Gemini idle; snapshot in tmp/rampeuse-gemini-before/idle.png"
+      "revision": "0e6589b194f916cf9bf7becd8d6e0247f7d0cce3",
+      "role": "Identité et cadrage de la version remplacée seulement ; entrée 1 de la base.",
+      "inspected": true,
+      "attachedToGenerator": true
     },
     {
       "path": "public/assets/zombies/zombie_idle.png",
-      "role": "pixel-art style"
+      "role": "Style pixel art ; entrée 2 de la base.",
+      "inspected": true,
+      "attachedToGenerator": true
     },
     {
       "path": "public/assets/zombies/agile/idle.png",
-      "role": "pixel-art style and materials"
+      "role": "Style pixel art ; entrée 3 de la base, entrée 2 des actions.",
+      "inspected": true,
+      "attachedToGenerator": true
     }
   ],
   "identity": [
-    "Femme adulte cadavérique quadrupède",
-    "Longs cheveux noirs",
-    "Chemise de nuit victorienne ivoire sale, manches longues",
-    "Peau livide, silhouette basse, deux bras et deux jambes"
+    "Femme adulte cadavérique quadrupède, exactement deux bras et deux jambes.",
+    "Chemise de nuit victorienne ivoire sale à manches longues ; cheveux noirs longs.",
+    "Dos angulaire cassé haut, coudes relevés, tête très basse inclinée, bouche sombre et yeux creusés.",
+    "Doigts longs, membres connectés, aucune émission lumineuse peinte."
   ],
   "technicalContract": {
-    "export": "512x512 PNG RGBA, no per-pose auto crop",
-    "source": "Measured below; whole canvas, no silhouette recropping",
+    "export": "512x512 PNG RGBA8, vrai alpha, même réduction du canevas complet sans recadrage de silhouette.",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "coordinateSpace": "Pixels export512, origine haut gauche. Sources carrées non recadrées.",
     "groundAnchor": [
       256,
       504
     ],
-    "faceTarget": "Measured per-pose regions: crawlerSprite.heads in src/CrawlerAnimation.ts",
-    "silhouette": "Full body inside margins; empty top area; same scale and camera in every pose",
-    "existingBillboard": [
+    "displaySize": [
       1.6,
       1.6
     ],
-    "originalBillboardBeforeCorrection": [1.6, 1.0],
     "runtimeGroundOffsetY": 0.775,
-    "runtimeNote": "Correction des proportions du 4 novembre : canevas carré conservé sans étirement, ancrage dérivé de groundY dans CrawlerAnimation.ts. Comparaison 3D contrôlée à 1,8 / 3,5 / 6 m en headless, combat réel non validé."
+    "headZones": "src/CrawlerAnimation.ts : crawlerSprite.heads, mesurées par pose sur les exports actuels.",
+    "fixedParts": "Identité, cadrage frontal bas, échelle anatomique, ligne des appuis ; variations organiques de poids sans redimensionnement indépendant.",
+    "movingParts": "Alternance des mains et genoux, contraction des épaules, tête/hair légèrement déplacés selon l'action.",
+    "opacity": "Vrai canal alpha préservé ; alphaTest0.4 dans le jeu, aucun damier peint.",
+    "runtimeLighting": "Émission texturée0.035 ivoire, sans nouvelle lumière ni yeux néon, pour conserver les détails en pénombre."
   },
-  "phases": [
-    {
-      "id": "idle",
-      "action": "Deux mains en appui, corps bas"
-    },
-    {
-      "id": "crawl-a",
-      "action": "Main côté gauche image avance au sol; main droite reprend appui"
-    },
-    {
-      "id": "crawl-b",
-      "action": "Main droite image avance au sol; alternance réelle, dos et tête stables"
-    },
-    {
-      "id": "attack",
-      "action": "Tête et épaules projetées, bouche ouverte, un seul geste"
-    },
-    {
-      "id": "hurt",
-      "action": "Contraction brève, tête reculée"
-    },
-    {
-      "id": "death",
-      "action": "Corps affaissé et inerte au sol, même identité"
-    }
-  ],
-  "pipeline": "Base inspected before generating a pilot crawl cycle; inspect normal and slow playback before expanding.",
+  "pipeline": "Base générée et inspectée, puis action pilote crawl-a inspectée avant extension. Six poses inspectées en contact et à60/140px ; cycles1x/0.25x et retour repos contrôlés en navigateur sur le lot complet.",
   "assets": [
     {
       "pose": "idle",
-      "sourceFile": "C:/Users/Administrateur/.codex/generated_images/01a1a7e9-4d38-7e10-adf2-053e3c996650/exec-2b566c27-ad41-464e-ac7a-a110eeb04467.png",
+      "file": "public/assets/zombies/crawler/idle.png",
+      "sourceFile": "docs/asset-packs/sources/rampeuse-v3/idle-source.png",
       "sourceDimensions": [
         1254,
         1254
       ],
-      "file": "public/assets/zombies/crawler/idle.png",
       "exportDimensions": [
         512,
         512
       ],
       "alphaBounds": {
-        "x": 14,
-        "y": 176,
-        "width": 481,
-        "height": 328
+        "x": 11,
+        "y": 171,
+        "width": 490,
+        "height": 333
       },
-      "bytes": 249698,
+      "bytes": 299704,
+      "sourceBytes": 1109944,
+      "sha256": "2607c0dcb874b60987bae3efcd1b0122913394cc572fabc68b36f748b8e89406",
       "productionStatus": "generated",
       "url": "/assets/zombies/crawler/idle.png",
-      "promptExact": "Use case: stylized-concept. Asset: ONE new production pixel-art enemy sprite for DEAD SECTOR retro first-person horror game, genuinely transparent PNG, square canvas. Input image 1 is IDENTITY AND LOW FRAMING REFERENCE ONLY: adult female crawler with long black hair, dirty ivory Victorian long-sleeved nightdress, pallid skin, crawling on two hands and two bent legs. Input images 2 and 3 are PIXEL ART STYLE REFERENCES. Create a better newly drawn base idle pose of this crawler matching the hand-pixelled chunky clusters, stepped edges, matte shading and muted dirty ivory/blue-grey skin of those male zombies. This is a full body game sprite, not an illustration. Front-facing low hunched quadruped approaching viewer, shoulders and humped back low, head hanging between shoulders, black hair partially veiling a cadaveric face with small pale eyes, threatening subtle slack mouth (no broad cartoon grin). Both complete long thin hands splayed firmly on ground, two bent knees/feet visible behind, exactly two arms and two legs. The nightdress drapes between knees. Same frontal camera as image 1. Maintain generous transparent upper area and 4% side margins. Composition in normalized square: silhouette spans x=5%-95%, y=33%-98.4%; head centered x=50%, face around y=51%-61%; both hands grounded near y=98.4%. Ground anchor center (50%,98.4%). Output ideally 1024x1024; downstream whole canvas will be reduced to512x512, no recropping. Pixel clusters must read at 60-140px display, restrained detail, broad diffuse shading, no glossy smooth rendering or photographic skin. No floor, no ground shadow, no puddle, no particles, no labels, no text, no grid, no border, no background. Empty regions truly alpha transparent. One base idle pose only.",
+      "generationFile": "exec-a78d61b7-4dff-4f7c-a6f6-a7be7cfc8658.png",
+      "promptExact": "Use case: stylized-concept. Asset type: ONE production sprite for DEAD SECTOR retro first-person Victorian horror game. Input image 1 is OLD IDENTITY AND CANVAS REFERENCE ONLY, not the desired scary design; images 2 and 3 are actual pixel-art style references. Primary request: redesign the adult female crawler to be much more unsettling, uncanny and frightening while retaining her identity. Genuinely transparent square PNG, one full body only. Exactly two arms and two bent legs, adult cadaveric woman in dirty ivory long-sleeved Victorian nightdress and long hanging black hair. Make the spine a high broken-looking hump, shoulder blades jutting upward, elbows sharply raised, very long thin forearms braced far apart, knotted long fingers planted on the ground. Her head hangs unnaturally LOW below the shoulders, tilted slightly towards image right, face visible between curtains of black hair: pallid gaunt face, deeply black hollow eye sockets with small dull iris flecks, slack dark open mouth, no grin, no luminous eyes. Asymmetric tense quadruped pose like something patiently watching before a sudden movement. Anatomically connected limbs, no extra joints or spider legs. Preserve the original LOW FRONT CAMERA, canvas framing and apparent body mass: silhouette x=5%-95%, y=31%-98.4%, empty top third, forehead around x50% y57%, chin around y76%, fingertips grounded near y98.4%. Complete hands and complete body with transparent margin on all sides. Base idle pose only, both hands grounded. Style: chunky hand-pixelled game sprite with stepped edges and broad matte shadow clusters, restrained dirty ivory, blue-grey dead skin and black-brown hair, detail readable at60-140px display height, matching references2/3. No smooth illustration, photorealism, gloss, red glow, floor, cast shadow, background, blood puddle, text, diagram, border or watermark. Empty regions must be real alpha transparency.",
       "referencesActuallyAttached": [
-        "public/assets/zombies/crawler/idle.png (old Gemini version, archived)",
+        "public/assets/zombies/crawler/idle.png @0e6589b194f916cf9bf7becd8d6e0247f7d0cce3",
         "public/assets/zombies/zombie_idle.png",
         "public/assets/zombies/agile/idle.png"
       ],
       "transformations": {
-        "script": "scripts/export-crawler-sprite.ps1",
-        "resampling": "NearestNeighbor, whole square canvas, true alpha preserved",
-        "groundOffsetY": -4
+        "script": "scripts/export-crawler-v3.ps1",
+        "sharedExport": "scripts/export-crawler-sprite.ps1",
+        "resampling": "NearestNeighbor de1254² à512², canevas entier, sans crop.",
+        "groundOffsetY": -2,
+        "note": "Translation verticale seule pour que le bord opaque des appuis finisse à la ligne504."
       },
       "validation": {
         "file": "pass",
         "art": "inspected_by_assistant",
-        "continuity": "preview_playback_sampled",
+        "continuity": "preview_sampled_normal_and_quarter_speed",
         "gameplay": "not_checked",
         "humanApproval": "not_requested"
       }
     },
     {
       "pose": "crawl-a",
-      "sourceFile": "C:/Users/Administrateur/.codex/generated_images/01a1a7e9-4d38-7e10-adf2-053e3c996650/exec-8a74f4ef-5a19-40ce-81e2-59dc29fc0cdf.png",
+      "file": "public/assets/zombies/crawler/crawl-a.png",
+      "sourceFile": "docs/asset-packs/sources/rampeuse-v3/crawl-a-source.png",
       "sourceDimensions": [
         1254,
         1254
       ],
-      "file": "public/assets/zombies/crawler/crawl-a.png",
       "exportDimensions": [
         512,
         512
       ],
       "alphaBounds": {
-        "x": 24,
-        "y": 176,
-        "width": 447,
-        "height": 328
+        "x": 21,
+        "y": 170,
+        "width": 467,
+        "height": 334
       },
-      "bytes": 240594,
+      "bytes": 279237,
+      "sourceBytes": 1061672,
+      "sha256": "6291dff6d47899da26db3a1fe34e4c333e8e1205ac6de043a7c958e1749f0b3e",
       "productionStatus": "generated",
       "url": "/assets/zombies/crawler/crawl-a.png",
-      "promptExact": "Use case: identity-preserve. Asset: ONE animation pose PNG for a low quadruped female crawler in DEAD SECTOR retro FPS. Image1 is the EXACT ACCEPTED BASE IDENTITY and exact square canvas/framing. Image2 is pixel-art style reference only. Keep exactly this adult cadaveric woman, long black hanging hair, pale small eyes, torn dirty ivory long-sleeved nightdress, long thin arms and exactly two legs, same head and torso size, diffuse matte pixel-cluster shading. Do NOT redraw her into a different person. Preserve camera, head center, humped back outline, scale, source canvas empty upper area, grounded palms/feet baseline at y98.4%, side margins. Generate ONE pose, not a sheet. Genuinely transparent background, no floor/shadow/puddle, no text, no effects, no disconnected parts. Crisp retro chunky pixel art matching style reference, no smooth photo rendering.\nChange only the crawl step: the hand on IMAGE LEFT reaches forward and is firmly planted near x15%, y98.4%; its elbow straightens a little. Hand on IMAGE RIGHT is lifted just above floor, fingers curled slightly, elbow drawn backward ready to move. The bent knee opposite the planted hand advances slightly. Keep torso and head almost unchanged, small body weight shift only. LEFT hand down, RIGHT hand visibly raised. This must be a readable forward crawl, not both arms lifted.",
+      "generationFile": "exec-bafc59dc-fb91-4f82-8172-10d25dcd76bb.png",
+      "promptExact": "Use case: identity-preserve. Asset type: ONE crawl-step animation pose for DEAD SECTOR. Image1 is exact approved base identity and full square canvas, image2 is actual pixel-art style reference. Preserve the adult quadruped woman with high angular humped spine, hanging LOW tilted gaunt face, black hollow eyes with dull tiny flecks, slack dark mouth, dirty ivory Victorian long-sleeved gown, long black hair, two arms and two bent legs. Keep camera, proportions, head position, torso volume, 1:1 square transparent canvas, empty upper third, complete silhouette margins and foot/palm baseline at y98.4%. Only change the locomotion step: the hand on IMAGE LEFT reaches forward at floor level and plants its long fingers near x15%,y98.4%; the IMAGE RIGHT hand lifts just above floor with curled fingers and its elbow pulls backward. Opposite bent knee advances. Body shifts weight slightly over the planted palm, face still looks forward low below shoulders, same scale. This is a real organic crawl step with alternating supports, not a mirror, not a new creature, not both hands raised. Chunky matte hand-pixelled style, dirty ivory and bluegrey skin, blackbrown hair, broad shadow clusters, stepped edges, matching base. Genuine alpha transparency, no ground shadow, no floor, no particles, no text, no background, no new body parts. One pose only.",
       "referencesActuallyAttached": [
-        "tmp/rampeuse-v2/idle.png (base before final ground alignment)",
+        "docs/asset-packs/sources/rampeuse-v3/idle-source.png",
         "public/assets/zombies/agile/idle.png"
       ],
       "transformations": {
-        "script": "scripts/export-crawler-sprite.ps1",
-        "resampling": "NearestNeighbor, whole square canvas, true alpha preserved",
-        "groundOffsetY": -2
+        "script": "scripts/export-crawler-v3.ps1",
+        "sharedExport": "scripts/export-crawler-sprite.ps1",
+        "resampling": "NearestNeighbor de1254² à512², canevas entier, sans crop.",
+        "groundOffsetY": -3,
+        "note": "Translation verticale seule pour que le bord opaque des appuis finisse à la ligne504."
       },
       "validation": {
         "file": "pass",
         "art": "inspected_by_assistant",
-        "continuity": "preview_playback_sampled",
+        "continuity": "preview_sampled_normal_and_quarter_speed",
         "gameplay": "not_checked",
         "humanApproval": "not_requested"
       }
     },
     {
       "pose": "crawl-b",
-      "sourceFile": "C:/Users/Administrateur/.codex/generated_images/01a1a7e9-4d38-7e10-adf2-053e3c996650/exec-079a2f17-be0b-4a69-87d5-73725331102d.png",
+      "file": "public/assets/zombies/crawler/crawl-b.png",
+      "sourceFile": "docs/asset-packs/sources/rampeuse-v3/crawl-b-source.png",
       "sourceDimensions": [
         1254,
         1254
       ],
-      "file": "public/assets/zombies/crawler/crawl-b.png",
       "exportDimensions": [
         512,
         512
       ],
       "alphaBounds": {
-        "x": 33,
-        "y": 178,
-        "width": 455,
-        "height": 326
+        "x": 24,
+        "y": 169,
+        "width": 471,
+        "height": 335
       },
-      "bytes": 241220,
+      "bytes": 278991,
+      "sourceBytes": 1018168,
+      "sha256": "6e0579ad27e9953d0bc9f69c6d3ba3c4431b3994ff32d8ea52ef41b1956fcc4f",
       "productionStatus": "generated",
       "url": "/assets/zombies/crawler/crawl-b.png",
-      "promptExact": "Use case: identity-preserve. Asset: ONE animation pose PNG for a low quadruped female crawler in DEAD SECTOR retro FPS. Image1 is the EXACT ACCEPTED BASE IDENTITY and exact square canvas/framing. Image2 is pixel-art style reference only. Keep exactly this adult cadaveric woman, long black hanging hair, pale small eyes, torn dirty ivory long-sleeved nightdress, long thin arms and exactly two legs, same head and torso size, diffuse matte pixel-cluster shading. Do NOT redraw her into a different person. Preserve camera, head center, humped back outline, scale, source canvas empty upper area, grounded palms/feet baseline at y98.4%, side margins. Generate ONE pose, not a sheet. Genuinely transparent background, no floor/shadow/puddle, no text, no effects, no disconnected parts. Crisp retro chunky pixel art matching style reference, no smooth photo rendering.\nChange only the crawl step: the hand on IMAGE RIGHT reaches forward and is firmly planted near x85%, y98.4%; its elbow straightens a little. Hand on IMAGE LEFT is lifted just above floor, fingers curled slightly, elbow drawn backward ready to move. The bent knee opposite the planted hand advances slightly. Keep torso and head almost unchanged, small body weight shift only. RIGHT hand down, LEFT hand visibly raised. This is the opposite support phase to a left-hand-forward crawl. Do not keep the left hand planted.",
+      "generationFile": "exec-ce6f1da4-874e-45bb-b3b3-7ef2ea556889.png",
+      "promptExact": "Use case: identity-preserve. Asset type: ONE production animation pose for DEAD SECTOR retro horror FPS. Input image1 is exact accepted base identity AND full square canvas, image2 actual pixel-art style reference. Preserve exactly the adult quadruped cadaveric woman, high angular humped spine, dirty ivory long-sleeved Victorian gown, long black hair, LOW hanging tilted gaunt face with small dull eyes in hollow sockets and slack dark mouth. Two arms and two bent legs only. Keep camera, clothing/stains, skin palette, anatomical scale, full square transparent canvas, empty upper third, complete margins and baseline at y98.4%. No per-pose zoom/crop. Chunky hand-pixelled stepped edges, matte broad shadow clusters; no smooth photo shading. Genuine alpha empty regions; no floor, no cast shadow, no puddle, no text, no particles, no disconnected body parts. One pose, not a sheet.\nChange only the opposite crawl step: hand on IMAGE RIGHT reaches forward and plants long fingers on the ground near x85%,y98.4%; IMAGE LEFT hand lifts above the floor, fingers curled, left elbow drawn backward. Opposite bent knee advances, weight leans onto image-right supporting palm. Keep head and angular hump almost stationary (no more than3% shift), retain low creepy tilted face. This is opposite to left-hand-forward pilot: RIGHT palm grounded, LEFT hand visibly raised. Do not mirror the image, redraw the connected limbs organically.",
       "referencesActuallyAttached": [
-        "tmp/rampeuse-v2/idle.png (base before final ground alignment)",
+        "docs/asset-packs/sources/rampeuse-v3/idle-source.png",
         "public/assets/zombies/agile/idle.png"
       ],
       "transformations": {
-        "script": "scripts/export-crawler-sprite.ps1",
-        "resampling": "NearestNeighbor, whole square canvas, true alpha preserved",
-        "groundOffsetY": -1
+        "script": "scripts/export-crawler-v3.ps1",
+        "sharedExport": "scripts/export-crawler-sprite.ps1",
+        "resampling": "NearestNeighbor de1254² à512², canevas entier, sans crop.",
+        "groundOffsetY": -3,
+        "note": "Translation verticale seule pour que le bord opaque des appuis finisse à la ligne504."
       },
       "validation": {
         "file": "pass",
         "art": "inspected_by_assistant",
-        "continuity": "preview_playback_sampled",
+        "continuity": "preview_sampled_normal_and_quarter_speed",
         "gameplay": "not_checked",
         "humanApproval": "not_requested"
       }
     },
     {
       "pose": "attack",
-      "sourceFile": "C:/Users/Administrateur/.codex/generated_images/01a1a7e9-4d38-7e10-adf2-053e3c996650/exec-ccdebffb-0260-447c-826b-aab9f8ab2648.png",
+      "file": "public/assets/zombies/crawler/attack.png",
+      "sourceFile": "docs/asset-packs/sources/rampeuse-v3/attack-source.png",
       "sourceDimensions": [
         1254,
         1254
       ],
-      "file": "public/assets/zombies/crawler/attack.png",
       "exportDimensions": [
         512,
         512
       ],
       "alphaBounds": {
-        "x": 13,
-        "y": 194,
-        "width": 462,
-        "height": 310
+        "x": 17,
+        "y": 185,
+        "width": 477,
+        "height": 319
       },
-      "bytes": 241634,
+      "bytes": 290874,
+      "sourceBytes": 1046202,
+      "sha256": "c6599b83eeaf5c6383c0344c1fb599a99afe89cbd6be8b4215e53fd6ecac1437",
       "productionStatus": "generated",
       "url": "/assets/zombies/crawler/attack.png",
-      "promptExact": "Use case: identity-preserve. Asset: ONE new animation pose sprite for DEAD SECTOR retro FPS. Image1 is the EXACT ACCEPTED BASE IDENTITY AND CANVAS. Image2 is PIXEL ART STYLE ONLY. Preserve the same adult cadaveric woman, long black hanging hair, pale small eyes, dirty ivory Victorian long-sleeved torn nightdress, two thin arms/two bent legs, exact clothing and stains, same scale and front low camera. Chunky hand-pixelled matte style, stepped edges, limited desaturated palette, no smoothing or new fine detail. Exact same square canvas, transparent empty upper area, side margins at least4%, ground baseline y98.4%, no per-pose zoom or recropping. Output one pose only, genuine alpha transparency in empty regions. No ground plane, shadow, blood puddle, gore additions, text, grid, labels, particles, glow, or background.\nChange only action: a short low forward biting lunge. Keep low body and near-stable head CENTER and SCALE, head slightly forward/up maximum3% of canvas, jaw clearly open dark mouth, black hair swings slightly to sides without disappearing. Shoulders lean forward, elbows flex preparing to pull body forward, one grounded supporting palm and one reaching claw, both full hands visible. The woman remains quadruped and low; do NOT stand her up or raise both arms overhead. No teeth enlargement, no extra limbs.",
+      "generationFile": "exec-d6e92b35-a938-4842-ad39-7738d5b9d980.png",
+      "promptExact": "Use case: identity-preserve. Asset type: ONE production animation pose for DEAD SECTOR retro horror FPS. Input image1 is exact accepted base identity AND full square canvas, image2 actual pixel-art style reference. Preserve exactly the adult quadruped cadaveric woman, high angular humped spine, dirty ivory long-sleeved Victorian gown, long black hair, LOW hanging tilted gaunt face with small dull eyes in hollow sockets and slack dark mouth. Two arms and two bent legs only. Keep camera, clothing/stains, skin palette, anatomical scale, full square transparent canvas, empty upper third, complete margins and baseline at y98.4%. No per-pose zoom/crop. Chunky hand-pixelled stepped edges, matte broad shadow clusters; no smooth photo shading. Genuine alpha empty regions; no floor, no cast shadow, no puddle, no text, no particles, no disconnected body parts. One pose, not a sheet.\nChange only the attack anticipation: the whole body crouches tense, shoulders push up, neck lifts the pallid face slightly out from the curtain of hair toward the viewer, jaw opens into a clearly readable dark oval, elbows bend and long fingers claw into floor ready to spring. Keep both arms low, at least one palm grounded at baseline, head only3% higher than base (not standing), hair swings aside enough to read the face. Differentiate this dangerous preparation from the staring idle through open jaw, raised shoulders and planted claws. No enormous cartoon teeth, no added tongue. One low biting-lunge pose returning to base.",
       "referencesActuallyAttached": [
-        "tmp/rampeuse-v2/idle.png (base before final ground alignment)",
+        "docs/asset-packs/sources/rampeuse-v3/idle-source.png",
         "public/assets/zombies/agile/idle.png"
       ],
       "transformations": {
-        "script": "scripts/export-crawler-sprite.ps1",
-        "resampling": "NearestNeighbor, whole square canvas, true alpha preserved",
-        "groundOffsetY": -1
+        "script": "scripts/export-crawler-v3.ps1",
+        "sharedExport": "scripts/export-crawler-sprite.ps1",
+        "resampling": "NearestNeighbor de1254² à512², canevas entier, sans crop.",
+        "groundOffsetY": 0,
+        "note": "Translation verticale seule pour que le bord opaque des appuis finisse à la ligne504."
       },
       "validation": {
         "file": "pass",
         "art": "inspected_by_assistant",
-        "continuity": "preview_playback_sampled",
+        "continuity": "preview_sampled_normal_and_quarter_speed",
         "gameplay": "not_checked",
         "humanApproval": "not_requested"
       }
     },
     {
       "pose": "hurt",
-      "sourceFile": "C:/Users/Administrateur/.codex/generated_images/01a1a7e9-4d38-7e10-adf2-053e3c996650/exec-b2da8bd3-d418-47e7-b6ff-9de325bcd232.png",
+      "file": "public/assets/zombies/crawler/hurt.png",
+      "sourceFile": "docs/asset-packs/sources/rampeuse-v3/hurt-source.png",
       "sourceDimensions": [
         1254,
         1254
       ],
-      "file": "public/assets/zombies/crawler/hurt.png",
       "exportDimensions": [
         512,
         512
       ],
       "alphaBounds": {
-        "x": 27,
-        "y": 198,
-        "width": 466,
-        "height": 306
+        "x": 61,
+        "y": 174,
+        "width": 440,
+        "height": 330
       },
-      "bytes": 215396,
+      "bytes": 259488,
+      "sourceBytes": 934764,
+      "sha256": "99f94648e728ac015aa551fb0d2bf56f52be788dd9d3148add055202ea540b28",
       "productionStatus": "generated",
       "url": "/assets/zombies/crawler/hurt.png",
-      "promptExact": "Use case: identity-preserve. Asset: ONE new animation pose sprite for DEAD SECTOR retro FPS. Image1 is the EXACT ACCEPTED BASE IDENTITY AND CANVAS. Image2 is PIXEL ART STYLE ONLY. Preserve the same adult cadaveric woman, long black hanging hair, pale small eyes, dirty ivory Victorian long-sleeved torn nightdress, two thin arms/two bent legs, exact clothing and stains, same scale and front low camera. Chunky hand-pixelled matte style, stepped edges, limited desaturated palette, no smoothing or new fine detail. Exact same square canvas, transparent empty upper area, side margins at least4%, ground baseline y98.4%, no per-pose zoom or recropping. Output one pose only, genuine alpha transparency in empty regions. No ground plane, shadow, blood puddle, gore additions, text, grid, labels, particles, glow, or background.\nChange only action: brief bullet-hit flinch, torso contracts backward, one shoulder lowered, head tilted slightly to IMAGE LEFT and chin tucks, face centered near original position (max3% shift). One hand braces hard on ground, other elbow folds slightly. Keep all limbs connected and same body mass, no wound additions. Readable small contraction returning to original idle, not a new attack, not a pose with one arm raised in the air.",
+      "generationFile": "exec-bc2a4030-fcff-45fa-8dde-d188806400cc.png",
+      "promptExact": "Use case: identity-preserve. Asset type: ONE production animation pose for DEAD SECTOR retro horror FPS. Input image1 is exact accepted base identity AND full square canvas, image2 actual pixel-art style reference. Preserve exactly the adult quadruped cadaveric woman, high angular humped spine, dirty ivory long-sleeved Victorian gown, long black hair, LOW hanging tilted gaunt face with small dull eyes in hollow sockets and slack dark mouth. Two arms and two bent legs only. Keep camera, clothing/stains, skin palette, anatomical scale, full square transparent canvas, empty upper third, complete margins and baseline at y98.4%. No per-pose zoom/crop. Chunky hand-pixelled stepped edges, matte broad shadow clusters; no smooth photo shading. Genuine alpha empty regions; no floor, no cast shadow, no puddle, no text, no particles, no disconnected body parts. One pose, not a sheet.\nChange only a brief hit flinch: torso contracts backward, head tilts a little further towards IMAGE RIGHT with chin tucked, hair swings over one hollow eye, one shoulder lowers and one elbow folds slightly. One palm braces on ground while the other hand pulls back close to her, retaining a frightening low quadruped stance. This is a SMALL recoiling contraction that returns to idle, not a new attack, not a raised arm, not an entirely different head. Keep the entire humped back and gown width close to base; fingers and feet touch baseline y98.4%. No new wounds.",
       "referencesActuallyAttached": [
-        "tmp/rampeuse-v2/idle.png (base before final ground alignment)",
+        "docs/asset-packs/sources/rampeuse-v3/idle-source.png",
         "public/assets/zombies/agile/idle.png"
       ],
       "transformations": {
-        "script": "scripts/export-crawler-sprite.ps1",
-        "resampling": "NearestNeighbor, whole square canvas, true alpha preserved",
-        "groundOffsetY": 8
+        "script": "scripts/export-crawler-v3.ps1",
+        "sharedExport": "scripts/export-crawler-sprite.ps1",
+        "resampling": "NearestNeighbor de1254² à512², canevas entier, sans crop.",
+        "groundOffsetY": -2,
+        "note": "Translation verticale seule pour que le bord opaque des appuis finisse à la ligne504."
       },
       "validation": {
         "file": "pass",
         "art": "inspected_by_assistant",
-        "continuity": "static_pose_checked",
+        "continuity": "preview_sampled_normal_and_quarter_speed",
         "gameplay": "not_checked",
         "humanApproval": "not_requested"
       }
     },
     {
       "pose": "death",
-      "sourceFile": "C:/Users/Administrateur/.codex/generated_images/01a1a7e9-4d38-7e10-adf2-053e3c996650/exec-8fb8159f-f957-47dc-987e-a660e30b1b4c.png",
+      "file": "public/assets/zombies/crawler/death.png",
+      "sourceFile": "docs/asset-packs/sources/rampeuse-v3/death-source.png",
       "sourceDimensions": [
         1254,
         1254
       ],
-      "file": "public/assets/zombies/crawler/death.png",
       "exportDimensions": [
         512,
         512
       ],
       "alphaBounds": {
-        "x": 12,
-        "y": 356,
-        "width": 487,
-        "height": 148
+        "x": 10,
+        "y": 350,
+        "width": 491,
+        "height": 154
       },
-      "bytes": 137682,
+      "bytes": 136793,
+      "sourceBytes": 549824,
+      "sha256": "97e7af3295cc5482a274cbec3d94c9ce0c437170a29dd3eee94ba351b08f24c4",
       "productionStatus": "generated",
       "url": "/assets/zombies/crawler/death.png",
-      "promptExact": "Use case: identity-preserve. Asset: ONE new animation pose sprite for DEAD SECTOR retro FPS. Image1 is the EXACT ACCEPTED BASE IDENTITY AND CANVAS. Image2 is PIXEL ART STYLE ONLY. Preserve the same adult cadaveric woman, long black hanging hair, pale small eyes, dirty ivory Victorian long-sleeved torn nightdress, two thin arms/two bent legs, exact clothing and stains, same scale and front low camera. Chunky hand-pixelled matte style, stepped edges, limited desaturated palette, no smoothing or new fine detail. Exact same square canvas, transparent empty upper area, side margins at least4%, ground baseline y98.4%, no per-pose zoom or recropping. Output one pose only, genuine alpha transparency in empty regions. No ground plane, shadow, blood puddle, gore additions, text, grid, labels, particles, glow, or background.\nChange only action: same woman has fully collapsed inert onto her side low on the ground, head resting around x43%,y85%, hair lying across her face, eyes closed, mouth slack. Long ivory nightdress, dark hair, two thin arms and two legs remain identifiable. Body extends left-to-right without increasing its total original width or apparent anatomical scale. Her uppermost silhouette starts no higher than y68%; bottommost fingertips/hair touch y98.4%. Silhouette height should be less than45% of canvas, retaining upper transparency. Limbs lie slack, no hand raised, no crawling stance, no kneeling, no new puddle. Match sprite materials and exact identity, same frontal camera.",
+      "generationFile": "exec-32467ce7-a0c0-4ce4-be24-def16af7849e.png",
+      "promptExact": "Use case: identity-preserve. Asset type: ONE production animation pose for DEAD SECTOR retro horror FPS. Input image1 is exact accepted base identity AND full square canvas, image2 actual pixel-art style reference. Preserve exactly the adult quadruped cadaveric woman, high angular humped spine, dirty ivory long-sleeved Victorian gown, long black hair, LOW hanging tilted gaunt face with small dull eyes in hollow sockets and slack dark mouth. Two arms and two bent legs only. Keep camera, clothing/stains, skin palette, anatomical scale, full square transparent canvas, empty upper third, complete margins and baseline at y98.4%. No per-pose zoom/crop. Chunky hand-pixelled stepped edges, matte broad shadow clusters; no smooth photo shading. Genuine alpha empty regions; no floor, no cast shadow, no puddle, no text, no particles, no disconnected body parts. One pose, not a sheet.\nChange only action to her final dead collapsed pose: the same woman lies fully inert on her side low across the bottom of the SAME canvas, head and black hair resting near x46%,y84%, slack closed eyes, mouth relaxed. The high humped spine and gown have collapsed sideways; no standing shoulder, no raised hand, no crawling stance. Two long arms and two bent legs lie slack on ground, recognizable dirty ivory gown, same anatomical size. Body extends left to right without widening beyond the base. Topmost body pixel should be BELOW y66%, bottommost fingers/hair at y98.4%, leaving the top two thirds transparent. Hair partly veils face. No blood puddle, no new wounds, no smoke, no detached limbs.",
       "referencesActuallyAttached": [
-        "tmp/rampeuse-v2/idle.png (base before final ground alignment)",
+        "docs/asset-packs/sources/rampeuse-v3/idle-source.png",
         "public/assets/zombies/agile/idle.png"
       ],
       "transformations": {
-        "script": "scripts/export-crawler-sprite.ps1",
-        "resampling": "NearestNeighbor, whole square canvas, true alpha preserved",
-        "groundOffsetY": -3
+        "script": "scripts/export-crawler-v3.ps1",
+        "sharedExport": "scripts/export-crawler-sprite.ps1",
+        "resampling": "NearestNeighbor de1254² à512², canevas entier, sans crop.",
+        "groundOffsetY": -7,
+        "note": "Translation verticale seule pour que le bord opaque des appuis finisse à la ligne504."
       },
       "validation": {
         "file": "pass",
         "art": "inspected_by_assistant",
-        "continuity": "preview_playback_sampled",
+        "continuity": "preview_sampled_normal_and_quarter_speed",
         "gameplay": "not_checked",
         "humanApproval": "not_requested"
       }
     }
   ],
-  "validation": {
-    "files": "pass",
-    "art": "inspected_by_assistant_at_60_and_140px_billboard_height",
-    "continuity": "Crawl cycles played at 1x/0.25x and frames sampled; attack returns to idle, death remains",
-    "gameplay": "not_checked",
-    "humanApproval": "not_requested"
-  },
-  "tool": "built-in image_gen",
-  "knownLimits": [
-    "One frontal billboard viewpoint",
-    "Only two crawl poses; sampled checks are not user artistic approval",
-    "Attack/hurt/death retain existing one-pose behavior, no multi-frame falling animation",
-    "Actual illumination, aim and movement readability in combat remain to test"
+  "phases": [
+    {
+      "id": "idle",
+      "action": "Fixation basse immobile ; tête pendante, deux mains en appui."
+    },
+    {
+      "id": "crawl-a",
+      "action": "Main image gauche au sol, main droite levée, déplacement du poids ; vrai appui alterné."
+    },
+    {
+      "id": "crawl-b",
+      "action": "Main image droite au sol, main gauche levée ; alternance organique, pas un miroir."
+    },
+    {
+      "id": "attack",
+      "action": "Préparation ramassée, épaules tendues et mâchoire plus ouverte ; un geste puis retour."
+    },
+    {
+      "id": "hurt",
+      "action": "Contraction et tête inclinée, une main repliée."
+    },
+    {
+      "id": "death",
+      "action": "Corps couché inerte sur le côté, cheveux et mains au sol."
+    }
   ],
-  "acceptedBaseFile": "public/assets/zombies/crawler/idle.png",
+  "animation": {
+    "sharedModule": "src/CrawlerAnimation.ts",
+    "crawlPoseDuration": 0.2,
+    "attackWindup": 0.35,
+    "attackRecovery": 0.25,
+    "deathDuration": 0.45,
+    "events": "Un impact maximum par attaque ; pauses et mort interrompent les dégâts selon CrawlerZombie.",
+    "behavior": "Arrêt de fixation à distance lorsqu'elle est regardée, tractions plus rapides hors champ et appuis plantés pendant les pauses. Lampe/furie/fuite/saisie conservées ; pas de téléportation."
+  },
   "budget": {
     "files": 6,
-    "bytes": 1326224,
+    "bytes": 1545087,
+    "sourceFiles": 6,
+    "sourceBytes": 5720574,
     "textureRGBABytes": 6291456
   },
-  "reused": [
-    "CrawlerZombie existing behavior and six paths",
-    "Existing combat audio, no new sound needed"
-  ],
-  "handoff": {
-    "sharedAnimationModule": "src/CrawlerAnimation.ts",
-    "previewCommand": "node scripts/make-crawler-preview.mjs",
-    "previewLocation": "http://127.0.0.1:5174/tmp/crawler-preview/index.html",
-    "screenshots": "tmp/rampeuse-browser/",
-    "oldSpritesBackup": "tmp/rampeuse-gemini-before/",
+  "validation": {
+    "files": "pass",
+    "art": "Six poses inspectées, appuis communs504, contours alpha et silhouette complète.",
+    "continuity": "A/B et retour au repos contrôlés à1x et0.25x. Attaque/retour, blessure et cadavre inspectés dans l'aperçu.",
+    "browser": "Aperçu isolé à60/140px et comparaison3D caméra1.7m à1.8/3.5/6m ; aucune exceptionJS ni fichier manquant. Scènes du vrai Level Hall/Salon inspectées par agent principal à3/6m, avec traque et saisie préparées ; pas de combat joué.",
+    "gameplay": "not_checked",
+    "audio": "not_checked",
+    "humanApproval": "not_requested",
     "checksActuallyRun": [
       "npm.cmd run build",
       "node scripts/check-crawler.mjs",
-      "node scripts/check-debug-menu.mjs",
       "node scripts/check-sprite-hit-mask.mjs",
-      "node scripts/check-tiers.mjs",
-      "node scripts/check-spitter.mjs",
-      "node scripts/check-horde-resources.mjs",
-      "node scripts/check-weapon.mjs",
-      "node tmp/check-rampeuse-browser.mjs pilot",
       "node tmp/check-rampeuse-browser.mjs final",
-      "node tmp/check-rampeuse-browser.mjs debug"
-    ],
-    "browserActuallyObserved": "Headless preview captures and debug UI; no physical play session",
-    "pointerLockAttempt": "Headless request failed with WrongDocumentError; not validated"
-  }
+      "node tmp/check-portrait-browser.mjs",
+      "git diff --check"
+    ]
+  },
+  "knownLimits": [
+    "Un seul point de vue frontal billboard.",
+    "Deux poses de locomotion ; attaque/blessure/mort conservent une seule pose.",
+    "À6m la lecture repose surtout sur la silhouette ; détails du visage lisibles proche/moyen.",
+    "Aucune tentative complète, écoute ou lecture sous pression validée par l'aperçu."
+  ]
 }

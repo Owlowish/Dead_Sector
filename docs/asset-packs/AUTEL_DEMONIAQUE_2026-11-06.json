@@ -1,0 +1,85 @@
+{
+  "documentType": "asset-pack",
+  "templateVersion": 1,
+  "id": "AUTEL_DEMONIAQUE_2026-11-06",
+  "updatedAt": "2026-11-06",
+  "request": "Améliorer la salle de la statue avec un autel démoniaque inspiré de la référence utilisateur.",
+  "scope": {
+    "prepare": true, "generate": true, "integrate": true,
+    "authorizedDecisions": ["Remplacement du buste de la Galerie par un autel décoratif", "Géométrie native, matières existantes et réglages réversibles de composition"],
+    "assumptions": ["Aucune interaction, nouvelle mécanique ou modification de progression", "Accès, apparitions et ressources de la Galerie conservés"],
+    "pendingDecisions": []
+  },
+  "style": {
+    "workflow": "docs/PIPELINE_ASSETS.md",
+    "references": [
+      {
+        "path": "docs/asset-packs/references/autel-demoniaque-concept.png",
+        "role": "Composition : autel de pierre, deux cristaux rouges suspendus, bougies, coulures et bannières bordeaux",
+        "inspected": true, "attachedToGenerator": false,
+        "bytes": 2203331, "dimensions": [1780, 884],
+        "sha256": "fcd4a2cb1c89962ebd804d77df0c2d32d48bd3b3aa8ee9e57c05ff3007289c9f",
+        "provenance": "Pièce jointe utilisateur copiée à l’identique ; origine antérieure non établie"
+      },
+      { "path": "public/assets/textures/mansion/stone-ashlar-v1.png", "role": "Pierre déjà chargée et style du manoir", "inspected": true, "attachedToGenerator": false },
+      { "path": "public/assets/textures/mansion_wall_v2.png", "role": "Palette et détail du papier peint environnant", "inspected": true, "attachedToGenerator": false }
+    ],
+    "sharedPromptBlock": null,
+    "lockedIdentity": ["Pierre grise mate et joints irréguliers", "Deux cristaux facettés sombres à fissures rouges", "Sceau pentagonal et bannières déchirées", "Bougies ivoire, laiton sombre et contraste chaud/froid rétro"],
+    "acceptedBaseFile": "src/DemonicAltar.ts",
+    "humanApproval": "not_requested"
+  },
+  "technicalContract": {
+    "usage": "Décor volumique de la Galerie Ouest, avec surfaces de tir distinctes des effets et du collider de déplacement",
+    "format": "Géométries Three.js TypeScript ; aucun bitmap ni son généré",
+    "coordinateSpace": "Mètres du manoir ; groupe demonic-altar à[-18,0,0], sol Y=0, plafond Y=6.4, façade principale vers+Z",
+    "displaySize": "Corps tactique de 2.8×1.3×1.8m ; effets jusqu’à environ 4.4m et bannières jusqu’à 4.63m",
+    "anchors": ["Collider MANSION_WALLS : x=-18,y=0.65,z=0,width=2.8,height=1.3,depth=1.8", "Centres des cristaux à y=2.15 et3.29, oscillation verticale de0.04m", "Quatorze flammes ancrées sur les mèches ; vingt-quatre braises bornées", "Deux bannières entre fenêtres et portrait du mur ouest", "Source Galerie réaffectée à[-17.3,2.15,1.8], couleur0xf47650, intensité8.5, rayon12, décroissance1.3 ; aucun ajout de lumière"],
+    "fixedParts": ["Maçonnerie, socle circulaire, sceaux, coulures et flaques de sang fixes", "Bougies, chandeliers et bannières"],
+    "movingParts": ["Deux cristaux : rotation lente et flottement", "Volutes ajourées en rotation, pulsation rouge, flammes et braises instanciées"],
+    "phases": ["Boucle ambiante continue, sans événement de gameplay"],
+    "uniqueEvents": [],
+    "interruptions": "Level.update(delta,atmosphereDelta) transmet le second delta à DemonicAltar.update ; atmosphereDelta=0 fige les poses et effets. dispose retire les solides en place et libère les seules ressources possédées.",
+    "signatures": ["new DemonicAltar(scene)", "getShotBlockers(): readonly THREE.Mesh[]", "update(delta): void", "dispose(): void"],
+    "budgetMeasured": {
+      "meshes": 14, "geometries": 14, "materials": 9, "shotBlockers": 6,
+      "trianglesIncludingInstances": 8166,
+      "geometryBufferBytes": 1008600, "instanceBufferBytes": 2432, "totalBufferBytes": 1011032,
+      "extraMainDrawCallsMax": 14, "newRuntimeTextures": 0, "newLights": 0, "newShadowCasters": 0,
+      "measurement": "Module réel sous Node, TextureLoader simulé ; attributs, indices et matrices d’instances comptés. Appels principaux théoriques après forceSinglePass des volutes, hors mesure GPU."
+    }
+  },
+  "assets": [
+    {
+      "id": "demonic-altar-native", "required": true, "productionStatus": "generated",
+      "sourceFile": "src/DemonicAltar.ts", "exportFile": "src/DemonicAltar.ts",
+      "purpose": "Autel, bougies, cristaux, bannières et effets ambiants dans le vrai niveau",
+      "toolAndModelActuallyUsed": "Code Three.js natif par assistant ; aucun ImageGen",
+      "promptExact": null, "referencesActuallyAttached": [],
+      "transformations": ["Buste supprimé du lot MansionFurnishings ; corniches de la Galerie conservées", "Primitives et sceaux fusionnés par matériau et statut d’occlusion", "Fissures sur les arêtes et à l’intérieur des faces des cristaux", "Flammes et braises instanciées ; deux rubans additifs recto-verso en une passe", "Sang, sceaux, bannières et effets exclus des tirs ; pierre, métal, cire et cristaux exposés par leurs surfaces réelles", "Éclairage ambiant existant réaffecté, sans source ni ombre supplémentaire"],
+      "validation": { "file": "pass", "art": "pass", "continuity": "pass", "integration": "pass", "gameplay": "not_checked" },
+      "evidence": ["Vraie Galerie inspectée dans le navigateur, vues point focal et ensemble ; cristaux et volutes observés à plusieurs instants", "Contrôles logiques de pause/reprise et mêmes poses après huit secondes à30/144Hz", "Tirs bidirectionnels sur pierre et deux cristaux, passage latéral sans occlusion invisible", "Quinze points de navigation/apparition/ressource préservés et contournement dans les deux sens"],
+      "knownDefects": [], "humanApproval": "not_requested"
+    },
+    {
+      "id": "existing-stone-and-room", "required": true, "productionStatus": "reused",
+      "files": ["public/assets/textures/mansion/stone-ashlar-v1.png", "public/assets/textures/mansion_wall_v2.png", "public/assets/textures/wood_floor_v2.png"],
+      "purpose": "Pierre de l’autel et surfaces environnantes du manoir",
+      "toolAndModelActuallyUsed": "Matières existantes réutilisées ; aucun générateur", "promptExact": null,
+      "transformations": ["Matériau pierre cloné, texture commune conservée", "Papier peint et parquet environnants conservés"],
+      "provenance": "Lots existants du manoir ; sources et licences inchangées",
+      "validation": { "file": "pass", "integration": "pass", "gameplay": "not_checked" }
+    }
+  ],
+  "handoff": {
+    "sharedAnimationModule": "src/DemonicAltar.ts via Level.update",
+    "previewCommand": "node scripts/make-composition-preview.mjs",
+    "previewLocation": "/tmp/composition-preview/index.html",
+    "checksActuallyRun": ["npm.cmd run build", "check-demonic-altar", "check-room-composition", "check-mansion-furnishings", "check-decor-surfaces", "check-encounters-f4", "git diff --check"],
+    "buildActuallyRun": true, "browserActuallyObserved": true,
+    "observations": ["Vraie salle observée depuis l'entrée, en ensemble, de face et côté escalier ; canvas426×240 à viewport1280×900", "Lampe allumée/éteinte, cristaux et volutes à plusieurs instants ; lumière avancée et renforcée après observation de la façade trop sombre", "Continuité logique et observation visuelle distinctes ; aucun combat joué"],
+    "missingRequiredAssets": [],
+    "remainingWork": ["Aucune partie jouée ne valide le confort du contournement et la lisibilité sous pression", "Coût GPU et temps d’image comparatif du lot non mesurés"],
+    "lastSpecificDefect": null
+  }
+}

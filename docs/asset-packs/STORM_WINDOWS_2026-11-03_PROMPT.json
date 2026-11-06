@@ -3,7 +3,89 @@
   "tool": "image_gen.imagegen",
   "reference": "Image d'exemple fournie par l'utilisateur le 3 novembre 2026 : fenêtres gothiques hautes, rideaux, éclairs et lumière projetée au sol. Référence de composition et d'ambiance, sans copie de la pièce.",
   "prompt": "Create a single reusable game texture for the exterior view seen through a tall Gothic mansion window at night. Use the attached reference image only for mood and palette: stormy deep navy blue sky, heavy layered clouds, fine diagonal rain, very distant silhouettes of bare trees and ruined rooftops along the bottom 20 percent, pale moonlit haze. Composition must be a clean front-facing flat view through glass, designed to be cropped into a tall rectangular pane: no window frame, no mullions, no curtains, no room interior, no floor, no text, no border, no visible lightning bolt (the game will add flashes dynamically). Keep the upper two thirds visually rich but dark, with irregular cloud structure and faint rain; bottom horizon moody but not busy. Retro horror game art direction, painterly realistic with slightly coarse texture and strong readability when downsampled to 300px screen height. Portrait-oriented 2:3 composition. Opaque background.",
-  "base": "Ciel et pluie fixes, texture partagée ; les baies impaires retournent les UV horizontalement.",
-  "mobile": "Trait de foudre visible seulement pendant le flash ; lumière froide et motif des montants projeté au sol.",
-  "validation": "Vues fixes du vrai Level au rendu rétro 427 × 300 : Vestibule, Salon, paires de la Galerie et de la Bibliothèque ; base et flash comparés. Écoute et parcours complet à effectuer par l'utilisateur."
+  "base": "Ciel/pluie peints réutilisés, recadrés sans étirement et horizon ancré en bas ; UV impairs miroités. Encadrements de pierre, trois ovales de ferronnerie, rideaux bordeaux déchirés, deux tringles et bougies/cire en géométrie native.",
+  "mobile": "Pluie extérieure oblique rapide, coulures lentes avec queues effilées et petites perles sur le verre ; vitesses/longueurs variées et opacité fondue, y compris dans le haut de l’arche. Foudre, flash et projection locaux inchangés ; temps actif d’ambiance et pause conservés.",
+  "validation": "Validation initiale du ciel et de l’orage (3 novembre) : vues fixes du vrai Level au rendu rétro427×300, base et flash comparés ; provenance du premier lot conservée.",
+  "updatedAt": "2026-11-06",
+  "currentVersion": 2,
+  "concept": {
+    "path": "docs/asset-packs/references/fenetres-gothiques-concept.png",
+    "sha256": "05a128f142f6de0562a0304e96545adb1100122dafd9d9cc1e4ace762dc04620",
+    "bytes": 2431535,
+    "dimensions": [
+      1536,
+      1024
+    ],
+    "provenance": "Concept utilisateur fourni le 6 novembre 2026, copié à l’identique ; auteur/licence non précisés. Référence non chargée par le jeu.",
+    "inspected": true,
+    "attachedToGenerator": false
+  },
+  "implementation": {
+    "status": "implemented_visual_review_complete",
+    "toolActuallyUsed": "Géométries Three.js/TypeScript natives ; aucune génération ou retouche de bitmap pour ce lot.",
+    "files": [
+      "src/StormWindow.ts",
+      "src/GothicWindowDressing.ts",
+      "src/Level.ts",
+      "src/WindowRain.ts"
+    ],
+    "reusedTextures": [
+      "public/assets/textures/mansion/storm-exterior-v1.png",
+      "public/assets/textures/mansion/stone-ashlar-v1.png"
+    ],
+    "variants": [
+      "Classique : baies0,1,3",
+      "Vitre fissurée : baie2, Galerie",
+      "Vitrail bleu/prune/bordeaux : baie4, Bibliothèque",
+      "Marquage occulte statique : baie5, Bibliothèque"
+    ],
+    "invariants": [
+      "Six placements et dimensions inchangés, murs fermés/collisions/navigation/tirs préservés.",
+      "Aucune nouvelle lumière ou ombre projetée ; décor fusionné par matière.",
+      "Ciel fixe et pluie dans le plan du vitrage ; aucun effet d’attaque ou de destruction ajouté."
+    ],
+    "preview": "node scripts/make-window-preview.mjs → /tmp/window-preview/index.html"
+  },
+  "technicalContract": {
+    "coordinateSpace": "Repère local du vitrage : x/y dans[-1,1], sommet(0,1), naissance de l’arc y0,38. Groupe multiplié par largeur/2 et hauteur/2 ; local -Z vers la pièce.",
+    "depthOrder": "Ciel z+0,004 ; foudre -0,006 ; pluie -0,016 ; teintes/gravures -0,021/-0,023 ; fer -0,062/-0,073 ; pierre/tissu en relief côté pièce.",
+    "anchors": "Appuis et ciel aux positions MANSION_STORM_WINDOWS. Recadrage source512×768 au ratio de chaque baie, horizon conservé ; aucun changement du bitmap. Couronne musique maxY3,986 pour plafond4m.",
+    "animation": "Par baie :48traînées de pluie,16coulures de3segments et20perles, soit116segments réservés dans un seul LineSegments. Buffers position/RGBA préparés une fois, alpha variable et clip dérivé de la vraie arche. Temps absolu déterministe ; zéro reproduit la même pluie après n’importe quelle durée. Mise à jour via delta d’ambiance plafonné0,05s, pause à delta0.",
+    "cleanup": "StormWindowVisuals.dispose idempotent : groupes/projections/traits retirés, géométries et matériaux dédupliqués libérés ; extérieur et DataTexture de projection possédés libérés, texture pierre du cache préservée."
+  },
+  "validationCurrent": {
+    "date": "2026-11-06",
+    "build": "pass",
+    "logic": [
+      "check-storm",
+      "check-audiovisual-pass"
+    ],
+    "visual": "Rendu réel1280×900 : pluie1×/0,25×, coulures de près, classique et vitrail/éclair, pause/reprise observés. Deux captures de pause identiques ; aucune erreur JavaScript relevée.",
+    "evidence": [
+      "tmp/window-preview/review/pluie-detail.jpg"
+    ],
+    "gameplay": "not_checked",
+    "gpuCost": "not_measured"
+  },
+  "budgetMeasured": {
+    "method": "Scène de fenêtres seule sous Node, TextureLoader simulé ; foudres et projections incluses. Buffers CPU, aucun coût GPU mesuré.",
+    "meshes": 55,
+    "lineBatches": 8,
+    "triangles": 23424,
+    "lineSegments": 765,
+    "rainSegments": 696,
+    "uniqueGeometries": 58,
+    "uniqueMaterials": 53,
+    "geometryBufferBytes": 2185132,
+    "runtimeTexturesInWindowGraph": 3,
+    "newRuntimeImageFiles": 0,
+    "newLights": 0,
+    "newShadowCasters": 0,
+    "baseline": {
+      "meshes": 48,
+      "triangles": 9372,
+      "geometryBufferBytes": 106272
+    },
+    "comparison": "Depuis le premier décor :15objets rendables et14052triangles supplémentaires pour six baies. Depuis la première pluie de ce lot :408segments et32064octets de buffers supplémentaires, aucun objet/triangle/matériau/bitmap/lumière ajouté. 116segments réservés par baie, certains à alpha0 selon leur phase. Les compteurs ne mesurent pas un temps GPU."
+  }
 }

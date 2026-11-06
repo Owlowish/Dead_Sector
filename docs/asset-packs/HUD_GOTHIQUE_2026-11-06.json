@@ -3,7 +3,7 @@
   "templateVersion": 1,
   "id": "HUD_GOTHIQUE_2026-11-06",
   "updatedAt": "2026-11-06",
-  "request": "V2 validée par l’utilisateur : HUD plus simple, compact et réellement pixel art ; cœur animé discret ; textures du décor moins chargées.",
+  "request": "HUD V3 selon la référence utilisateur, ajusté : santé en barre rouge sans nombre, pictogramme de munition animé à chaque tir réel, décompte entre paliers plus grand en haut au centre.",
   "scope": {
     "prepare": true,
     "generate": true,
@@ -13,7 +13,8 @@
       "Recomposer le HUD en conservant valeurs, contrôles et calques d’armes.",
       "Retoucher seulement les couleurs des ombres et de la brume du manoir.",
       "V2 : retirer médaillons/cadres chargés et cartouches redondantes ; remplacer le cœur par quatre poses natives32px, battement discret et mouvement réduit.",
-      "Atténuer localement les détails des textures murales/bois/tapis au chargement, sans modifier leurs fichiers sources."
+      "Atténuer localement les détails des textures murales/bois/tapis au chargement, sans modifier leurs fichiers sources.",
+      "V3 : recomposer le HUD en CSS selon la nouvelle référence, réutiliser le cœur animé, lire chargeur / réserve, déplacer la lampe au bas-centre sans batterie."
     ],
     "assumptions": [
       "Référence de style et de composition, sans reprise de ses valeurs de munitions ni ajout de batterie à la lampe."
@@ -42,20 +43,28 @@
         "role": "matières laiton et lisibilité des munitions",
         "inspected": true,
         "attachedToGenerator": false
+      },
+      {
+        "path": "docs/asset-packs/references/hud-angular-reference.png",
+        "sha256": "b46b56184a785cd0e0ef47288b12b57d7803255a3455b79654e7988364f21486",
+        "role": "Nouvelle référence de composition, hiérarchie et contours du HUD V3",
+        "inspected": true,
+        "attachedToGenerator": false,
+        "provenance": "Image utilisateur copiée à l’identique ; auteur/licence non précisés. Référence uniquement, non chargée par le jeu."
       }
     ],
     "lockedIdentity": [
-      "Cœur anatomique simplifié, six tons opaques rouge vin/brique, alpha binaire.",
-      "Cellules32×32, cadre absent, artères identiques sur11lignes et ancrage commun ; affichage64×64.",
-      "Aplats noir brun, contours fins laiton mat et valeurs ivoire plus lumineuses que les bordures.",
+      "Cœur anatomique V2 réutilisé à l’identique : six couleurs opaques, quatre cellules 32 × 32 et chronologie partagée.",
+      "Panneaux anthracite biseautés, contours fins et accent bordeaux à gauche ; texte monospace, grands chiffres ivoire.",
+      "Vie en barre rouge au bas gauche, palier/menaces en haut à gauche ; accalmie en grand au haut-centre, chargeur / réserve et pictogrammes animés en bas à droite ; lampe au bas-centre sans batterie.",
       "Identité des armes/ennemis et vrais signaux de combat conservés."
     ],
     "acceptedBaseFile": "docs/asset-packs/hud-gothic-v2/heart-base-source.png",
     "humanApproval": "not_requested"
   },
   "technicalContract": {
-    "usage": "HUD DOM sobre ; seule l’illustration du cœur bat.",
-    "displaySize": "Cœur64px, HUD santé208×80px et munitions250×~80px à1280×720 ; source32px doublée à un facteur entier.",
+    "usage": "HUD DOM/CSS ; cœur PNG animé réutilisé, pictogrammes lampe/munitions en CSS. Aucun nouvel atlas ni police téléchargée.",
+    "displaySize": "À 1280 × 720 : santé 256 × 58 px avec barre rouge de 14 px, munitions environ 211 × 58 px ; cœur 48 px, 64 px dès 1600 px de large, 40 px sous 450 px. Décompte central de 34 à 52 px selon le viewport ; filtrage pixelated du cœur.",
     "sourceDimensions": "Deux PNG générés conservés dans hud-gothic-v2 ; mesures et SHA dans sourceProvenance.",
     "exportDimensions": [
       128,
@@ -64,7 +73,7 @@
     "format": "PNG RGBA, quatre cellules32×32 horizontales.",
     "background": "Alpha binaire, six couleurs opaques.",
     "coordinateSpace": "Cellules32×32, source action2×2 ; export [0,0,32,32],[32,0,32,32],[64,0,32,32],[96,0,32,32].",
-    "coordinateConversion": "Nearest et palette déterministe ; ni lissage ni échelle par pose.",
+    "coordinateConversion": "Atlas V2 inchangé ; taille CSS commune aux quatre poses, sans normalisation par pose.",
     "anchors": [
       {
         "space": "cell32x32",
@@ -79,8 +88,8 @@
     "movingParts": [
       "Lobes inférieurs, petites variations de contraction/relâchement."
     ],
-    "phases": "Chronologie de référence dans src/HeartAnimation.ts ; cycle1,4s, repos1,16s puis3poses de0,08s.",
-    "interruptions": "GameHud.update avance seulement sous contrôle avec vie>0 ; mouvement réduit ou décès repos0 ; clear/reset remet le cycleà0.",
+    "phases": "Cœur : chronologie src/HeartAnimation.ts inchangée (1,4 s). Munition : notifyShot au vrai setOnShoot, vol/flash de 0,30 s actives ; flash seul en mouvement réduit.",
+    "interruptions": "Hors contrôle : cœur et munition figés ; clear, mort, recharge et changement d’arme annulent le retour de tir. Vie nulle ou mouvement réduit : cœur au repos. Accalmie de dix secondes suspendue hors contrôle dans Game.",
     "budget": {
       "runtimeImageBytes": 956,
       "decodedRgbaBytes": 16384,
@@ -362,7 +371,7 @@
     }
   ],
   "limitations": [
-    "V1 conservée pour provenance ; les anciens médaillons et SVG ornés ne sont plus chargés par le HUD V2.",
+    "Médaillons et SVG V1 conservés pour provenance, jamais chargés par V3 ; cœur V2 réutilisé sans nouveau bitmap de jeu.",
     "Animation contrôlée dans l’aperçu et sur captures de poses ; discrétion sous pression et performances comparatives non établies par un combat réel."
   ],
   "validation": {
@@ -373,12 +382,15 @@
     "evidence": [
       "tmp/hud-preview/review/report.json",
       "tmp/gothic-review/report.json",
-      "scripts/check-hud.mjs"
+      "scripts/check-hud.mjs",
+      "tmp/hud-preview/review/hud-v3-manoir.jpg",
+      "tmp/hud-preview/review/hud-v3-critique-ads.jpg",
+      "tmp/hud-preview/review/hud-v3-accalmie.jpg"
     ]
   },
-  "currentVersion": 2,
+  "currentVersion": 3,
   "v2": {
-    "status": "implemented_visual_review_complete",
+    "status": "superseded_layout_heart_and_texture_pass_retained",
     "acceptedChanges": [
       "HUD compact et suppression des ornements/cartouches redondants.",
       "Secteur affiché trois secondes actives par palier, compteurs en continu.",
@@ -393,5 +405,42 @@
       "sourceFilesUnchanged": true
     },
     "preview": "node scripts/make-hud-preview.mjs → /tmp/hud-preview/index.html"
+  },
+  "v3": {
+    "status": "implemented_visual_review_complete",
+    "generate": false,
+    "changes": [
+      "Barre rouge de vie à la place du nombre ; valeurs et ARIA du meter conservées, cœur V2 réutilisé.",
+      "Bandeau palier / total et menaces en haut à gauche ; décompte d’accalmie agrandi et centré en haut, dix secondes libres conservées.",
+      "Chargeur / réserve avec balle ou cartouche CSS ; vol/fondu et flash au tir réel, aucun faux retour sur clic vide ou transfert.",
+      "Temps actif partagé avec les retours du HUD : pause/focus figés et nettoyage aux interruptions ; mouvement réduit persistant.",
+      "Jauge finale, notifications, secteurs temporaires et victoire libre conservés."
+    ],
+    "implementation": [
+      "index.html",
+      "src/style.css",
+      "src/GameHud.ts",
+      "src/Game.ts"
+    ],
+    "preview": "node scripts/make-hud-preview.mjs → /tmp/hud-preview/index.html ; ?scene=1 pour le vrai Level sans combat. Douze états, tir T, accalmie réelle, pause et ralenti HUD.",
+    "knownLimits": [
+      "Lecture sous pression et coût propre au HUD non mesurés en partie."
+    ],
+    "humanApproval": "not_requested",
+    "validation": {
+      "build": "pass",
+      "logicalChecks": [
+        "scripts/check-hud.mjs",
+        "scripts/check-final-run.mjs",
+        "scripts/check-encounters-f4.mjs"
+      ],
+      "browser": "Vie pleine/62 %/critique, ADS, animation de balle 1×/0,25× et pause observés dans le vrai Level préparé. Accalmie centrale inspectée à1280×720,1024×768 et1920×1080 ; géométrie vérifiée à2560×1080 et480px. Vrai Game avec pause/accalmie : panneau et annonce séparés. Aucune erreur JavaScript relevée.",
+      "gameplay": "not_checked",
+      "evidence": [
+        "tmp/hud-preview/review/hud-v3-manoir.jpg",
+        "tmp/hud-preview/review/hud-v3-critique-ads.jpg",
+        "tmp/hud-preview/review/hud-v3-accalmie.jpg"
+      ]
+    }
   }
 }

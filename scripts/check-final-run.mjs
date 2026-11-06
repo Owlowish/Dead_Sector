@@ -25,7 +25,9 @@ const { Weapon } = await import('../src/Weapon.ts');
 const { Level } = await import('../src/Level.ts');
 const { Zombie } = await import('../src/Zombie.ts');
 const { GuardianProjectile } = await import('../src/GuardianProjectile.ts');
+const { PortraitParticles } = await import('../src/PortraitParticles.ts');
 const { ShotgunPickup } = await import('../src/ShotgunPickup.ts');
+const { PistolPickup } = await import('../src/PistolPickup.ts');
 const { TierDiagnosticsTracker } = await import('../src/TierDiagnostics.ts');
 const { ENCOUNTER_CONFIGS } = await import('../src/EncounterConfig.ts');
 const { PLAYER_START_POSITION } = await import('../src/MansionConfig.ts');
@@ -46,8 +48,11 @@ Object.assign(player, {
 });
 player.resetForDebug();
 const game = Object.create(Game.prototype);
+const portraitParticles = new PortraitParticles(scene, () => 0.5);
+const portraitAudio = { stops: 0, plays: [], stop() { this.stops++; }, play(...args) { this.plays.push(args); } };
 const weapon = new Weapon(player.camera, canvas, [], level.getSolidMeshes(), () => {}, () => game.isSimulationActive(), (amount) => player.setAimAmount(amount));
 const pickup = new ShotgunPickup(scene);
+const pistolPickup = new PistolPickup(scene);
 const diagnostics = new TierDiagnosticsTracker();
 diagnostics.startTier(7); diagnostics.recordShot(); diagnostics.recordHit(1, 2); diagnostics.endTier();
 diagnostics.startTier(8); diagnostics.recordShot(); diagnostics.recordDamageTaken(12);
@@ -60,7 +65,7 @@ const summaryDisplay = Object.assign(element(), {
 let clearedEffects = 0, resetStorm = 0, disposed = 0;
 const disposable = () => ({ dispose() { disposed++; }, stopAudio() {} });
 Object.assign(game, {
-  scene, level, player, weapon, shotgunPickup: pickup, tierDiagnostics: diagnostics,
+  scene, level, player, weapon, shotgunPickup: pickup, pistolPickup, tierDiagnostics: diagnostics, portraitParticles, portraitAudio,
   encounterConfigs: ENCOUNTER_CONFIGS, renderer: { domElement: canvas },
   state: 'playing', currentTier: 8, pendingTierStart: 0, spawnQueue: 1, respiteTimer: 0,
   runElapsedSeconds: 125, completedTiers: new Set([1, 2, 3, 4, 5, 6, 7]),
@@ -87,8 +92,17 @@ game.zombies = [pendingRevival];
 game.checkTierCompletion();
 assert.equal(game.state, 'playing', 'Une relève en attente interdit la victoire');
 pendingRevival.revivalPending = false;
+game.onPortraitCue({ kind: 'transform-burst', position: new THREE.Vector3(), direction: new THREE.Vector3(0, 0, 1), phase: 2 });
+assert.ok(portraitParticles.getStats().active > 0, 'La transformation du vrai Game émet les fragments');
+assert.equal(portraitAudio.plays.length, 1, 'Le signal de transformation commande une seule voix');
 game.checkTierCompletion();
 assert.equal(game.state, 'won');
+assert.equal(portraitParticles.getStats().active, 0, 'La victoire nettoie les effets du boss');
+const stoppedAfterWin = portraitAudio.stops;
+assert.ok(stoppedAfterWin > 0, 'La victoire coupe le son de transformation');
+game.onPortraitCue({ kind: 'transform-burst', position: new THREE.Vector3(), direction: new THREE.Vector3(0, 0, 1), phase: 2 });
+assert.equal(portraitParticles.getStats().active, 0, 'Aucun effet tardif après la victoire');
+assert.equal(portraitAudio.plays.length, 1, 'Aucun son tardif après la victoire');
 assert.equal(game.isSimulationActive(), true, 'Le déplacement reste disponible après la victoire');
 assert.equal(game.runSummaryOpen, false);
 assert.equal(game.victoryDisplay.hidden, true);
@@ -127,6 +141,7 @@ player.maxHealth = 140; player.health = 7; player.speedMultiplier = 1.12; player
 player.applyAnkleGrab();
 game.ammoDrops = [disposable()]; game.shellCasings = [disposable()]; game.spitProjectiles = [disposable()];
 game.appliedUpgrades = ['ammo_capacity']; game.debugRun = true;
+portraitParticles.transformation(new THREE.Vector3(), 'burst');
 for (const door of level.getDoors()) {
   if (door.getType() === 'permanent_limit') continue;
   door.unlock(); door.toggle(); door.update(5, []);
@@ -141,14 +156,19 @@ assert.equal(game.completedTiers.size, 0); assert.equal(game.debugRun, false);
 assert.equal(game.ammoDrops.length + game.shellCasings.length + game.spitProjectiles.length + game.zombies.length, 0);
 assert.equal(disposed, 4, 'Corps, projectile, drop et douille sont nettoyés');
 assert.equal(clearedEffects, 1); assert.equal(resetStorm, 1);
+assert.equal(portraitParticles.getStats().active, 0, 'Une nouvelle tentative efface toutes les particules');
+assert.ok(portraitAudio.stops > stoppedAfterWin, 'Une nouvelle tentative coupe les voix restantes');
 assert.equal(player.getHealth(), 100); assert.equal(player.getMaxHealth(), 100);
 assert.equal(player.getSpeedMultiplier(), 1); assert.equal(player.isFlashlightOn(), true);
 assert.equal(player.grabTimer, 0, 'Une nouvelle tentative efface un agrippement en cours');
 assert.equal(player.grabSlowFactor, 1, 'Le ralentissement de la Rampeuse ne traverse pas les tentatives');
 assert.deepEqual(player.camera.position.toArray(), [PLAYER_START_POSITION.x, 1.7, PLAYER_START_POSITION.z]);
-assert.equal(weapon.getActiveWeaponId(), 'pistol'); assert.equal(weapon.isWeaponUnlocked('shotgun'), false);
-assert.equal(weapon.getAmmo(), 10); assert.equal(weapon.getMaxAmmo(), 15); assert.equal(weapon.getReserveAmmo(), 30);
+assert.equal(weapon.getActiveWeaponId(), 'axe');
+assert.equal(weapon.isWeaponUnlocked('pistol'), false); assert.equal(weapon.isWeaponUnlocked('shotgun'), false);
+assert.equal(weapon.getAmmo(), 0); assert.equal(weapon.getMaxAmmo(), 0); assert.equal(weapon.getReserveAmmo(), 0);
+assert.deepEqual(weapon.getAmmoStocks().pistol, { magazine: 10, reserve: 30, unlocked: false });
 assert.equal(pickup.isConsumed(), false);
+assert.equal(pickup.isActive(), false); assert.equal(pistolPickup.isActive(), false);
 assert.deepEqual(level.getDoors().map((door) => [door.getId(), door.getState()]), initialDoors);
 assert.equal(diagnostics.getRecords().length, 0);
 assert.equal(diagnostics.getCurrentRecord().tierNumber, 1);
@@ -190,8 +210,10 @@ try {
 }
 assert.equal(game.state, 'lost'); assert.equal(game.isSimulationActive(), false);
 assert.equal(game.gameOverDisplay.hidden, false); assert.equal(summaryDisplay.hidden, true);
+assert.equal(portraitParticles.getStats().active, 0, 'La défaite conserve aussi un pool vide');
 assert.equal(document.pointerLockElement, null, 'La défaite conserve sa pause existante');
 game.restartRun();
 assert.equal(player.isAlive(), true); assert.equal(game.currentTier, 1);
 assert.equal(game.getRunSummary().completedTiers, 0);
+portraitParticles.dispose();
 console.log('Finale : file/relèves, victoire unique et libre, bilan volontaire et nouvelle tentative complète : OK. Audio/DOM simulés ; gameplay non validé.');

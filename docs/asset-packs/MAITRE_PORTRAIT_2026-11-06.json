@@ -1,0 +1,1759 @@
+{
+  "documentType": "asset-pack",
+  "id": "maitre-portrait",
+  "updatedAt": "2026-11-06",
+  "request": "Deux formes et salves animées selon concept utilisateur ; correction de lisibilité : suppression des barres dorées superposées au masque et traînées brèves bordeaux pour distinguer les lames et les passages d’esquive.",
+  "scope": {
+    "generate": true,
+    "integrate": true,
+    "gameplayChanges": true,
+    "ownership": "Production raster et export via ImageGen natif ; comportement, projectiles, HUD et intégration dans le jeu."
+  },
+  "references": [
+    {
+      "path": "docs/asset-packs/references/maitre-portrait-concept-v2.png",
+      "role": "Deux formes cadre/prisonnier puis corps émergé, lames de peinture et éclatement",
+      "inspected": true,
+      "attachedToGenerator": true
+    },
+    {
+      "path": "docs/asset-packs/references/maitre-portrait-concept.png",
+      "role": "Identité et poses, concept utilisateur conservé à l'identique",
+      "inspected": true,
+      "attachedToGenerator": true
+    },
+    {
+      "path": "public/assets/zombies/zombie_idle.png",
+      "role": "Style pixel art, ombres larges et hiérarchie des détails",
+      "inspected": true,
+      "attachedToGenerator": true
+    },
+    {
+      "path": "public/assets/zombies/spitter/idle.png",
+      "role": "Style pixel art, matières mates et volumes",
+      "inspected": true,
+      "attachedToGenerator": true
+    }
+  ],
+  "identity": [
+    "Aristocrate contenu dans un cadre presque intact et sa toile ; pas de jambes visibles hors cadre. Bras partiellement sorti, main droite proche du masque actif. Cadre rigide stabilisé entre poses.",
+    "Corps totalement émergé, jambes pliées visibles, bras gauche géant déployé, cadre éclaté derrière épaules. Silhouette plus large et plus basse, identité masque/perruque/livrée conservée.",
+    "Les deux mains quittent le masque ; visage exposé et tourné vers le joueur dans les deux formes."
+  ],
+  "technicalContract": {
+    "exports": "28 PNG RGBA8, 384 × 384, alpha binaire 0/255",
+    "displayCanvasMeters": [
+      2.6,
+      2.6
+    ],
+    "groundAnchor": [
+      192,
+      360
+    ],
+    "groundConvention": "Bordexclusif inférieur du dernier appui dessiné ; offset partagé 1,1375 m.",
+    "coordinateSpace": "Pixels des exports, origine en haut à gauche ; 27 rectangles du masque seul dans src/PortraitAnimation.ts, aucune zone sur le cadavre.",
+    "filter": "NearestFilter ; pas de mipmaps.",
+    "budget": {
+      "bossDiskBytes": 4722174,
+      "bossRgba8Bytes": 16515072,
+      "projectileDiskBytes": 129242,
+      "projectileRgba8Bytes": 1048576,
+      "notes": "15,75 Mio pour les 28 poses, 1 Mio pour les deux atlas, hors ombres. Sources docs non chargées par le jeu."
+    },
+    "normalization": {
+      "sheets": [
+        {
+          "file": "contained-blades.png",
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "columns": 2,
+          "rows": 2,
+          "cell": 627,
+          "pad": 26,
+          "xShift": 0,
+          "xOffsets": [
+            -16,
+            13
+          ],
+          "ground": [
+            581,
+            585
+          ],
+          "poses": [
+            "blades-windup",
+            "blades-windup-b",
+            "blades-release",
+            "blades-followthrough"
+          ]
+        },
+        {
+          "file": "contained-actions.png",
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "columns": 3,
+          "rows": 3,
+          "cell": 418,
+          "pad": 17,
+          "xShift": 0,
+          "xOffsets": [
+            -18,
+            5,
+            27
+          ],
+          "ground": [
+            384,
+            384,
+            384
+          ],
+          "poses": [
+            "idle",
+            "walk-a",
+            "walk-b",
+            "tear-windup",
+            "tear-windup-b",
+            "tear-release",
+            "recovery",
+            "transform-a",
+            "transform-b"
+          ]
+        },
+        {
+          "file": "emerged-blades.png",
+          "dimensions": [
+            1261,
+            1247
+          ],
+          "columns": 2,
+          "rows": 2,
+          "cell": 631,
+          "pad": 38,
+          "xShift": 0,
+          "ground": [
+            589,
+            564
+          ],
+          "poses": [
+            "phase2-blades-windup",
+            "phase2-blades-windup-b",
+            "phase2-blades-release",
+            "phase2-blades-followthrough"
+          ]
+        },
+        {
+          "file": "emerged-actions.png",
+          "dimensions": [
+            1261,
+            1247
+          ],
+          "columns": 3,
+          "rows": 3,
+          "cell": 421,
+          "pad": 40,
+          "xShift": -20,
+          "xOffsets": [
+            0,
+            0,
+            4
+          ],
+          "ground": [
+            409,
+            396,
+            394
+          ],
+          "poses": [
+            "phase2-idle",
+            "phase2-walk-a",
+            "phase2-walk-b",
+            "phase2-tear-windup",
+            "phase2-tear-windup-b",
+            "phase2-tear-release",
+            "phase2-recovery",
+            "sweep-windup",
+            "sweep-release"
+          ]
+        },
+        {
+          "file": "emergence-death.png",
+          "dimensions": [
+            1774,
+            887
+          ],
+          "columns": 2,
+          "rows": 1,
+          "cell": 887,
+          "pad": 54,
+          "xShift": 0,
+          "ground": [
+            859
+          ],
+          "poses": [
+            "transform-c",
+            "death"
+          ]
+        }
+      ],
+      "groundCorrections": {
+        "death": 7,
+        "phase2-blades-followthrough": 4,
+        "phase2-tear-windup": 12,
+        "phase2-tear-windup-b": 10,
+        "phase2-walk-a": 11,
+        "phase2-walk-b": 10,
+        "sweep-windup": 3,
+        "sweep-release": 3,
+        "transform-b": -4
+      },
+      "algorithm": [
+        "Chaque planche a une échelle uniforme, sans redimensionner une silhouette pour remplir sa case.",
+        "Cases sources légèrement rectangulaires placées dans un carré sans étirement ; débord fixe par planche.",
+        "Extraction de la composantealpha principale (corps/cadre) pour retirer fragments des cellules voisines et poussières générées.",
+        "Export voisinleplusproche vers384, alpha>102 devient255.",
+        "Translations entières de colonnes stabilisent le cadrephaseI àx192 ; translations verticales d'appui vers360 ; aucune déformation de bitmap.",
+        "Toutes les transformations sont reproductibles par le script d'export."
+      ]
+    },
+    "projectiles": {
+      "flight": {
+        "atlas": [
+          768,
+          256
+        ],
+        "grid": [
+          3,
+          2
+        ],
+        "cell": [
+          256,
+          128
+        ],
+        "frameDurationSeconds": 0.055,
+        "cycleSeconds": 0.33,
+        "anchorCellPixels": [
+          192,
+          64
+        ],
+        "worldCanvas": [
+          1,
+          0.5
+        ],
+        "visual": "Noyau ivoire toujours visible à l'origine physique ; queue bordeaux déchirée alternée six poses. Le rendu peut osciller de0.06radian autour du noyau, trajectoire inchangée."
+      },
+      "impact": {
+        "atlas": [
+          256,
+          256
+        ],
+        "grid": [
+          2,
+          2
+        ],
+        "cell": [
+          128,
+          128
+        ],
+        "frameDurationSeconds": 0.07,
+        "totalSeconds": 0.28,
+        "anchorCellPixels": [
+          64,
+          110
+        ],
+        "worldCanvas": [
+          0.85,
+          0.85
+        ],
+        "poolCapacity": 10,
+        "nearCameraReadability": "Masqué à moins de0.7m de la position monde caméra ; sinon échelle min(1,distance/1.4). Âge/cycle continuent même masqués, nouvelle émission réinitialise l'échelle1. Aucun mesh ajouté."
+      },
+      "coordinateConversion": "Chaque géométrie porte ses UV de cellule. Translation du canevas width*(0.5-anchorX/cellWidth), height*(anchorY/cellHeight-0.5), puis billboard face au joueur pour le vol/à la caméra pour l'impact. Aucun texture.offset/repeat muté au fil des instances.",
+      "sourceTransforms": {
+        "flight": "Six sources1774x887, réduction entière à256x128 puis assemblage3x2 ; même échelle et mêmes marges, aucun crop silhouette.",
+        "impact": "Source1254² en quatre cellules627², réduction de chaque cellule à128² ; translations seules: frame0(-2,0),frame1(+2,0),frame2(0,+6),frame3(+2,+6). Contact aligné au pixel(64,110).",
+        "exportScript": "scripts/export-portrait-projectiles.ps1",
+        "resampling": "NearestNeighbor, alpha d'origine préservé."
+      },
+      "rendering": "NearestFilter, sRGB, mipmaps désactivées, alphaTest0.35, transparent, DoubleSide forceSinglePass, depthWritefalse ; aucun éclairage ni ombre.",
+      "budgets": {
+        "exportFiles": 2,
+        "exportBytes": 129242,
+        "textureRGBABytes": 1048576,
+        "sharedGeometries": 10,
+        "sharedMaterials": 2,
+        "flightDrawCallsPerProjectile": 1,
+        "impactDrawCallsMaximum": 10
+      },
+      "physics": "Projectile noyau16m/s,18dégâts, vie3s. Segment balayé conservé, premier obstacle prioritaire, aucune animation ne modifie la collision, trajectoire verrouillée, pause delta0. Traînées arrêtées au premier impact, sources et pool nettoyés à la fin/reset par Game.",
+      "trail": {
+        "spacingMeters": 0.7,
+        "lifetimeSeconds": [
+          0.045,
+          0.075
+        ],
+        "maximumTailMeters": 1.4,
+        "maximumActivePerBlade": 2,
+        "color": "#712731",
+        "sharedModule": "src/PortraitProjectileAnimation.ts",
+        "note": "Sources et atlas inchangés ; retouche runtime des seuls fragments cosmétiques."
+      }
+    }
+  },
+  "production": {
+    "tool": "image_gen.imagegen natif",
+    "model": "Non exposé par l'outil ; aucun CLI/API fallback.",
+    "workflow": {
+      "order": [
+        "BasephaseI",
+        "PilotephaseI4poses",
+        "BasephaseII",
+        "PilotephaseII4poses",
+        "ExtensionphaseI+transforma/b",
+        "ExtensionphaseII",
+        "Transformationc+mort"
+      ],
+      "baseAndPilotInspected": true,
+      "gameplayActuallyPlayed": false,
+      "animatedBrowserReview": "Par agent principal après rechargement complet des textures512vers384"
+    },
+    "generationInputs": {
+      "baseContained": [
+        "docs/asset-packs/references/maitre-portrait-concept-v2.png",
+        "docs/asset-packs/sources/maitre-portrait/identity-before-contained.png",
+        "public/assets/zombies/zombie_idle.png",
+        "public/assets/zombies/spitter/idle.png"
+      ],
+      "pilotContained": [
+        "docs/asset-packs/sources/maitre-portrait/contained-base.png"
+      ],
+      "baseEmerged": [
+        "docs/asset-packs/references/maitre-portrait-concept-v2.png",
+        "docs/asset-packs/sources/maitre-portrait/contained-base.png",
+        "docs/asset-packs/sources/maitre-portrait/identity-before-contained.png"
+      ],
+      "pilotEmerged": [
+        "docs/asset-packs/sources/maitre-portrait/emerged-base.png"
+      ],
+      "extensionContained": [
+        "docs/asset-packs/sources/maitre-portrait/contained-base.png",
+        "docs/asset-packs/sources/maitre-portrait/contained-blades.png",
+        "docs/asset-packs/sources/maitre-portrait/emerged-base.png"
+      ],
+      "extensionEmerged": [
+        "docs/asset-packs/sources/maitre-portrait/emerged-base.png",
+        "docs/asset-packs/sources/maitre-portrait/emerged-blades.png"
+      ],
+      "emergenceDeath": [
+        "docs/asset-packs/sources/maitre-portrait/emerged-base.png",
+        "docs/asset-packs/sources/maitre-portrait/emerged-actions.png"
+      ]
+    },
+    "promptsExact": {
+      "baseContained": "Use case: stylized-concept. Asset type: ONE production enemy sprite for DEAD SECTOR, PHASE ONE idle, true transparent alpha. Input1 approved new concept sheet is design reference for the character INSIDE his portrait; ignore all sheet labels/UI/effect examples. Input2 current boss sprite is identity reference ONLY for cracked ivory death mask, grey curled wig, burgundy/ivory Victorian clothes. Inputs3–4 actual game enemy sprites are pixel rendering references.\nDraw ONE isolated tall nearly intact ornate rectangular brass portrait frame with dark burgundy painted canvas. The aristocrat is genuinely TRAPPED INSIDE this rectangle: head, chest and painted lower body remain inside the canvas, NO legs or boots outside the frame, NO freestanding man carrying a frame. The bottom golden frame rail is the sole ground support. His cracked ivory mask and grey wig are clearly readable high inside the frame; stiff ivory cravat, muted burgundy coat. His IMAGE LEFT forearm only partially pushes through the painted surface, bent close to his torso, five long ivory fingers protruding slightly beyond the inner edge; it is NOT yet the fully extended huge phase-two limb. The smaller other hand rests near the mask as a protective gesture, without hiding all the face. Intact rectangular silhouette is the main signature, with just subtle torn canvas at the arm opening. Near-frontal camera, slight three-quarter toward image right, full frame and hands contained inside canvas. Square composition, complete silhouette in central80percent height, top frame at10percent and bottom rail at90percent, center root x50percent. Leave generous real transparent margins on ALL sides.\nChunky deliberate retro pixel art with visibly grouped pixels and stair-step edges, broad matte shadows, not smooth illustration. Small-size readability at384px export and60px gameplay height. Muted tarnished brass, aged ivory, burgundy, iron-black palette from game references; no glowing effects. No ground, no cast shadow, no scene, no labels, no border around the image, no text, no icons or watermark. EXACTLY ONE character/portrait, ONE idle pose.",
+      "pilotContained": "Use case: identity-preserve. Asset type: PHASE ONE blade-attack pilot animation atlas, FOUR square cells in a strict2-column by2-row square grid, true transparent alpha. The input is the accepted phase-one identity: aristocrat genuinely contained INSIDE an almost intact brass rectangular portrait, cracked ivory mask, grey curled wig, burgundy/ivory clothes painted into dark canvas, NO external legs or boots. Preserve exactly this design, same face size, same near-frontal camera, same rigid frame position/size in every cell. Frame top at12percent and bottom ground rail at90percent of EACH cell, frame center around55percent cell width, width45percent cell. All protruding fingers safely inside their own cell with10percent margins. No per-pose zoom.\nExactly four REAL DRAWN successive poses, left-to-right top-to-bottom:\n1 blades-windup: left-image arm begins folding across chest, fingers reach inward; small right hand protects mask cheek. Head leans backward. Frame remains almost intact and the painted body contained.\n2 blades-windup-b: stronger anticipation; shoulder twists and huge left fingers fan open beside the mask at eye height, preparing to throw. The mask is partly guarded by hands but not entirely hidden. Keep hand below frame top.\n3 blades-release: arm thrusts FORWARD and out to IMAGE LEFT at chest height, five long fingers widely open, torso leaning from canvas but lower body STILL trapped inside rectangle. Frame rails remain in same place. NO projectile/effect painted.\n4 blades-followthrough: arm completes its cast in a low outward arc, wrist bends downward, torso follows and head bows slightly; this is a genuinely different organic pose from cell3, not a translated copy. Small right hand remains near mask. Still no legs outside.\nThe four poses form a readable anticipation → charge → release → follow-through action. Coarse crisp retro game pixel-art clusters, broad matte shadows, restricted muted burgundy/ivory/tarnished brass palette matching input. True alpha around frames and arms. No floor, no cast shadow, no scene, no labels, text, UI, grid lines, particle or separate blade. Exactly4sprites.",
+      "baseEmerged": "Use case: identity-preserve. Asset type: ONE production game enemy sprite, PHASE TWO idle, true transparent alpha. Input1 new concept is the emerging/outside-the-frame design direction; input2 is the accepted phase-one contained portrait identity; input3 old game boss identifies the same mask/wig/clothes but is NOT the desired final silhouette. Draw the SAME cracked ivory death-mask aristocrat with grey curled wig and burgundy/ivory shredded Victorian canvas coat, now FULLY EMERGED from his portrait. This second form must look unmistakably DIFFERENT from the intact rectangular portrait form: full bent legs and black boots visible, whole torso out in the room, forward hunched predatory posture, shoulder leaning toward the player, IMAGE LEFT arm grotesquely stretched almost to floor with an enormous five-fingered hand. A violently SHATTERED brass frame remains in angular splinters behind his shoulders, no complete rectangle enclosing his body and NO intact bottom rail. Large ragged strips of ivory and burgundy canvas stream from his coat, but no floating particles. Small right hand lifted defensively near his mask cheek, leaving part of the cracked ivory mask visible. Keep the mask/wig identity from the accepted portrait and approximately the SAME MASK SIZE relative to the square canvas (do NOT turn into a tiny-headed normal zombie). The massive arm makes this form much wider than the enclosed portrait. Near-frontal slight three-quarter toward IMAGE RIGHT, whole body including giant hand, frame splinters and boots inside central80percent canvas with broad real alpha margins. Boot ground line90percent, top frame/head10percent. Root center50percent. Coarse deliberate retro pixel-art clusters and stair-step edges, matte broad shadows, muted aged ivory/tarnished brass/burgundy/iron-black. This is readable pixel game art, not smooth fantasy painting. Real transparent background, no ground, no cast shadow, no glow, no scene, no labels, UI, text or watermark. Exactly ONE character, ONE full-body idle pose.",
+      "pilotEmerged": "Use case: identity-preserve. Asset type: PHASE TWO blade-attack pilot, FOUR equal square cells in a strict2-by2 atlas, true transparent background. Reference is the accepted emerged PHASE TWO identity. Preserve this exact wider hunched monster, cracked ivory mask, grey curled wig, huge exposed IMAGE LEFT arm and five-fingered giant hand, torn burgundy/ivory canvas coat, bent legs and boots fully outside portrait, shattered angular brass frame splinters behind shoulders. NO intact bottom rail or enclosing rectangle. Same mask/body/hand size and camera in all cells, not a different monster. Fit whole figure inside central80percent of EACH cell; lowest hand/boot appui at90percent cell height, top splinters10percent; NO finger touching any cell boundary. Camera near-frontal slight turn IMAGE RIGHT. Leave broad alpha gaps.\nFour genuine drawn consecutive action poses, left-to-right top-to-bottom:\n1 phase2-blades-windup: hunched body draws huge hand inward and upward across chest, smaller hand guards mask cheek; legs brace.\n2 phase2-blades-windup-b: stronger twist backward, huge open fingers fan at mask level to one side, shoulder tightly drawn back, claw partly shields mask. Hand never above highest frame splinter.\n3 phase2-blades-release: violent forward cast to IMAGE LEFT, huge arm extending horizontally at chest height, fingers open, torso lunging forward, back boot braced. No projectile/effect drawn.\n4 phase2-blades-followthrough: distinct final low cast, elbow extends down-and-out left, wrist flexes, torso bows deeper, mask points forward-down, smaller hand still near cheek. Keep all phase-two ripped cloth and broken frame features permanent.\nDo not simply translate or rotate previous drawings; anatomy and cloth genuinely move along the action. Coarse crisp retro game pixel-art clusters, broad matte shadows, restricted muted ivory/brass/burgundy palette. True transparent alpha, no floor or shadow, no scene, no glow, no labels, text, UI or borders. Exactly4full-body sprites.",
+      "extensionContained": "Use case: identity-preserve. Asset type: controlled production sprite atlas, EXACTLY NINE equal square cells, strict3columns by3rows, true transparent alpha. Input1 accepted PHASE ONE contained portrait fixes design, scale and colors. Input2 phase-one blade pilot fixes camera and action proportions. Input3 emerged PHASE TWO identity is ONLY for the LAST TWO transformation cells. Preserve cracked ivory mask, grey curled wig, burgundy/ivory painted-canvas clothes and brass frame. Every cell same scale/camera, not closeups. Frame bottom/appui at90percent cell height, top frame10percent; all fingers and frame inside each cell with alpha margin, no overlap. Face size consistent across cells.\nOrder left-to-right top-to-bottom:\n1 idle: nearly intact rectangular portrait, aristocrat and painted lower body genuinely INSIDE canvas, no external legs. Bent left hand only partly protrudes and small right hand protects mask cheek.\n2 walk-a: same intact upright frame, slow gliding locomotion pose; shoulders lean left INSIDE canvas, left hand pulls inward, head tilts slightly left, coat folds tension. No external legs, no rotation of the whole image.\n3 walk-b: genuine opposite shoulder/head/arm movement inside same fixed frame; left hand opens lower, torso leans right, cloth folds change. No external legs.\n4 tear-windup: contained torso bends forward, left arm begins reaching downward through canvas, small right hand near mask, all lower body still inside intact rectangle.\n5 tear-windup-b: stronger low anticipation, shoulder drops and giant hand approaches the floor at bottom-left of the frame; palm drawn back before striking, mask lower and still guarded by right hand. No external legs.\n6 tear-release: left palm SLAPS FLAT near bottom-left frame corner, fingers spread along the SAME ground line as bottom rail, torso deeply thrust forward from painted canvas, lower body still trapped; no crack or effect painted.\n7 recovery: AFTER an attack, torso and head bow FORWARD toward viewer from the canvas, BOTH hands drop away from face, cracked ivory mask FULLY EXPOSED and unmistakably clear. Same intact frame and no external legs. This is a distinct vulnerable pose.\n8 transform-a: FIRST rupture, huge left hand pushes violently THROUGH torn canvas in front of him, big jagged hole and ivory canvas strips peeling. Lower body remains contained, rectangular frame still mostly intact. Same mask/wig.\n9 transform-b: SECOND rupture, left and top frame rails visibly SNAP into angular attached splinters, torso and one knee start EMERGING out of ripped canvas, giant arm extends down-left. Silhouette is now wider, but not yet fully free; no detached particles. Same identity, preparing to match input3.\nExactly9characters, one per cell. Coarse crisp pixel-art clusters, broad matte shadows, muted burgundy/ivory/brass/iron. True transparent alpha, NO floor/cast shadow, scene, labels, words, grid lines, borders, glow, separate attacks or projectiles. Keep safe blank margins on each cell, no clipped fingers.",
+      "extensionEmerged": "Use case: identity-preserve. Asset type: production PHASE TWO animation atlas, EXACTLY NINE equal square cells in strict3columns by3rows. Input1 accepted emerged-form base and input2 its blade pilot fix the exact identity, head size, wide hunched body, giant IMAGE LEFT arm and camera. ALL NINE poses keep the SAME emerged form: cracked ivory mask, grey curled wig, burgundy/ivory shredded canvas coat, fully visible bent legs/black boots, angular shattered brass frame splinters behind shoulders, NO intact rectangular frame and NO bottom golden rail. The enormous left arm makes it distinctly wider than phase1portrait. Same scale and same near-frontal camera in all cells; no zoom/crop. Whole body and every fingertip safely inside each cell with broad10percent alpha margins; top splinters10percent, lowest hand/boot appui90percent. Root center50percent.\nLeft-to-right top-to-bottom:\n1 phase2-idle: predatory hunched stance, huge arm hangs nearly to floor, small right hand guards mask cheek.\n2 phase2-walk-a: left boot ahead, torso pulls forward, giant arm swings slightly inward, head low; small hand near mask. Real drawn stride.\n3 phase2-walk-b: right boot ahead, shoulders twist opposite, giant arm swings outward, cloth shifts in the other direction. Distinct alternate stride, same anatomy.\n4 phase2-tear-windup: torso lowers, elbow folds, huge hand drawn back near knee ready to strike floor, small hand guards mask.\n5 phase2-tear-windup-b: body crouches deeper, huge five-fingered hand open just above ground, shoulder loaded before slam, head low and guarded.\n6 phase2-tear-release: huge palm slams FLAT on ground at same ground line as feet, fingers spread and body lunges forward, no crack/effect painted, small right hand near mask. Clear impact pose unlike windup.\n7 phase2-recovery: exhausted body and head bow TOWARD THE VIEWER, BOTH hands drop away from face, the cracked ivory mask is FULLY EXPOSED, unobstructed and facing player. Giant arm rests low, small hand is down, no hands near mask; distinct vulnerable silhouette.\n8 sweep-windup: giant arm drawn across toward IMAGE RIGHT side at waist height, torso twists back and legs brace, small right hand protects mask cheek. Readable rotational preparation.\n9 sweep-release: huge arm sweeps fully to IMAGE LEFT low at knee height, body stretches sideways, wrist extended and fingers open, follow-through motion; no effect arc painted, no new weapon.\nExactly9characters with genuine organic pose changes, no copying/translating previous cells. Pixel-art game rendering with chunky stair-step contours and broad matte shadows, muted ivory/brass/burgundy/iron palette, no smooth photoreal painting. Pure real transparent background. No floor/shadow, scene, text, labels, UI, grid lines, glows, particles or projectiles.",
+      "emergenceDeath": "Use case: identity-preserve. Asset type: production game sprite strip, TWO equal square cells horizontally side-by-side, transparent alpha. Input1 accepted emerged-form base and input2 phase-two action atlas fix exact aristocrat identity, pixel style, size and camera. Same cracked ivory mask, grey wig, burgundy/ivory shredded canvas coat, enormous IMAGE LEFT arm, black boots and shattered brass frame. Same square-cell scale in both sprites, never zoom to fill bounds. Ground appui line90percent cell height; whole hand/frame/corpse inside cell with generous10percent alpha margins. No overlap.\nLEFT CELL transform-c: final physical emergence from the torn portrait. Whole body now free with both legs and boots outside; one boot stepping forward, torso violently hunches forward, huge left arm thrusts downward-outward, long fingers spread. Small right hand near mask. Broken brass rails have fully opened into angular splinters behind shoulders, no enclosing rectangle or intact bottom rail. Ripped canvas flares from torso. This pose joins the middle rupture to the final wide emerged stance. Keep big mask/head identity and body size.\nRIGHT CELL death: the SAME emerged monster collapsed sideways LOW along the ground line, body inert, head and wig lying sideways, giant left fingers slack and curled against floor, boots visible, shattered frame tilted and resting across the back at a low angle. Entire corpse in cell, no standing parts, NO merely squashed standing figure. Genuine drawn organic collapse. No extra figure.\nRetro game pixel-art clusters with crisp stair-step contours, broad matte shadows, muted ivory/tarnished brass/burgundy/iron. Pure true transparent alpha, no floor or cast shadow, no scene, no particle/effect, no text, labels, UI or border. Exactly TWO sprites."
+    },
+    "sources": [
+      {
+        "file": "docs/asset-packs/sources/maitre-portrait/contained-base.png",
+        "dimensions": [
+          1254,
+          1254
+        ],
+        "bytes": 1179363,
+        "sha256": "061dada76a3c84b9b706936d743351f9fc55002eaf21f67f0b87c61b12d8ed76"
+      },
+      {
+        "file": "docs/asset-packs/sources/maitre-portrait/contained-blades.png",
+        "dimensions": [
+          1254,
+          1254
+        ],
+        "bytes": 1722274,
+        "sha256": "4fc9e4a8da6738e3a3b5cc47b4f4c13ab7779cbff41153cdd9b6f8495c76a579"
+      },
+      {
+        "file": "docs/asset-packs/sources/maitre-portrait/emerged-base.png",
+        "dimensions": [
+          1254,
+          1254
+        ],
+        "bytes": 1565112,
+        "sha256": "20d1b3a30bae000c3a365a7e5424d62ce58174f97b653528dfcc389d2be45922"
+      },
+      {
+        "file": "docs/asset-packs/sources/maitre-portrait/emerged-blades.png",
+        "dimensions": [
+          1261,
+          1247
+        ],
+        "bytes": 1971751,
+        "sha256": "cc42d7e3c2a97f5142e48fe94b207148b620f767bf68c66ac4df8f01c8866b59"
+      },
+      {
+        "file": "docs/asset-packs/sources/maitre-portrait/contained-actions.png",
+        "dimensions": [
+          1254,
+          1254
+        ],
+        "bytes": 1947279,
+        "sha256": "3ccb07d3be8415bee1d1fbe480885e12634038e59b640ee45a26ef0c5caef1b0"
+      },
+      {
+        "file": "docs/asset-packs/sources/maitre-portrait/emerged-actions.png",
+        "dimensions": [
+          1261,
+          1247
+        ],
+        "bytes": 2568506,
+        "sha256": "9c1d91ce929fc5c908b51277b72034cd89ea98da64517552d2700ffa29b00f25"
+      },
+      {
+        "file": "docs/asset-packs/sources/maitre-portrait/emergence-death.png",
+        "dimensions": [
+          1774,
+          887
+        ],
+        "bytes": 1437446,
+        "sha256": "b186aa7952550f5331081a35b6a405be5ae8611c9ba4e656ee3b23539eb27017"
+      },
+      {
+        "file": "docs/asset-packs/sources/maitre-portrait/identity-before-contained.png",
+        "dimensions": [
+          512,
+          512
+        ],
+        "bytes": 258596,
+        "sha256": "ad69515d2d45eb05156c94ad5586828f3cb94885e662444e58864fb190c84986"
+      }
+    ],
+    "exportCommand": "pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/export-portrait-sprites.ps1",
+    "identityAndStyleProvenance": {
+      "role": "Ancienne identité réutilisée pour les deux formes et ancienne pose employée comme référence de style des projectiles ; ces prompts ne décrivent pas les exports actuels.",
+      "base": "docs/asset-packs/sources/maitre-portrait/idle.png",
+      "sourceSheets": [
+        {
+          "source": "phase1-support.png",
+          "columns": 2,
+          "cell": 887,
+          "grounds": [
+            826
+          ],
+          "poses": [
+            "idle",
+            "blades-windup"
+          ]
+        },
+        {
+          "source": "phase1-actions.png",
+          "columns": 3,
+          "cell": 512,
+          "grounds": [
+            475,
+            480
+          ],
+          "poses": [
+            "walk-a",
+            "walk-b",
+            "blades-release",
+            "tear-windup",
+            "recovery",
+            "death"
+          ]
+        },
+        {
+          "source": "phase2-actions.png",
+          "columns": 3,
+          "cell": 418,
+          "grounds": [
+            399,
+            398,
+            397
+          ],
+          "poses": [
+            "phase2-idle",
+            "phase2-walk-a",
+            "phase2-walk-b",
+            "phase2-blades-windup",
+            "phase2-blades-release",
+            "phase2-tear-windup",
+            "phase2-recovery",
+            "sweep-windup",
+            "sweep-release"
+          ]
+        }
+      ],
+      "promptsExact": {
+        "base": "Use case: stylized-concept. Asset type: one production game enemy sprite, idle pose, transparent background. References: Image 1 is the approved identity concept for Le Maître du Portrait; Images 2 and 3 are actual DEAD SECTOR enemy sprites used only for pixel-art rendering style, not silhouette. Primary request: extract the portrait master character design into ONE front-facing three-quarter game billboard sprite in resting stance. Adult cadaverous aristocrat, cracked ivory full-face death mask, grey curled wig, aged ivory cravat, shredded burgundy and dirty ivory painted canvas coat, thin dark trousers and boots. A narrow shattered ornate antique brass picture frame rises behind his shoulders, burgundy canvas in it. His arm on IMAGE LEFT is grotesquely elongated with five long clear skeletal fingers reaching almost to the floor; the right arm is smaller. Keep the distinctive asymmetric body and huge left hand from the concept. The frame stays behind the body and never surrounds empty scenery. Draw full body at a fixed camera near frontal, slight three-quarter turn toward image right, no perspective floor. Square 1024x1024 composition, center root x=512, boot ground line y=960, top of frame around y=90, clear 50px margins all sides. Entire hand, boots and frame inside canvas. Readable masses and chunky deliberate pixel clusters in the style of the two game sprite references; crisp stair-step edges, matte rough cloth, broad dark shadows, restricted muted burgundy/ivory/tarnished brass/iron palette. Face stays clean and readable, darker eye sockets. Neutral diffuse light, no external cast shadow, no painted floor. Transparent true alpha background. Exactly ONE character and ONE pose, NO sprite sheet, no scene, no UI, no labels, no text, no watermark, no glows, no particles, no smooth photoreal painting.",
+        "pilotRejected": "Use case: identity-preserve. Asset type: ONE game sprite action pose, transparent RGBA. Input image is the accepted idle game sprite of Le Maître du Portrait, sole identity and pixel-art style reference. Make ONE new full-body pose: blades-windup, the clear anticipation before throwing paint blades. Preserve exactly the SAME aristocrat, cracked ivory mask, grey curled wig, torn burgundy-and-ivory canvas clothing, narrow broken brass frame behind shoulders, exaggerated arm on IMAGE LEFT, smaller right arm, boots, palette, pixel clusters, camera and body size. CHANGE ONLY THE POSE: feet stay planted at their original positions, torso twists backward, the huge IMAGE LEFT arm folds across his chest and rises visibly with splayed fingers at shoulder height, preparing a broad forward cast. The head turns slightly toward that raised hand. Frame stays mounted behind shoulders and rises no higher than the idle image. This is a large readable silhouette change, not a recolor. Keep head well isolated. Canvas square, same proportions and root position as reference; boots' sole stays on exactly same horizontal line as reference. Keep entire frame/hand/feet in bounds with empty alpha margins. True transparent background, no floor, no cast shadow, no separate weapons, no projectile or particle yet, no scene, no labels, no text. ONE isolated sprite ONLY. Hard-edged readable game pixel art matching the reference, no photoreal smoothness.",
+        "pilotFinal": "Use case: identity-preserve. Asset type: ONE production game sprite, transparent background. Reference 1 is the accepted idle Maître du Portrait and fixes his identity, proportions and pixel rendering. Reference 2 is a pose pilot only. Draw final blades-windup anticipation with same cracked ivory mask, grey curled wig, burgundy/ivory torn canvas coat, broken brass frame mounted behind shoulders, huge left-image arm. Pose like pilot: left-image arm bends across chest, hand open at FACE HEIGHT (never above his head); torso twists backward before a throw, feet remain planted. Crucial framing correction: the whole hand, EVERY fingertip, frame and boots must stay comfortably within frame with generous blank alpha, no edge touch. Fit full character into central 80 percent of square canvas. Boots ground line at y=90percent; frame/head top y=10percent. Camera near frontal three-quarter toward right, chunky legible pixel-art rendering like idle reference, matte muted ivory/burgundy/brass. Same head size and limb thickness as idle. No zoom, no new accessories, no detached objects, no extra hand, no projectiles or painted effect. Transparent real alpha, no cast shadow, no floor, no text, no panel or sheet. ONE CHARACTER ONE POSE.",
+        "phase1": "Use case: identity-preserve. Asset type: production animation atlas for a game sprite, transparent RGBA, exactly SIX cells in a strict 3-column by 2-row grid, landscape canvas. Reference 1 fixes Le Maître du Portrait identity and idle proportions. Reference 2 fixes his final readable windup pose. Draw six WHOLE BODY poses of the EXACT same adult gothic portrait monster: cracked ivory mask, grey curled wig, burgundy and ivory shredded painted-canvas coat, narrow broken antique gold/brass picture frame fixed behind shoulders, enormous long IMAGE LEFT arm and small right arm, dark boots. Preserve pixel-art rendering and colors, camera near frontal three-quarter toward image right. Every cell is the SAME square size; no borders, labels or visible grid. Character root at center of each cell; planted boot sole line at 90percent of each cell height. Top of head/frame at 10percent. SAME head/body scale in all cells, never zoom or crop. Generous transparent padding so all fingers and frame tips remain inside their own cell.\nCell order LEFT TO RIGHT then TOP TO BOTTOM:\n1 walk-a: slow stalking step, image left boot slightly forward, enormous arm low, cloth swinging slightly left.\n2 walk-b: opposite slow step, right boot slightly forward, huge arm low, cloth swings slightly right. Same torso/head size and stable frame.\n3 blades-release: full forward cast of the huge arm, its open five-fingered hand extends to IMAGE LEFT SIDE at chest height, clear follow-through, head leans slightly forward. NO separate blades, particles or effects.\n4 tear-windup: bent knees, chest deeply hunched, huge hand lowered and spread just ABOVE the floor ready to dig, head visibly lower than idle; intact boot anchor.\n5 recovery: exhausted after attack, both arms low, shoulders droop, mask bows forward and is fully readable, huge hand rests near floor. Face remains visible and lower.\n6 death: whole body collapsed sideways low on floor, broken frame tilted and resting on floor, mask visible inert, fingers curled, no standing parts, NOT a cropped standing figure. Root ground line still 90percent of cell.\nAll are genuine different drawn organic poses. Precisely SIX characters, one per cell, no duplicated extra figure, no crossing cell boundaries. Matte blocky crisp pixel clusters, muted burgundy/ivory/brass palette, no smooth photorealism. Real transparent alpha background, no cast shadow, no floor, no scene, no text, no labels.",
+        "phase2": "Use case: identity-preserve. Asset type: production game enemy PHASE TWO animation atlas. EXACTLY NINE cells, strict THREE columns by THREE rows, each square, total square canvas ideally1536x1536. Transparent alpha background in all gaps. Reference1 is accepted phase-one idle identity; reference2 is phase-one windup, same character/camera/style. New phase-two variant: same adult aristocrat, cracked ivory mask, grey curled wig, same burgundy and ivory painted-canvas costume, same slim boots, SAME BODY AND HEAD SIZE as phase1. The transformation is PERMANENT IN ALL NINE POSES: large strips of torso canvas have ripped away and flare like jagged cloth, the broken brass frame opens into angular splinters fixed behind shoulders, the enormous IMAGE LEFT forearm and fingers are now more exposed pale skeletal paint/flesh and visibly thicker, wrist and hand remain monstrous. No new limbs or face. Frame width must remain navigable through manor doors; never a huge horizontal rectangle. Maintain all phase-two features through EVERY action. Crisp coarse readable pixel-art clusters matching references, muted matte burgundy/ivory/brass, no glow, no smooth painting.\nLAYOUT: nine full-body characters, one inside each equal square cell, no overlap. Camera near frontal three-quarter toward IMAGE RIGHT. Root center each cell; boot baseline90percent; head top10percent. Head and torso same scale across ALL cells. Huge hand remains inside its cell with generous alpha padding. Do not crop or zoom a pose.\nRead left-to-right top-to-bottom:\n1 phase2-idle: giant hand hanging low, expanded canvas and opened frame clearly visible.\n2 phase2-walk-a: left boot steps forward, huge hand swings slightly behind, ragged cloth moves left.\n3 phase2-walk-b: right boot steps forward, opposite hand swing, cloth moves right.\n4 phase2-blades-windup: huge arm folds across torso, open fingers at MASK HEIGHT, torso twists away, never hand above head.\n5 phase2-blades-release: giant arm fully casts toward IMAGE LEFT at chest height, hand spread, chest follows; no projectile drawn.\n6 phase2-tear-windup: knees bent, torso low, huge splayed hand very close to floor ready to dig, head lowered.\n7 phase2-recovery: drooping shoulders, arms down, bowed mask facing forward and clearly visible, exhausted.\n8 sweep-windup: huge hand drawn back across IMAGE RIGHT side at waist height, trunk rotated backward, knees braced; strong sideways preparation silhouette.\n9 sweep-release: huge arm sweeps outward toward IMAGE LEFT horizontally low at knee height, torso lunges, head forward; no effects or separate arc drawn.\nAll nine have genuine distinct drawn organic action poses. No weapons, no floor or cast shadow, no panels or grid lines, no words or labels. Pure true transparent background, not a painted brown backdrop.",
+        "support": "Use case: identity-preserve. Asset type: production sprite strip, TWO square cells horizontally side-by-side, transparent alpha. Reference 1 is the same character's production atlas: use exactly the character drawing scale, anatomy, pixel-art style, head size and boot anchor of its TOP LEFT cell. Reference 2 is the accepted standalone identity; reference3 is a correct windup gesture. Produce exactly TWO full-body sprites of the SAME Maître du Portrait, one per equal square cell. Each character occupies about 84percent of cell height with ample alpha margin. Boot baseline at92percent of each cell; top of head/frame around8percent. Same body scale in both poses, no cropping, no fingers crossing cell boundary. Cell1 IDLE: resting upright, gigantic elongated IMAGE LEFT hand hangs almost to floor, cracked ivory mask looking toward viewer-right, grey curled wig, burgundy/ivory shredded painted-canvas coat, narrow broken brass frame behind shoulders, slim black trousers and boots. Cell2 BLADES WINDUP: same planted boot positions, torso twists backward, huge image-left arm folds across chest, open spread hand at MASK HEIGHT on image-right, never raised above head. Preserve frame position and same head size. Head and mask clearly visible. Genuine distinct anticipation. No projectiles, effects, scene, floor, cast shadow, panels, text, grid lines or labels. Pure real transparent background. Chunky crisp pixel art, matte muted burgundy/ivory/brass palette, exactly matching character in first reference."
+      }
+    },
+    "projectiles": {
+      "tool": "built-in image_gen",
+      "pipeline": "Base unique générée et inspectée, puis action pilote flight1 inspectée avant extension des quatre variantes et de l'impact4poses. Sources7PNG conservées dans le lot existant ; export déterministe sans recadrage silhouette ni normalisation par pose.",
+      "sources": [
+        {
+          "path": "docs/asset-packs/sources/maitre-portrait/projectiles/flight-1.png",
+          "width": 1774,
+          "height": 887,
+          "bytes": 401094,
+          "sha256": "7768aa676a6841874cc823807ac06ab9128128189f50794fe033be44b1ceffb3",
+          "alphaBounds": {
+            "x": 208,
+            "y": 264,
+            "width": 1284,
+            "height": 342
+          }
+        },
+        {
+          "path": "docs/asset-packs/sources/maitre-portrait/projectiles/flight-2.png",
+          "width": 1774,
+          "height": 887,
+          "bytes": 397105,
+          "sha256": "8a10b1244d9f64a76897d0ac97e79d58ec9860d525023d6be2ac196b3a72cd9d",
+          "alphaBounds": {
+            "x": 242,
+            "y": 274,
+            "width": 1254,
+            "height": 351
+          }
+        },
+        {
+          "path": "docs/asset-packs/sources/maitre-portrait/projectiles/flight-3.png",
+          "width": 1774,
+          "height": 887,
+          "bytes": 414773,
+          "sha256": "f327a47c963a16381ba6e0b3be467b0b2419223a2506dc37790ccd157e25f12f",
+          "alphaBounds": {
+            "x": 153,
+            "y": 263,
+            "width": 1341,
+            "height": 349
+          }
+        },
+        {
+          "path": "docs/asset-packs/sources/maitre-portrait/projectiles/flight-4.png",
+          "width": 1774,
+          "height": 887,
+          "bytes": 371058,
+          "sha256": "cc643ce6ab309b1637c28cc2ed82f3048e3679903143d55a535ff4debac88535",
+          "alphaBounds": {
+            "x": 233,
+            "y": 263,
+            "width": 1264,
+            "height": 366
+          }
+        },
+        {
+          "path": "docs/asset-packs/sources/maitre-portrait/projectiles/flight-5.png",
+          "width": 1774,
+          "height": 887,
+          "bytes": 378186,
+          "sha256": "db4685c04c9e2004554dcf23aff7dd50262614d2b7d181d57a1fbcc067ea8cb5",
+          "alphaBounds": {
+            "x": 310,
+            "y": 266,
+            "width": 1186,
+            "height": 339
+          }
+        },
+        {
+          "path": "docs/asset-packs/sources/maitre-portrait/projectiles/flight-base.png",
+          "width": 1774,
+          "height": 887,
+          "bytes": 369150,
+          "sha256": "5f9f54fc07319289983a163d316f7951dab122ded7808d15e11fbf3efd0230b7",
+          "alphaBounds": {
+            "x": 245,
+            "y": 264,
+            "width": 1247,
+            "height": 351
+          }
+        },
+        {
+          "path": "docs/asset-packs/sources/maitre-portrait/projectiles/impact.png",
+          "width": 1254,
+          "height": 1254,
+          "bytes": 551742,
+          "sha256": "24e923d84fac48e0af900d7f16edcb09ddbf10ed909d6bd7850516f62cac6d5e",
+          "alphaBounds": {
+            "x": 76,
+            "y": 126,
+            "width": 1118,
+            "height": 1014
+          }
+        }
+      ],
+      "promptsExact": [
+        {
+          "pose": "flight-0",
+          "sourceFile": "docs/asset-packs/sources/maitre-portrait/projectiles/flight-base.png",
+          "originalGeneratedFile": "C:/Users/Administrateur/.codex/generated_images/01a1b1c3-f6bf-7250-8335-3d0c416c4ec6/exec-d6a8bc07-1361-4767-9ca0-b39d36df3ab4.png",
+          "promptExact": "Use case: stylized-concept. Asset type: ONE production projectile sprite for DEAD SECTOR pixel-art horror FPS. Input image1 is the accepted boss concept and paint-blade FX reference; images2/3 are actual game sprite style/material references. Primary request: isolate and redraw ONE flying crescent of torn oil paint matching the paint blades row of image1. Genuinely transparent square canvas. A thick antique IVORY curved blade forms the leading head on the RIGHT, edged with a little dirty beige; behind it a shredded dark BORDEAUX paint ribbon trails horizontally LEFT, jagged separated strokes and a few tiny paint flecks, no fire. Palette ivory #d4c6a5, dark burgundy #4d161a/#712731, charcoal, very restrained rust red. Chunky hand-pixelled matte clusters and stepped edges, crisp at small gameplay size, no photo softness, no glow bloom, no shiny 3D lighting. Frontal side-on projectile icon, full shape within x6%-94%, y30%-70% of square. Fixed bright nucleus (thickest leading paint mass) centered at x68.75%,y50%; this is the physical travel anchor, keep it clearly visible. Tail extends left from the nucleus, leading curved hook tips to upper/right and lower/right. Main ivory blade is ONE connected curved slash, not multiple swords or a wing. Asset will be reduced and centrally cropped to256x128, so keep all pixels inside middle50% height. One BASE flight pose only, no sprite sheet. No character, room, frame, letters, labels, grids, border, ground, shadow, watermark or background. Real alpha transparency in all empty space.",
+          "referencesActuallyAttached": [
+            "C:/Users/ADMINI~1/AppData/Local/Temp/codex-clipboard-4b4389be-4f5c-4423-8be2-7f9337f51a67.png",
+            "public/assets/zombies/portrait/idle.png (512px version before current refonte)",
+            "public/assets/zombies/portrait/blades-release.png (512px version before current refonte)"
+          ]
+        },
+        {
+          "pose": "flight-1",
+          "sourceFile": "docs/asset-packs/sources/maitre-portrait/projectiles/flight-1.png",
+          "originalGeneratedFile": "C:\\Users\\Administrateur\\.codex\\generated_images\\01a1b1c3-f6bf-7250-8335-3d0c416c4ec6\\exec-645911a2-8747-4e31-b391-75e172369bf3.png",
+          "promptExact": "Use case: identity-preserve. Asset type: ONE flight animation pilot frame for a paint crescent projectile, transparent PNG with same2:1 canvas as image1. Image1 is exact accepted projectile base/canvas identity; image2 style reference. Keep the SAME ivory curved leading head on the RIGHT: its outer shape, brightness, nucleus location, thickness and scale must remain pixel-stable. Preserve canvas margins, lateral camera, ivory/burgundy palette, hand-pixelled stepped edges, connected stroke texture and proportions. Change ONLY the trailing paint ribbon on the LEFT: stretch the upper burgundy stroke slightly left/up, split one lower burgundy strand and peel a thin ivory fibre backward, as if thick paint is tearing while flying. The tail undulates organically; no fire or glow. Keep the full blade within identical original bounding composition, do NOT zoom or rotate. All empty space genuine alpha. One frame only, no sheet, no text, no floor, no border or background. This must alternate cleanly with the base, not transform the core into a different shape.",
+          "referencesActuallyAttached": [
+            "docs/asset-packs/sources/maitre-portrait/projectiles/flight-base.png",
+            "public/assets/zombies/portrait/blades-release.png (512px version before current refonte)"
+          ]
+        },
+        {
+          "pose": "flight-2",
+          "sourceFile": "docs/asset-packs/sources/maitre-portrait/projectiles/flight-2.png",
+          "originalGeneratedFile": "C:\\Users\\Administrateur\\.codex\\generated_images\\01a1b1c3-f6bf-7250-8335-3d0c416c4ec6\\exec-c9072e7c-c875-472d-b6f8-f8404e00fa80.png",
+          "promptExact": "Use case: identity-preserve. Asset type: ONE flight animation frame of the SAME DEAD SECTOR paint-crescent projectile. Image1 is exact accepted base identity,2:1 transparent canvas and core position; image2 is style only. Keep the SAME ivory leading crescent on the RIGHT pixel-stable: outer shape, ivory nucleus, location, thickness, brightness, scale and camera. Change ONLY trailing paint on the LEFT. Preserve original framing and margins and dark burgundy/ivory hand-pixelled texture. No zoom, rotation, scene lighting or glow. All empty space real alpha transparency. One frame, no sheet, no text/background/border.\nBurgundy ribbons dip slightly downward in a low sine bend; a short upper strand contracts toward the core. A couple tiny ivory fibres peel off at the trailing end. Keep the base's leading head exactly fixed.",
+          "referencesActuallyAttached": [
+            "docs/asset-packs/sources/maitre-portrait/projectiles/flight-base.png",
+            "public/assets/zombies/portrait/blades-release.png (512px version before current refonte)"
+          ]
+        },
+        {
+          "pose": "flight-3",
+          "sourceFile": "docs/asset-packs/sources/maitre-portrait/projectiles/flight-3.png",
+          "originalGeneratedFile": "C:\\Users\\Administrateur\\.codex\\generated_images\\01a1b1c3-f6bf-7250-8335-3d0c416c4ec6\\exec-4bf3f8ba-40f2-41a2-a3a4-a28b98e84a9c.png",
+          "promptExact": "Use case: identity-preserve. Asset type: ONE flight animation frame of the SAME DEAD SECTOR paint-crescent projectile. Image1 is exact accepted base identity,2:1 transparent canvas and core position; image2 is style only. Keep the SAME ivory leading crescent on the RIGHT pixel-stable: outer shape, ivory nucleus, location, thickness, brightness, scale and camera. Change ONLY trailing paint on the LEFT. Preserve original framing and margins and dark burgundy/ivory hand-pixelled texture. No zoom, rotation, scene lighting or glow. All empty space real alpha transparency. One frame, no sheet, no text/background/border.\nThe upper trailing burgundy ribbon stretches left almost straight, while the lower ribbon curls upward, making a longer torn taper. One slender pale fibre shows between dark strokes. Same core and total width within original margins.",
+          "referencesActuallyAttached": [
+            "docs/asset-packs/sources/maitre-portrait/projectiles/flight-base.png",
+            "public/assets/zombies/portrait/blades-release.png (512px version before current refonte)"
+          ]
+        },
+        {
+          "pose": "flight-4",
+          "sourceFile": "docs/asset-packs/sources/maitre-portrait/projectiles/flight-4.png",
+          "originalGeneratedFile": "C:\\Users\\Administrateur\\.codex\\generated_images\\01a1b1c3-f6bf-7250-8335-3d0c416c4ec6\\exec-33427b58-80f1-4126-941f-a516bdeb40c8.png",
+          "promptExact": "Use case: identity-preserve. Asset type: ONE flight animation frame of the SAME DEAD SECTOR paint-crescent projectile. Image1 is exact accepted base identity,2:1 transparent canvas and core position; image2 is style only. Keep the SAME ivory leading crescent on the RIGHT pixel-stable: outer shape, ivory nucleus, location, thickness, brightness, scale and camera. Change ONLY trailing paint on the LEFT. Preserve original framing and margins and dark burgundy/ivory hand-pixelled texture. No zoom, rotation, scene lighting or glow. All empty space real alpha transparency. One frame, no sheet, no text/background/border.\nThe long trailing ribbon breaks into three broad jagged burgundy chips with small gaps, still flowing LEFT from the unchanged ivory crescent head. Keep the nearest ribbon connected to the core; no explosion, no extra head, same scale.",
+          "referencesActuallyAttached": [
+            "docs/asset-packs/sources/maitre-portrait/projectiles/flight-base.png",
+            "public/assets/zombies/portrait/blades-release.png (512px version before current refonte)"
+          ]
+        },
+        {
+          "pose": "flight-5",
+          "sourceFile": "docs/asset-packs/sources/maitre-portrait/projectiles/flight-5.png",
+          "originalGeneratedFile": "C:\\Users\\Administrateur\\.codex\\generated_images\\01a1b1c3-f6bf-7250-8335-3d0c416c4ec6\\exec-a9df2aed-679b-41fb-985e-0c367b1bb85a.png",
+          "promptExact": "Use case: identity-preserve. Asset type: ONE flight animation frame of the SAME DEAD SECTOR paint-crescent projectile. Image1 is exact accepted base identity,2:1 transparent canvas and core position; image2 is style only. Keep the SAME ivory leading crescent on the RIGHT pixel-stable: outer shape, ivory nucleus, location, thickness, brightness, scale and camera. Change ONLY trailing paint on the LEFT. Preserve original framing and margins and dark burgundy/ivory hand-pixelled texture. No zoom, rotation, scene lighting or glow. All empty space real alpha transparency. One frame, no sheet, no text/background/border.\nTrailing burgundy strips curl gently upward and gather back toward the base silhouette, ready to loop back into the original pose. Keep a few torn edge gaps and a small ivory filament. Unchanged leading crescent and core.",
+          "referencesActuallyAttached": [
+            "docs/asset-packs/sources/maitre-portrait/projectiles/flight-base.png",
+            "public/assets/zombies/portrait/blades-release.png (512px version before current refonte)"
+          ]
+        },
+        {
+          "pose": "impact-0..3",
+          "sourceFile": "docs/asset-packs/sources/maitre-portrait/projectiles/impact.png",
+          "originalGeneratedFile": "C:\\Users\\Administrateur\\.codex\\generated_images\\01a1b1c3-f6bf-7250-8335-3d0c416c4ec6\\exec-31ee9cc0-2c1c-4525-87d8-00208e5ffe37.png",
+          "promptExact": "Use case: stylized-concept. Asset type: FOUR FRAME impact sprite sheet,2columns×2rows, equal square cells, transparent PNG, for DEAD SECTOR paint-crescent projectile. Image1 is accepted projectile identity/material; image2 is accepted concept FX row reference. Draw four sequential frames of this same ivory/burgundy oil paint blade striking a surface and breaking apart. Fixed contact origin in EVERY cell at x50%,y68%; all expansion grows around/upward from that point. Read left-to-right top row then bottom row: frame1 compact ivory crescent folding into a small splash (nucleus at anchor); frame2 largest burst of three jagged curved ivory paint chips and short burgundy ribbons rising/sideways; frame3 chips separate, smaller burgundy flecks and ivory scraps disperse; frame4 sparse tiny fading paint fragments around the same origin, little solid mass, ready to disappear. No straight lightning spikes, no fire, no magical glow, no blood puddle or floor line. Preserve the pixel-art palette and chunky stepped-edge matte paint texture of image1; fully connected meaningful paint shapes, simple readable clusters at128px per cell. Equal square cells with 10% transparent margin on all sides, no fragment crosses a cell boundary. Contact point visually consistent and no per-frame zoom. One production sheet only, no labels, grid lines, numbers, borders, captions or background. All empty space genuine alpha transparency. Duration in game0.28seconds; firstframe small, secondburst broad, finalframe sparse.",
+          "referencesActuallyAttached": [
+            "docs/asset-packs/sources/maitre-portrait/projectiles/flight-base.png",
+            "C:/Users/ADMINI~1/AppData/Local/Temp/codex-clipboard-4b4389be-4f5c-4423-8be2-7f9337f51a67.png"
+          ]
+        }
+      ],
+      "exportCommand": "pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/export-portrait-projectiles.ps1",
+      "originalStyleReference": {
+        "file": "public/assets/zombies/portrait/blades-release.png",
+        "version": "512 × 512 avant remplacement par V2",
+        "sha256": "6051cb134e117e8a0127bbaeb461325054ee67751a8533359ed2d2475f66a768"
+      }
+    }
+  },
+  "assets": [
+    {
+      "id": "blades-followthrough",
+      "exportFile": "public/assets/zombies/portrait/blades-followthrough.png",
+      "runtimeUrl": "/assets/zombies/portrait/blades-followthrough.png",
+      "productionStatus": "generated",
+      "dimensions": [
+        384,
+        384
+      ],
+      "bytes": 188530,
+      "sha256": "a6cea38925125603b09c6f93e0b28f47916f86f331b300eba341f51ed13ce6ec",
+      "alphaBounds": {
+        "x": 32,
+        "y": 35,
+        "width": 262,
+        "height": 325
+      },
+      "sourceFile": "docs/asset-packs/sources/maitre-portrait/contained-blades.png",
+      "column": 1,
+      "row": 1,
+      "validation": {
+        "file": "pass",
+        "art": "Bases, pilotes et exports inspectés à taille source/export puis dans le Level.",
+        "continuity": "Attaques/transformation observées par poses et animation instrumentée normale/ralentie ; confort en combat non établi.",
+        "integration": "Logique, PNG, alpha, appuis et vrais tirs tête ; 18 scénarios boss et six vues de distance sans erreur JS ni ressource manquante.",
+        "gameplay": "not_played"
+      }
+    },
+    {
+      "id": "blades-release",
+      "exportFile": "public/assets/zombies/portrait/blades-release.png",
+      "runtimeUrl": "/assets/zombies/portrait/blades-release.png",
+      "productionStatus": "generated",
+      "dimensions": [
+        384,
+        384
+      ],
+      "bytes": 185526,
+      "sha256": "c56830385e42deb6c95f444c8ccf1a7f99ea5ffbef0d1cdc13a0380e2d15de6a",
+      "alphaBounds": {
+        "x": 26,
+        "y": 34,
+        "width": 268,
+        "height": 326
+      },
+      "sourceFile": "docs/asset-packs/sources/maitre-portrait/contained-blades.png",
+      "column": 0,
+      "row": 1,
+      "validation": {
+        "file": "pass",
+        "art": "Bases, pilotes et exports inspectés à taille source/export puis dans le Level.",
+        "continuity": "Attaques/transformation observées par poses et animation instrumentée normale/ralentie ; confort en combat non établi.",
+        "integration": "Logique, PNG, alpha, appuis et vrais tirs tête ; 18 scénarios boss et six vues de distance sans erreur JS ni ressource manquante.",
+        "gameplay": "not_played"
+      }
+    },
+    {
+      "id": "blades-windup-b",
+      "exportFile": "public/assets/zombies/portrait/blades-windup-b.png",
+      "runtimeUrl": "/assets/zombies/portrait/blades-windup-b.png",
+      "productionStatus": "generated",
+      "dimensions": [
+        384,
+        384
+      ],
+      "bytes": 175344,
+      "sha256": "a09efd6cb4fe28340d88f3d5fb35f59641dddb1a7cc49959829299f6f1478f2b",
+      "alphaBounds": {
+        "x": 91,
+        "y": 36,
+        "width": 202,
+        "height": 324
+      },
+      "sourceFile": "docs/asset-packs/sources/maitre-portrait/contained-blades.png",
+      "column": 1,
+      "row": 0,
+      "validation": {
+        "file": "pass",
+        "art": "Bases, pilotes et exports inspectés à taille source/export puis dans le Level.",
+        "continuity": "Attaques/transformation observées par poses et animation instrumentée normale/ralentie ; confort en combat non établi.",
+        "integration": "Logique, PNG, alpha, appuis et vrais tirs tête ; 18 scénarios boss et six vues de distance sans erreur JS ni ressource manquante.",
+        "gameplay": "not_played"
+      }
+    },
+    {
+      "id": "blades-windup",
+      "exportFile": "public/assets/zombies/portrait/blades-windup.png",
+      "runtimeUrl": "/assets/zombies/portrait/blades-windup.png",
+      "productionStatus": "generated",
+      "dimensions": [
+        384,
+        384
+      ],
+      "bytes": 176040,
+      "sha256": "4a72ff52edb5875d0bde7a6dfd989b84879081ae945deae7b867f5a7c217a8c6",
+      "alphaBounds": {
+        "x": 91,
+        "y": 36,
+        "width": 202,
+        "height": 324
+      },
+      "sourceFile": "docs/asset-packs/sources/maitre-portrait/contained-blades.png",
+      "column": 0,
+      "row": 0,
+      "validation": {
+        "file": "pass",
+        "art": "Bases, pilotes et exports inspectés à taille source/export puis dans le Level.",
+        "continuity": "Attaques/transformation observées par poses et animation instrumentée normale/ralentie ; confort en combat non établi.",
+        "integration": "Logique, PNG, alpha, appuis et vrais tirs tête ; 18 scénarios boss et six vues de distance sans erreur JS ni ressource manquante.",
+        "gameplay": "not_played"
+      }
+    },
+    {
+      "id": "death",
+      "exportFile": "public/assets/zombies/portrait/death.png",
+      "runtimeUrl": "/assets/zombies/portrait/death.png",
+      "productionStatus": "generated",
+      "dimensions": [
+        384,
+        384
+      ],
+      "bytes": 99817,
+      "sha256": "8de40541b11fca0692aeb6ec9f5089160b0070871be468fa47d1fd8eccf042d4",
+      "alphaBounds": {
+        "x": 32,
+        "y": 194,
+        "width": 325,
+        "height": 166
+      },
+      "sourceFile": "docs/asset-packs/sources/maitre-portrait/emergence-death.png",
+      "column": 1,
+      "row": 0,
+      "validation": {
+        "file": "pass",
+        "art": "Bases, pilotes et exports inspectés à taille source/export puis dans le Level.",
+        "continuity": "Attaques/transformation observées par poses et animation instrumentée normale/ralentie ; confort en combat non établi.",
+        "integration": "Logique, PNG, alpha, appuis et vrais tirs tête ; 18 scénarios boss et six vues de distance sans erreur JS ni ressource manquante.",
+        "gameplay": "not_played"
+      }
+    },
+    {
+      "id": "idle",
+      "exportFile": "public/assets/zombies/portrait/idle.png",
+      "runtimeUrl": "/assets/zombies/portrait/idle.png",
+      "productionStatus": "generated",
+      "dimensions": [
+        384,
+        384
+      ],
+      "bytes": 179812,
+      "sha256": "3de89f8989cc781551b0f1df0306f977bb844841f0e6964c153f80718e9c1e13",
+      "alphaBounds": {
+        "x": 90,
+        "y": 40,
+        "width": 204,
+        "height": 320
+      },
+      "sourceFile": "docs/asset-packs/sources/maitre-portrait/contained-actions.png",
+      "column": 0,
+      "row": 0,
+      "validation": {
+        "file": "pass",
+        "art": "Bases, pilotes et exports inspectés à taille source/export puis dans le Level.",
+        "continuity": "Attaques/transformation observées par poses et animation instrumentée normale/ralentie ; confort en combat non établi.",
+        "integration": "Logique, PNG, alpha, appuis et vrais tirs tête ; 18 scénarios boss et six vues de distance sans erreur JS ni ressource manquante.",
+        "gameplay": "not_played"
+      }
+    },
+    {
+      "id": "phase2-blades-followthrough",
+      "exportFile": "public/assets/zombies/portrait/phase2-blades-followthrough.png",
+      "runtimeUrl": "/assets/zombies/portrait/phase2-blades-followthrough.png",
+      "productionStatus": "generated",
+      "dimensions": [
+        384,
+        384
+      ],
+      "bytes": 155956,
+      "sha256": "d6446c7d1980d44dc73ae31708a326ac4ac3c21031cbf32a729df79344b92fc3",
+      "alphaBounds": {
+        "x": 40,
+        "y": 71,
+        "width": 311,
+        "height": 289
+      },
+      "sourceFile": "docs/asset-packs/sources/maitre-portrait/emerged-blades.png",
+      "column": 1,
+      "row": 1,
+      "validation": {
+        "file": "pass",
+        "art": "Bases, pilotes et exports inspectés à taille source/export puis dans le Level.",
+        "continuity": "Attaques/transformation observées par poses et animation instrumentée normale/ralentie ; confort en combat non établi.",
+        "integration": "Logique, PNG, alpha, appuis et vrais tirs tête ; 18 scénarios boss et six vues de distance sans erreur JS ni ressource manquante.",
+        "gameplay": "not_played"
+      }
+    },
+    {
+      "id": "phase2-blades-release",
+      "exportFile": "public/assets/zombies/portrait/phase2-blades-release.png",
+      "runtimeUrl": "/assets/zombies/portrait/phase2-blades-release.png",
+      "productionStatus": "generated",
+      "dimensions": [
+        384,
+        384
+      ],
+      "bytes": 162596,
+      "sha256": "cb9d9287cdb9ecc22e24d7fbb8cd52b8a9d7a60e18f8cc9f3466f14c5bdf2430",
+      "alphaBounds": {
+        "x": 33,
+        "y": 68,
+        "width": 319,
+        "height": 292
+      },
+      "sourceFile": "docs/asset-packs/sources/maitre-portrait/emerged-blades.png",
+      "column": 0,
+      "row": 1,
+      "validation": {
+        "file": "pass",
+        "art": "Bases, pilotes et exports inspectés à taille source/export puis dans le Level.",
+        "continuity": "Attaques/transformation observées par poses et animation instrumentée normale/ralentie ; confort en combat non établi.",
+        "integration": "Logique, PNG, alpha, appuis et vrais tirs tête ; 18 scénarios boss et six vues de distance sans erreur JS ni ressource manquante.",
+        "gameplay": "not_played"
+      }
+    },
+    {
+      "id": "phase2-blades-windup-b",
+      "exportFile": "public/assets/zombies/portrait/phase2-blades-windup-b.png",
+      "runtimeUrl": "/assets/zombies/portrait/phase2-blades-windup-b.png",
+      "productionStatus": "generated",
+      "dimensions": [
+        384,
+        384
+      ],
+      "bytes": 159916,
+      "sha256": "9c15c680df8a1a0e67f1006481d2e2cae702ae26e29fa219795557b2df8be7ab",
+      "alphaBounds": {
+        "x": 56,
+        "y": 58,
+        "width": 267,
+        "height": 302
+      },
+      "sourceFile": "docs/asset-packs/sources/maitre-portrait/emerged-blades.png",
+      "column": 1,
+      "row": 0,
+      "validation": {
+        "file": "pass",
+        "art": "Bases, pilotes et exports inspectés à taille source/export puis dans le Level.",
+        "continuity": "Attaques/transformation observées par poses et animation instrumentée normale/ralentie ; confort en combat non établi.",
+        "integration": "Logique, PNG, alpha, appuis et vrais tirs tête ; 18 scénarios boss et six vues de distance sans erreur JS ni ressource manquante.",
+        "gameplay": "not_played"
+      }
+    },
+    {
+      "id": "phase2-blades-windup",
+      "exportFile": "public/assets/zombies/portrait/phase2-blades-windup.png",
+      "runtimeUrl": "/assets/zombies/portrait/phase2-blades-windup.png",
+      "productionStatus": "generated",
+      "dimensions": [
+        384,
+        384
+      ],
+      "bytes": 146108,
+      "sha256": "235eee26b207b23dfdf2d27118416479c2be88ef5fcb6285f79d1a8b3309b8bf",
+      "alphaBounds": {
+        "x": 87,
+        "y": 61,
+        "width": 250,
+        "height": 299
+      },
+      "sourceFile": "docs/asset-packs/sources/maitre-portrait/emerged-blades.png",
+      "column": 0,
+      "row": 0,
+      "validation": {
+        "file": "pass",
+        "art": "Bases, pilotes et exports inspectés à taille source/export puis dans le Level.",
+        "continuity": "Attaques/transformation observées par poses et animation instrumentée normale/ralentie ; confort en combat non établi.",
+        "integration": "Logique, PNG, alpha, appuis et vrais tirs tête ; 18 scénarios boss et six vues de distance sans erreur JS ni ressource manquante.",
+        "gameplay": "not_played"
+      }
+    },
+    {
+      "id": "phase2-idle",
+      "exportFile": "public/assets/zombies/portrait/phase2-idle.png",
+      "runtimeUrl": "/assets/zombies/portrait/phase2-idle.png",
+      "productionStatus": "generated",
+      "dimensions": [
+        384,
+        384
+      ],
+      "bytes": 160194,
+      "sha256": "b3c54aa6edcac45b71270b8148e1f27e2f3a25ce823208629b8a56733d38dd42",
+      "alphaBounds": {
+        "x": 72,
+        "y": 67,
+        "width": 264,
+        "height": 293
+      },
+      "sourceFile": "docs/asset-packs/sources/maitre-portrait/emerged-actions.png",
+      "column": 0,
+      "row": 0,
+      "validation": {
+        "file": "pass",
+        "art": "Bases, pilotes et exports inspectés à taille source/export puis dans le Level.",
+        "continuity": "Attaques/transformation observées par poses et animation instrumentée normale/ralentie ; confort en combat non établi.",
+        "integration": "Logique, PNG, alpha, appuis et vrais tirs tête ; 18 scénarios boss et six vues de distance sans erreur JS ni ressource manquante.",
+        "gameplay": "not_played"
+      }
+    },
+    {
+      "id": "phase2-recovery",
+      "exportFile": "public/assets/zombies/portrait/phase2-recovery.png",
+      "runtimeUrl": "/assets/zombies/portrait/phase2-recovery.png",
+      "productionStatus": "generated",
+      "dimensions": [
+        384,
+        384
+      ],
+      "bytes": 172489,
+      "sha256": "b6f40e2f4ea8b0972d748e9faa775486e88b1107e62361538e4e507a423be019",
+      "alphaBounds": {
+        "x": 66,
+        "y": 67,
+        "width": 263,
+        "height": 293
+      },
+      "sourceFile": "docs/asset-packs/sources/maitre-portrait/emerged-actions.png",
+      "column": 0,
+      "row": 2,
+      "validation": {
+        "file": "pass",
+        "art": "Bases, pilotes et exports inspectés à taille source/export puis dans le Level.",
+        "continuity": "Attaques/transformation observées par poses et animation instrumentée normale/ralentie ; confort en combat non établi.",
+        "integration": "Logique, PNG, alpha, appuis et vrais tirs tête ; 18 scénarios boss et six vues de distance sans erreur JS ni ressource manquante.",
+        "gameplay": "not_played"
+      }
+    },
+    {
+      "id": "phase2-tear-release",
+      "exportFile": "public/assets/zombies/portrait/phase2-tear-release.png",
+      "runtimeUrl": "/assets/zombies/portrait/phase2-tear-release.png",
+      "productionStatus": "generated",
+      "dimensions": [
+        384,
+        384
+      ],
+      "bytes": 168729,
+      "sha256": "79107f94219f3fe5f0010a34922ceea9bfb046dc5ed24d320317d23c110c8239",
+      "alphaBounds": {
+        "x": 55,
+        "y": 80,
+        "width": 299,
+        "height": 280
+      },
+      "sourceFile": "docs/asset-packs/sources/maitre-portrait/emerged-actions.png",
+      "column": 2,
+      "row": 1,
+      "validation": {
+        "file": "pass",
+        "art": "Bases, pilotes et exports inspectés à taille source/export puis dans le Level.",
+        "continuity": "Attaques/transformation observées par poses et animation instrumentée normale/ralentie ; confort en combat non établi.",
+        "integration": "Logique, PNG, alpha, appuis et vrais tirs tête ; 18 scénarios boss et six vues de distance sans erreur JS ni ressource manquante.",
+        "gameplay": "not_played"
+      }
+    },
+    {
+      "id": "phase2-tear-windup-b",
+      "exportFile": "public/assets/zombies/portrait/phase2-tear-windup-b.png",
+      "runtimeUrl": "/assets/zombies/portrait/phase2-tear-windup-b.png",
+      "productionStatus": "generated",
+      "dimensions": [
+        384,
+        384
+      ],
+      "bytes": 157151,
+      "sha256": "8532bc3dcefe31f1aba961edd13d081405d6d01493a4e8d563ac2851fb84c1a7",
+      "alphaBounds": {
+        "x": 45,
+        "y": 87,
+        "width": 282,
+        "height": 273
+      },
+      "sourceFile": "docs/asset-packs/sources/maitre-portrait/emerged-actions.png",
+      "column": 1,
+      "row": 1,
+      "validation": {
+        "file": "pass",
+        "art": "Bases, pilotes et exports inspectés à taille source/export puis dans le Level.",
+        "continuity": "Attaques/transformation observées par poses et animation instrumentée normale/ralentie ; confort en combat non établi.",
+        "integration": "Logique, PNG, alpha, appuis et vrais tirs tête ; 18 scénarios boss et six vues de distance sans erreur JS ni ressource manquante.",
+        "gameplay": "not_played"
+      }
+    },
+    {
+      "id": "phase2-tear-windup",
+      "exportFile": "public/assets/zombies/portrait/phase2-tear-windup.png",
+      "runtimeUrl": "/assets/zombies/portrait/phase2-tear-windup.png",
+      "productionStatus": "generated",
+      "dimensions": [
+        384,
+        384
+      ],
+      "bytes": 154551,
+      "sha256": "c37a1f7ecd88cb9175081373a8d506e6c4bd0099ea8d6d5b369f776a7b3df67c",
+      "alphaBounds": {
+        "x": 63,
+        "y": 86,
+        "width": 268,
+        "height": 274
+      },
+      "sourceFile": "docs/asset-packs/sources/maitre-portrait/emerged-actions.png",
+      "column": 0,
+      "row": 1,
+      "validation": {
+        "file": "pass",
+        "art": "Bases, pilotes et exports inspectés à taille source/export puis dans le Level.",
+        "continuity": "Attaques/transformation observées par poses et animation instrumentée normale/ralentie ; confort en combat non établi.",
+        "integration": "Logique, PNG, alpha, appuis et vrais tirs tête ; 18 scénarios boss et six vues de distance sans erreur JS ni ressource manquante.",
+        "gameplay": "not_played"
+      }
+    },
+    {
+      "id": "phase2-walk-a",
+      "exportFile": "public/assets/zombies/portrait/phase2-walk-a.png",
+      "runtimeUrl": "/assets/zombies/portrait/phase2-walk-a.png",
+      "productionStatus": "generated",
+      "dimensions": [
+        384,
+        384
+      ],
+      "bytes": 156667,
+      "sha256": "1f2e1bb136b328ce22501f340186315f043e0b6446db4aff620759da68616451",
+      "alphaBounds": {
+        "x": 45,
+        "y": 80,
+        "width": 287,
+        "height": 280
+      },
+      "sourceFile": "docs/asset-packs/sources/maitre-portrait/emerged-actions.png",
+      "column": 1,
+      "row": 0,
+      "validation": {
+        "file": "pass",
+        "art": "Bases, pilotes et exports inspectés à taille source/export puis dans le Level.",
+        "continuity": "Attaques/transformation observées par poses et animation instrumentée normale/ralentie ; confort en combat non établi.",
+        "integration": "Logique, PNG, alpha, appuis et vrais tirs tête ; 18 scénarios boss et six vues de distance sans erreur JS ni ressource manquante.",
+        "gameplay": "not_played"
+      }
+    },
+    {
+      "id": "phase2-walk-b",
+      "exportFile": "public/assets/zombies/portrait/phase2-walk-b.png",
+      "runtimeUrl": "/assets/zombies/portrait/phase2-walk-b.png",
+      "productionStatus": "generated",
+      "dimensions": [
+        384,
+        384
+      ],
+      "bytes": 156799,
+      "sha256": "2ef63aa1e5e33fee92cc402ccd9151db63f9c08e179a3e86b1bc8a35f3dd207a",
+      "alphaBounds": {
+        "x": 40,
+        "y": 76,
+        "width": 309,
+        "height": 284
+      },
+      "sourceFile": "docs/asset-packs/sources/maitre-portrait/emerged-actions.png",
+      "column": 2,
+      "row": 0,
+      "validation": {
+        "file": "pass",
+        "art": "Bases, pilotes et exports inspectés à taille source/export puis dans le Level.",
+        "continuity": "Attaques/transformation observées par poses et animation instrumentée normale/ralentie ; confort en combat non établi.",
+        "integration": "Logique, PNG, alpha, appuis et vrais tirs tête ; 18 scénarios boss et six vues de distance sans erreur JS ni ressource manquante.",
+        "gameplay": "not_played"
+      }
+    },
+    {
+      "id": "recovery",
+      "exportFile": "public/assets/zombies/portrait/recovery.png",
+      "runtimeUrl": "/assets/zombies/portrait/recovery.png",
+      "productionStatus": "generated",
+      "dimensions": [
+        384,
+        384
+      ],
+      "bytes": 178066,
+      "sha256": "91b900c2abbe97e4967f0fafeeee817328e238f598f631479227e62978fc9dd3",
+      "alphaBounds": {
+        "x": 90,
+        "y": 41,
+        "width": 203,
+        "height": 319
+      },
+      "sourceFile": "docs/asset-packs/sources/maitre-portrait/contained-actions.png",
+      "column": 0,
+      "row": 2,
+      "validation": {
+        "file": "pass",
+        "art": "Bases, pilotes et exports inspectés à taille source/export puis dans le Level.",
+        "continuity": "Attaques/transformation observées par poses et animation instrumentée normale/ralentie ; confort en combat non établi.",
+        "integration": "Logique, PNG, alpha, appuis et vrais tirs tête ; 18 scénarios boss et six vues de distance sans erreur JS ni ressource manquante.",
+        "gameplay": "not_played"
+      }
+    },
+    {
+      "id": "sweep-release",
+      "exportFile": "public/assets/zombies/portrait/sweep-release.png",
+      "runtimeUrl": "/assets/zombies/portrait/sweep-release.png",
+      "productionStatus": "generated",
+      "dimensions": [
+        384,
+        384
+      ],
+      "bytes": 181342,
+      "sha256": "6c907a0bc5a5db3d1a084c82f8ee562d64e62fc662285e36d9fbc62c488dd027",
+      "alphaBounds": {
+        "x": 6,
+        "y": 71,
+        "width": 351,
+        "height": 289
+      },
+      "sourceFile": "docs/asset-packs/sources/maitre-portrait/emerged-actions.png",
+      "column": 2,
+      "row": 2,
+      "validation": {
+        "file": "pass",
+        "art": "Bases, pilotes et exports inspectés à taille source/export puis dans le Level.",
+        "continuity": "Attaques/transformation observées par poses et animation instrumentée normale/ralentie ; confort en combat non établi.",
+        "integration": "Logique, PNG, alpha, appuis et vrais tirs tête ; 18 scénarios boss et six vues de distance sans erreur JS ni ressource manquante.",
+        "gameplay": "not_played"
+      }
+    },
+    {
+      "id": "sweep-windup",
+      "exportFile": "public/assets/zombies/portrait/sweep-windup.png",
+      "runtimeUrl": "/assets/zombies/portrait/sweep-windup.png",
+      "productionStatus": "generated",
+      "dimensions": [
+        384,
+        384
+      ],
+      "bytes": 155270,
+      "sha256": "ad6a4524f08442603cd8816f8a682f41b48954c53f9d449f588e0fac872de611",
+      "alphaBounds": {
+        "x": 40,
+        "y": 69,
+        "width": 265,
+        "height": 291
+      },
+      "sourceFile": "docs/asset-packs/sources/maitre-portrait/emerged-actions.png",
+      "column": 1,
+      "row": 2,
+      "validation": {
+        "file": "pass",
+        "art": "Bases, pilotes et exports inspectés à taille source/export puis dans le Level.",
+        "continuity": "Attaques/transformation observées par poses et animation instrumentée normale/ralentie ; confort en combat non établi.",
+        "integration": "Logique, PNG, alpha, appuis et vrais tirs tête ; 18 scénarios boss et six vues de distance sans erreur JS ni ressource manquante.",
+        "gameplay": "not_played"
+      }
+    },
+    {
+      "id": "tear-release",
+      "exportFile": "public/assets/zombies/portrait/tear-release.png",
+      "runtimeUrl": "/assets/zombies/portrait/tear-release.png",
+      "productionStatus": "generated",
+      "dimensions": [
+        384,
+        384
+      ],
+      "bytes": 178195,
+      "sha256": "4f8300a643d81a69f9982b8880d0365bbf69614be800e85974c975c3fba483e4",
+      "alphaBounds": {
+        "x": 90,
+        "y": 41,
+        "width": 204,
+        "height": 319
+      },
+      "sourceFile": "docs/asset-packs/sources/maitre-portrait/contained-actions.png",
+      "column": 2,
+      "row": 1,
+      "validation": {
+        "file": "pass",
+        "art": "Bases, pilotes et exports inspectés à taille source/export puis dans le Level.",
+        "continuity": "Attaques/transformation observées par poses et animation instrumentée normale/ralentie ; confort en combat non établi.",
+        "integration": "Logique, PNG, alpha, appuis et vrais tirs tête ; 18 scénarios boss et six vues de distance sans erreur JS ni ressource manquante.",
+        "gameplay": "not_played"
+      }
+    },
+    {
+      "id": "tear-windup-b",
+      "exportFile": "public/assets/zombies/portrait/tear-windup-b.png",
+      "runtimeUrl": "/assets/zombies/portrait/tear-windup-b.png",
+      "productionStatus": "generated",
+      "dimensions": [
+        384,
+        384
+      ],
+      "bytes": 178569,
+      "sha256": "199e30c8813d228e44ddef263b7a3f5592d816834b91df225bf138368f4dc865",
+      "alphaBounds": {
+        "x": 90,
+        "y": 41,
+        "width": 204,
+        "height": 319
+      },
+      "sourceFile": "docs/asset-packs/sources/maitre-portrait/contained-actions.png",
+      "column": 1,
+      "row": 1,
+      "validation": {
+        "file": "pass",
+        "art": "Bases, pilotes et exports inspectés à taille source/export puis dans le Level.",
+        "continuity": "Attaques/transformation observées par poses et animation instrumentée normale/ralentie ; confort en combat non établi.",
+        "integration": "Logique, PNG, alpha, appuis et vrais tirs tête ; 18 scénarios boss et six vues de distance sans erreur JS ni ressource manquante.",
+        "gameplay": "not_played"
+      }
+    },
+    {
+      "id": "tear-windup",
+      "exportFile": "public/assets/zombies/portrait/tear-windup.png",
+      "runtimeUrl": "/assets/zombies/portrait/tear-windup.png",
+      "productionStatus": "generated",
+      "dimensions": [
+        384,
+        384
+      ],
+      "bytes": 178879,
+      "sha256": "5635189e3f5727abe87d2741e1d0573b7b315f42459bd3af345fe4ca69a6242c",
+      "alphaBounds": {
+        "x": 90,
+        "y": 41,
+        "width": 203,
+        "height": 319
+      },
+      "sourceFile": "docs/asset-packs/sources/maitre-portrait/contained-actions.png",
+      "column": 0,
+      "row": 1,
+      "validation": {
+        "file": "pass",
+        "art": "Bases, pilotes et exports inspectés à taille source/export puis dans le Level.",
+        "continuity": "Attaques/transformation observées par poses et animation instrumentée normale/ralentie ; confort en combat non établi.",
+        "integration": "Logique, PNG, alpha, appuis et vrais tirs tête ; 18 scénarios boss et six vues de distance sans erreur JS ni ressource manquante.",
+        "gameplay": "not_played"
+      }
+    },
+    {
+      "id": "transform-a",
+      "exportFile": "public/assets/zombies/portrait/transform-a.png",
+      "runtimeUrl": "/assets/zombies/portrait/transform-a.png",
+      "productionStatus": "generated",
+      "dimensions": [
+        384,
+        384
+      ],
+      "bytes": 187118,
+      "sha256": "520580af21cc8c8f1852d60d2432ca58e4a0688e8d03a279d01b3de1b41540fa",
+      "alphaBounds": {
+        "x": 76,
+        "y": 41,
+        "width": 218,
+        "height": 319
+      },
+      "sourceFile": "docs/asset-packs/sources/maitre-portrait/contained-actions.png",
+      "column": 1,
+      "row": 2,
+      "validation": {
+        "file": "pass",
+        "art": "Bases, pilotes et exports inspectés à taille source/export puis dans le Level.",
+        "continuity": "Attaques/transformation observées par poses et animation instrumentée normale/ralentie ; confort en combat non établi.",
+        "integration": "Logique, PNG, alpha, appuis et vrais tirs tête ; 18 scénarios boss et six vues de distance sans erreur JS ni ressource manquante.",
+        "gameplay": "not_played"
+      }
+    },
+    {
+      "id": "transform-b",
+      "exportFile": "public/assets/zombies/portrait/transform-b.png",
+      "runtimeUrl": "/assets/zombies/portrait/transform-b.png",
+      "productionStatus": "generated",
+      "dimensions": [
+        384,
+        384
+      ],
+      "bytes": 206300,
+      "sha256": "a3328b39cbbaaca08286d72bdb6de264af2b42ceaa876ae4b21dcc3a0d108b97",
+      "alphaBounds": {
+        "x": 52,
+        "y": 37,
+        "width": 249,
+        "height": 323
+      },
+      "sourceFile": "docs/asset-packs/sources/maitre-portrait/contained-actions.png",
+      "column": 2,
+      "row": 2,
+      "validation": {
+        "file": "pass",
+        "art": "Bases, pilotes et exports inspectés à taille source/export puis dans le Level.",
+        "continuity": "Attaques/transformation observées par poses et animation instrumentée normale/ralentie ; confort en combat non établi.",
+        "integration": "Logique, PNG, alpha, appuis et vrais tirs tête ; 18 scénarios boss et six vues de distance sans erreur JS ni ressource manquante.",
+        "gameplay": "not_played"
+      }
+    },
+    {
+      "id": "transform-c",
+      "exportFile": "public/assets/zombies/portrait/transform-c.png",
+      "runtimeUrl": "/assets/zombies/portrait/transform-c.png",
+      "productionStatus": "generated",
+      "dimensions": [
+        384,
+        384
+      ],
+      "bytes": 164288,
+      "sha256": "9943939d923331d2c928752bb23db050c4a84c97b7426efecb4c215f4e1be92b",
+      "alphaBounds": {
+        "x": 37,
+        "y": 50,
+        "width": 316,
+        "height": 310
+      },
+      "sourceFile": "docs/asset-packs/sources/maitre-portrait/emergence-death.png",
+      "column": 0,
+      "row": 0,
+      "validation": {
+        "file": "pass",
+        "art": "Bases, pilotes et exports inspectés à taille source/export puis dans le Level.",
+        "continuity": "Attaques/transformation observées par poses et animation instrumentée normale/ralentie ; confort en combat non établi.",
+        "integration": "Logique, PNG, alpha, appuis et vrais tirs tête ; 18 scénarios boss et six vues de distance sans erreur JS ni ressource manquante.",
+        "gameplay": "not_played"
+      }
+    },
+    {
+      "id": "walk-a",
+      "exportFile": "public/assets/zombies/portrait/walk-a.png",
+      "runtimeUrl": "/assets/zombies/portrait/walk-a.png",
+      "productionStatus": "generated",
+      "dimensions": [
+        384,
+        384
+      ],
+      "bytes": 179010,
+      "sha256": "f4f0221b10ac109d0651862935bb301e93cb66c4e0cae613d0c9018d3d077bb9",
+      "alphaBounds": {
+        "x": 90,
+        "y": 41,
+        "width": 204,
+        "height": 319
+      },
+      "sourceFile": "docs/asset-packs/sources/maitre-portrait/contained-actions.png",
+      "column": 1,
+      "row": 0,
+      "validation": {
+        "file": "pass",
+        "art": "Bases, pilotes et exports inspectés à taille source/export puis dans le Level.",
+        "continuity": "Attaques/transformation observées par poses et animation instrumentée normale/ralentie ; confort en combat non établi.",
+        "integration": "Logique, PNG, alpha, appuis et vrais tirs tête ; 18 scénarios boss et six vues de distance sans erreur JS ni ressource manquante.",
+        "gameplay": "not_played"
+      }
+    },
+    {
+      "id": "walk-b",
+      "exportFile": "public/assets/zombies/portrait/walk-b.png",
+      "runtimeUrl": "/assets/zombies/portrait/walk-b.png",
+      "productionStatus": "generated",
+      "dimensions": [
+        384,
+        384
+      ],
+      "bytes": 178912,
+      "sha256": "09feaf5ce23b9ef9f9f3374658f8dc4501f34b0dd398d9e1a060e3c736ee93fa",
+      "alphaBounds": {
+        "x": 90,
+        "y": 40,
+        "width": 204,
+        "height": 320
+      },
+      "sourceFile": "docs/asset-packs/sources/maitre-portrait/contained-actions.png",
+      "column": 2,
+      "row": 0,
+      "validation": {
+        "file": "pass",
+        "art": "Bases, pilotes et exports inspectés à taille source/export puis dans le Level.",
+        "continuity": "Attaques/transformation observées par poses et animation instrumentée normale/ralentie ; confort en combat non établi.",
+        "integration": "Logique, PNG, alpha, appuis et vrais tirs tête ; 18 scénarios boss et six vues de distance sans erreur JS ni ressource manquante.",
+        "gameplay": "not_played"
+      }
+    }
+  ],
+  "verification": {
+    "checksActuallyRun": [
+      "npm.cmd run build",
+      "node scripts/check-guardian.mjs",
+      "node scripts/check-portrait-particles.mjs",
+      "node scripts/check-portrait-audio.mjs",
+      "node scripts/check-hud.mjs",
+      "node scripts/check-final-run.mjs",
+      "node scripts/check-debug-menu.mjs",
+      "node scripts/check-encounters-f4.mjs",
+      "node scripts/check-gameplay-economy.mjs",
+      "node tmp/check-portrait-browser.mjs",
+      "git diff --check",
+      "node scripts/check-portrait-projectiles.mjs",
+      "node scripts/check-portrait-mask.mjs",
+      "node scripts/check-weapon.mjs",
+      "node scripts/check-shotgun.mjs",
+      "node scripts/check-shotgun-recoil.mjs",
+      "node scripts/check-sprite-hit-mask.mjs"
+    ],
+    "sharedAnimationModule": "src/PortraitAnimation.ts + src/PortraitProjectileAnimation.ts",
+    "previewCommand": "node scripts/make-portrait-preview.mjs",
+    "browserActuallyObserved": true,
+    "audio": "Formes44,1/48kHz, cache, voix et interruptions contrôlés ; lecture activée dans le navigateur sans exception. Aucune écoute en combat validée.",
+    "humanApproval": "Concept utilisateur fourni ; aucune approbation artistique humaine des exports déduite des tests.",
+    "remainingLimits": [
+      "Difficulté, durée, économie et confort sous pression restent à mesurer en partie.",
+      "Deux sons de transformation contrôlés numériquement ; pas d’écoute du mix en combat.",
+      "Un angle billboard ; le déplacement de phase I fait glisser le cadre et anime son contenu.",
+      "Les queues de peinture sont cosmétiques ; collision et dégâts suivent le noyau physique.",
+      "Coût GPU et premières apparitions non mesurés par ce lot."
+    ],
+    "browserScope": "18 scénarios boss et six vues des deux formes à 3/6/10 m dans le vrai Hall/Salon, viewports1280×900 et1024×768, six poses de vol et animation instrumentée à1×/0,25×. Visage sans barres et intervalles entre projectiles inspectés après allègement des traînées ; pause/mort/reset et P8 sous contrôle virtuel, sans erreurJS ni ressource manquante. Aucune partie jouée.",
+    "renderMeasurement": {
+      "scene": "Hall, même pose/caméra, canvas426×246,72 fragments actifs",
+      "withFragments": 420,
+      "withoutFragments": 419,
+      "additionalDrawCalls": 1,
+      "report": "tmp/portrait-legibility-review/results.json",
+      "limit": "Compteur renderer ; pas de temps GPU isolé ni coût de combat joué."
+    },
+    "files": "node scripts/check-guardian.mjs : réussi logique+28PNG+alpha+appuis360+27zonesmasqueseul+routagehitscan",
+    "projectiles": {
+      "files": "pass (RGBA8, dimensions, marges de chaque case, alpha et pixel noyau/contact réels)",
+      "art": "Base/pilote puis deux atlas inspectés par assistant à taille source/export. Noyau stable, croissant et queue distincts, impact compact→large→débris→clairsemé.",
+      "logic": "check-portrait-projectiles réussit : UV et pivot sur vraie géométrie, frames indépendantes, masques/alpha, collision/mur/esquive, grand delta/vie3s, pause, pool10 saturé/recyclé, nettoyage sans double libération.",
+      "browser": "Lames/impacts inspectés dans le Level, vol 1×/0,25× ; traînées brèves après correction utilisateur, impact joueur contenu sous0,7m.",
+      "gameplay": "not_checked",
+      "humanApproval": "not_requested"
+    },
+    "trailReadability": {
+      "check": "check-portrait-particles : vrai projectile/particules pendant1s, traînée<1,4m, deux écailles maximum et extinction<80ms, pause/cadence spatiale/couvert conservés.",
+      "scene": "Hall, seconde salve phaseII au même instant/caméra",
+      "previousActiveFragments": 130,
+      "currentActiveFragments": 29,
+      "observation": "La ligne ivoire continue est remplacée par des lames séparées et des écailles sombres ; confort d’esquive en combat non établi."
+    }
+  },
+  "presentation": {
+    "implementation": "28 poses raster ImageGen et atlas de lames/impacts ; Three.js/WebAudio natifs pour traces, fragments et sons. Visage dégagé de toute géométrie ajoutée.",
+    "combat": {
+      "health": 800,
+      "phaseSpeeds": [
+        3,
+        3.5
+      ],
+      "advanceSeconds": [
+        0.9,
+        1.2
+      ],
+      "stopDistance": 1.2,
+      "combo": "deux salves -> transition -> déchirure annoncée ; récupération après le dernier geste",
+      "transitionSeconds": 0.6,
+      "secondWindupSeconds": 1.4,
+      "phase2RecoverySeconds": 1.6,
+      "cancellation": "second geste annulé au contact, hors portée, autre étage ou couvert",
+      "bladeCountPerVolley": [
+        3,
+        5
+      ],
+      "volleys": 2,
+      "volleyIntervalSeconds": [
+        0.55,
+        0.5
+      ],
+      "lockBeforeEachVolleySeconds": 0.35,
+      "mask": {
+        "protectedDamage": {
+          "pistolHead": 40,
+          "shotgunHeadPellet": 12
+        },
+        "exposedDamage": {
+          "pistolHead": 80,
+          "shotgunHeadPellet": 24
+        },
+        "window": "RECOVER final uniquement ; inter-salves, combo, transformation et mort exclus.",
+        "bodyDamageUnchanged": true,
+        "presentation": "Poses et HUD indiquent protection et récupération ; aucune barre superposée au visage."
+      },
+      "dodgeHint": "LAMES DE PEINTURE · SALVE 1/2 ou 2/2 · DÉCALEZ-VOUS ; trajectoires engagées, esquive latérale."
+    },
+    "effects": {
+      "module": "src/PortraitParticles.ts",
+      "projectileModule": "src/GuardianProjectile.ts",
+      "capacity": 144,
+      "rendering": "Un InstancedMesh, couleurs par instance, fragments opaques en file transparente après décor, profondeur testée sans écriture ; forceSinglePass pour une seule passe.",
+      "newBitmapFiles": 2,
+      "newLights": 0,
+      "newShadows": 0,
+      "palette": [
+        "#712731",
+        "#d4c6a5",
+        "#b69a60",
+        "#9b8261"
+      ],
+      "trail": "Une petite écaille bordeaux tous les 0,7 m, dimensions 0,018–0,03 × 0,035–0,06 m, vie 0,045–0,075 s. Moins de 1,4 m de traînée, deux écailles vivantes maximum par lame ; l’ivoire reste réservé au projectile. Arrêt au premier contact et extinction sous 80 ms.",
+      "impact": "Quatre poses de peinture pendant 0,28 s et dix fragments au vrai contact ; pool de dix sprites. Masquage à moins de 0,7 m de la caméra, taille réduite jusqu’à 1,4 m, âge inchangé.",
+      "transformation": "Dix-huit fragments suspendus avant éclatement ; burst à55% de1,3s :72 fragments dont36 lambeaux0,18–0,30m, couleurs mélangées sur les deux côtés, émission latérale sous le masque ysol+0,9–1,8m, vitesse2–3,5m/s, vie0,5–0,8s.",
+      "lifecycle": "Gel exact hors contrôle ; nettoyage à mort, victoire, défaite, saut debug et nouveau palier ; buffers/matériau/géométrie/instances détruits avec Game.",
+      "projectileAtlasModule": "src/PortraitProjectileResources.ts",
+      "impactModule": "src/PortraitProjectileImpacts.ts"
+    },
+    "audio": {
+      "module": "src/PortraitAudio.ts",
+      "generator": "createPortraitSamples : bruit déterministe filtré original, deux buffers mono sur contexte existant ; aucun fichier ni AudioContext ajouté.",
+      "durationSeconds": [
+        0.38,
+        0.5
+      ],
+      "maximumVoices": 1,
+      "baseGain": 0.18,
+      "mix": "Effets ; position spatiale du cadre ; arrêt focus/pause/mort/reset/dispose, aucune lecture différée."
+    }
+  },
+  "projectileAssets": [
+    {
+      "path": "public/assets/zombies/portrait-projectiles/flight.png",
+      "width": 768,
+      "height": 256,
+      "bytes": 93643,
+      "sha256": "545db363ce8d697773c66221109c513b10bf13436ca54b8a2228fafa4991cab1",
+      "alphaBounds": {
+        "x": 22,
+        "y": 38,
+        "width": 706,
+        "height": 181
+      },
+      "cells": [
+        {
+          "frame": 0,
+          "x": 0,
+          "y": 0,
+          "width": 256,
+          "height": 128,
+          "alphaBounds": {
+            "x": 35,
+            "y": 38,
+            "width": 180,
+            "height": 51
+          }
+        },
+        {
+          "frame": 1,
+          "x": 256,
+          "y": 0,
+          "width": 256,
+          "height": 128,
+          "alphaBounds": {
+            "x": 286,
+            "y": 38,
+            "width": 185,
+            "height": 49
+          }
+        },
+        {
+          "frame": 2,
+          "x": 512,
+          "y": 0,
+          "width": 256,
+          "height": 128,
+          "alphaBounds": {
+            "x": 547,
+            "y": 40,
+            "width": 181,
+            "height": 50
+          }
+        },
+        {
+          "frame": 3,
+          "x": 0,
+          "y": 128,
+          "width": 256,
+          "height": 128,
+          "alphaBounds": {
+            "x": 22,
+            "y": 166,
+            "width": 194,
+            "height": 50
+          }
+        },
+        {
+          "frame": 4,
+          "x": 256,
+          "y": 128,
+          "width": 256,
+          "height": 128,
+          "alphaBounds": {
+            "x": 290,
+            "y": 166,
+            "width": 182,
+            "height": 53
+          }
+        },
+        {
+          "frame": 5,
+          "x": 512,
+          "y": 128,
+          "width": 256,
+          "height": 128,
+          "alphaBounds": {
+            "x": 558,
+            "y": 166,
+            "width": 170,
+            "height": 49
+          }
+        }
+      ]
+    },
+    {
+      "path": "public/assets/zombies/portrait-projectiles/impact.png",
+      "width": 256,
+      "height": 256,
+      "bytes": 35599,
+      "sha256": "c0a1855feaece3307bc8d4ff4afade89f09d4aa56085509aae124e3d481012b8",
+      "alphaBounds": {
+        "x": 16,
+        "y": 26,
+        "width": 230,
+        "height": 213
+      },
+      "cells": [
+        {
+          "frame": 0,
+          "x": 0,
+          "y": 0,
+          "width": 128,
+          "height": 128,
+          "alphaBounds": {
+            "x": 34,
+            "y": 80,
+            "width": 58,
+            "height": 31
+          }
+        },
+        {
+          "frame": 1,
+          "x": 128,
+          "y": 0,
+          "width": 128,
+          "height": 128,
+          "alphaBounds": {
+            "x": 137,
+            "y": 26,
+            "width": 109,
+            "height": 85
+          }
+        },
+        {
+          "frame": 2,
+          "x": 0,
+          "y": 128,
+          "width": 128,
+          "height": 128,
+          "alphaBounds": {
+            "x": 16,
+            "y": 163,
+            "width": 102,
+            "height": 76
+          }
+        },
+        {
+          "frame": 3,
+          "x": 128,
+          "y": 128,
+          "width": 128,
+          "height": 128,
+          "alphaBounds": {
+            "x": 149,
+            "y": 181,
+            "width": 83,
+            "height": 58
+          }
+        }
+      ]
+    }
+  ]
+}

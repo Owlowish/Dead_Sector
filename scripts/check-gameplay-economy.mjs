@@ -31,6 +31,7 @@ const weapon = new Weapon(camera, canvas, [], [], (_mesh, _damage, shot) => {
   tracker.recordDamageDealt();
 }, () => true, () => {});
 weapon.setOnShoot((_aim, weaponId) => tracker.recordShot(weaponId));
+weapon.unlockWeapon('pistol');
 const scene = new THREE.Scene();
 const playerPosition = new THREE.Vector3(0, 1.7, 0);
 
@@ -83,6 +84,7 @@ for (const invalid of [0, -1, NaN, Infinity]) {
 assert.equal(weapon.getReserveAmmo(), pistolBefore);
 
 weapon.resetForNewRun();
+weapon.unlockWeapon('pistol');
 const startStock = weapon.getAmmoStocks();
 tracker.startTier(4, startStock);
 startStock.pistol.reserve = 999;

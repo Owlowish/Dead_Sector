@@ -84,6 +84,7 @@ function fixture({ setup = true, volume = 1 } = {}) {
   const context = new FakeContext();
   const destination = new Node();
   const weapon = new Weapon(new THREE.PerspectiveCamera(75, 16 / 9, 0.1, 100), canvas, [], [], () => {}, () => active, () => {});
+  weapon.unlockWeapon('pistol');
   weapon.setEffectsVolume(volume);
   const attach = () => weapon.setupMechanicalAudio(context, destination);
   if (setup) attach();
@@ -220,7 +221,7 @@ for (const [reason, interrupt] of Object.entries(interruptions).filter(([name]) 
 {
   const f = fixture({ setup: false, volume: 0.25 });
   f.weapon.reload(); f.step(0.7); f.attach(); f.attach();
-  assert.equal(f.context.buffers.length, 6, 'Une synthèse par timbre malgré deux setup');
+  assert.equal(f.context.buffers.length, 7, 'Une synthèse par timbre malgré deux setup, souffle de hache compris');
   assert.equal(f.context.gains[0].gain.value, WEAPON_MECHANICAL_BASE_GAIN * 0.25);
   f.step(1);
   assert.deepEqual(f.names(), ['mag-in', 'seat'], 'Pas de restitution du mag-out passé avant setup');
@@ -236,7 +237,7 @@ for (const [reason, interrupt] of Object.entries(interruptions).filter(([name]) 
 {
   const context = new FakeContext(); const destination = new Node();
   const audio = new WeaponMechanicalAudio(context, destination);
-  assert.equal(context.buffers.length, 6);
+  assert.equal(context.buffers.length, 7);
   assert.equal(context.gains[0].connections[0], destination);
   for (let i = 0; i < 20; i++) audio.play('pump-back');
   assert.equal(audio.voices.length, 4);
@@ -280,4 +281,4 @@ for (const sampleRate of [44100, 48000]) for (const id of Object.keys(WEAPON_MEC
 }
 assert.equal(WEAPON_MECHANICAL_BASE_GAIN, 0.04);
 console.table(stats);
-console.log('PASS : événements réels uniques 30/144 Hz, gros deltas, stocks/commit exacts, interruptions sans reprise, Effets/init tardive, six buffers bornés et quatre voix maximum. Aucune écoute ni validation artistique effectuée.');
+console.log('PASS : événements réels uniques 30/144 Hz, gros deltas, stocks/commit exacts, interruptions sans reprise, Effets/init tardive, sept buffers bornés et quatre voix maximum. Aucune écoute ni validation artistique effectuée.');

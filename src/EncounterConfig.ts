@@ -44,7 +44,7 @@ export interface EncounterSpec {
   spawnUnlocks?: { agile?: number; spitter?: number; crawler?: number };
   /** Groupes successifs ; leur somme respecte les quotas totaux du palier. */
   spawnGroups?: EncounterSpawnGroup[];
-  /** Rencontre de clôture, ici un duel sans renfort contre le Gardien. */
+  /** Rencontre de clôture, duel sans renfort contre le Maître du Portrait. */
   finalEncounter?: boolean;
   /** Secteur déverrouillé à l'issue de cette rencontre (null si le manoir est déjà complètement ouvert) */
   unlockSectorTier: number | null;
@@ -117,7 +117,7 @@ export const MANSION_OPEN_SPAWN_POOL: Point2D[] = [
 export const ENCOUNTER_4_SPAWN_POOL: Point2D[] = MANSION_OPEN_SPAWN_POOL;
 
 export const ENCOUNTER_CONFIGS: EncounterSpec[] = [
-  // RENCONTRE 1 : Apprendre le tir, le rechargement et la boucle du Secteur 1
+  // RENCONTRE 1 : Apprendre la portée et l'engagement lent de la hache, puis obtenir le pistolet.
   {
     tierNumber: 1,
     name: 'Incursion Initiale',
@@ -153,7 +153,7 @@ export const ENCOUNTER_CONFIGS: EncounterSpec[] = [
     sectorBounds: MANSION_SPAWNS[1].sectorBounds,
     spawnPool: MANSION_SPAWNS[1].pool,
   },
-  // RENCONTRE 3 : Apprentissage de la verticalité (+2,4 m) et défense des escaliers
+  // RENCONTRE 3 : Verticalité et Cracheur au pistolet ; la purge donne le fusil avant la Rampeuse.
   {
     tierNumber: 3,
     name: 'Hauteurs Gothiques',
@@ -259,7 +259,7 @@ export const ENCOUNTER_CONFIGS: EncounterSpec[] = [
   },
   {
     tierNumber: 8,
-    name: 'Le Gardien du Manoir',
+    name: 'Le Maître du Portrait',
     sectorName: 'RENCONTRE FINALE · MANOIR OUVERT',
     finalEncounter: true,
     totalZombies: 1,

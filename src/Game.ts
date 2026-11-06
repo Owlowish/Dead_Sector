@@ -5,10 +5,11 @@ import { Level } from './Level';
 import { Player } from './Player';
 import { Zombie, disposeAllZombieResources } from './Zombie';
 import { type ZombieKind } from './ZombieRemains';
-import { Weapon } from './Weapon';
+import { Weapon, type FirearmId, type ShotDamage } from './Weapon';
 import { Medkit } from './Medkit';
 import { AmmoBox } from './AmmoBox';
 import { ShotgunPickup } from './ShotgunPickup';
+import { PistolPickup } from './PistolPickup.ts';
 import { ShellCasing } from './ShellCasing';
 import { HitEffects } from './HitEffects';
 import { PerfTracker, type DetailedPerfReport } from './PerfTracker';
@@ -26,8 +27,12 @@ import { StormController } from './StormController.ts';
 import { SpitterZombie } from './SpitterZombie.ts';
 import { CrawlerZombie } from './CrawlerZombie.ts';
 import { SpitProjectile } from './SpitProjectile.ts';
-import { GuardianZombie } from './GuardianZombie.ts';
-import { GuardianProjectile } from './GuardianProjectile.ts';
+import { GuardianZombie, type PortraitCue } from './GuardianZombie.ts';
+import { guardianConfig } from './FinaleConfig.ts';
+import { GuardianProjectile, type PortraitProjectileEffects } from './GuardianProjectile.ts';
+import { PortraitProjectileImpacts } from './PortraitProjectileImpacts.ts';
+import { PortraitParticles } from './PortraitParticles.ts';
+import { PortraitAudio } from './PortraitAudio.ts';
 import { TierDiagnosticsTracker, type TierDiagnosticRecord } from './TierDiagnostics.ts';
 import { GameHud, type HudPrompt } from './GameHud.ts';
 import { AudioMix, type AudioChannel } from './AudioMix.ts';
@@ -54,14 +59,24 @@ export class Game {
   private spawnGroupIndex = 0;
   private groupRespiteRemaining: number | null = null;
   private finaleSupplyLots = 0;
+  private guardianSupplyElapsed = 0;
+  private guardianHealthSupplyElapsed = 0;
+  private guardianSupplyIndex = 0;
+  private guardianAmmoDrops: AmmoBox[] = [];
+  private guardianMedkitDrops: Medkit[] = [];
   private hordeAlertTimer = 0;
   private respiteTimer = 0;
+  private pistolPickup: PistolPickup;
   private shotgunPickup: ShotgunPickup;
   private encounterBell: EncounterBell;
   private upgradePedestals: UpgradePedestal[] = [];
   private appliedUpgrades: UpgradeId[] = [];
   private shellCasings: ShellCasing[] = [];
   private hitEffects: HitEffects;
+  private portraitParticles: PortraitParticles;
+  private portraitAudio: PortraitAudio;
+  private portraitProjectileImpacts: PortraitProjectileImpacts;
+  private portraitProjectileEffects: PortraitProjectileEffects;
   private weapon: Weapon;
   private readonly weaponMotion = new WeaponMotion(document.querySelector<HTMLElement>('.weapon-view'));
   private state: GameState = 'playing';
@@ -161,6 +176,15 @@ export class Game {
   constructor() {
     this.scene = new THREE.Scene();
     this.hitEffects = new HitEffects(this.scene);
+    this.portraitParticles = new PortraitParticles(this.scene);
+    this.portraitProjectileImpacts = new PortraitProjectileImpacts(this.scene);
+    this.portraitProjectileEffects = {
+      trail: (position, direction) => this.portraitParticles.trail(position, direction),
+      impact: (position, normal) => {
+        this.portraitParticles.impact(position, normal);
+        this.portraitProjectileImpacts.impact(position, normal);
+      },
+    };
 
     this.scene.background = new THREE.Color(
       0x10131a
@@ -196,6 +220,7 @@ export class Game {
 
     // Intégrer la caméra du joueur à la scène pour que ses enfants (lumières 3D, audio) soient rendus.
     this.scene.add(this.player.camera);
+    this.portraitAudio = new PortraitAudio(this.player.audioListener);
     this.footsteps = new FootstepAudio(this.player.audioListener.context, this.player.audioListener.getInput());
     this.stormController = new StormController(
       this.level.getStormLights(),
@@ -213,15 +238,12 @@ export class Game {
     this.player.setOnInteract(() => {
       const cameraDir = this.player.camera.getWorldDirection(new THREE.Vector3());
 
-      // 1. Ramassage du fusil à pompe si visé
+      // 1. Ramassage des armes offertes par les paliers purgés.
+      if (this.pistolPickup.canInteract(this.player.camera.position, cameraDir)) {
+        if (this.collectWeaponPickup('pistol')) return;
+      }
       if (this.shotgunPickup.canInteract(this.player.camera.position, cameraDir)) {
-        const before = this.weapon.getAmmoStocks().shotgun;
-        if (this.shotgunPickup.collect(this.weapon)) {
-          this.recordShotgunGain(before.unlocked ? before.magazine + before.reserve : 0);
-          this.updateAmmoDisplay();
-          this.hud.notifyWeapon();
-          return;
-        }
+        if (this.collectWeaponPickup('shotgun')) return;
       }
 
       // 2. Dispositif d'activation volontaire (Carillon d'arène pour rencontres en manoir ouvert)
@@ -398,9 +420,11 @@ export class Game {
     // Les munitions proviennent désormais des ennemis éliminés.
     this.ammoBoxes = [];
 
-    // Fusil à pompe placé au centre du Grand Hall (Secteur 2)
-    const shotgunFloorY = this.level.getFloorHeightAt(0, 0);
-    this.shotgunPickup = new ShotgunPickup(this.scene, 0, 0, shotgunFloorY + 0.4);
+    // Récompenses inactives jusqu'aux purges P1 et P3, puis posées près du joueur.
+    this.pistolPickup = new PistolPickup(this.scene);
+    this.shotgunPickup = new ShotgunPickup(this.scene);
+    this.pistolPickup.resetForNewRun();
+    this.shotgunPickup.resetForNewRun();
 
     // Dispositif d'activation volontaire des rencontres (Carillon d'arène au Grand Hall Sud)
     const bellFloorY = this.level.getFloorHeightAt(0, 2.5);
@@ -415,20 +439,7 @@ export class Game {
       this.renderer.domElement,
       [],
       this.level.getSolidMeshes(),
-      (target, damage, shot) => {
-        const zombie = this.zombies.find(
-          (candidate) => candidate.getMesh() === target
-        );
-        if (zombie) {
-          const wasAlive = zombie.isAlive();
-          zombie.takeDamage(damage, shot.headHits > 0, shot.impactForce);
-          this.tierDiagnostics?.recordHit(shot.headHits, shot.bodyHits, shot.weaponId);
-          if (wasAlive && !zombie.isAlive()) this.onZombieKilled(zombie);
-          this.tierDiagnostics?.recordDamageDealt();
-        }
-        this.checkTierCompletion();
-        this.updateObjectiveDisplay();
-      },
+      (target, damage, shot) => this.handleWeaponHit(target, damage, shot),
       () => this.isSimulationActive(),
       (amount) => this.player.setAimAmount(amount)
     );
@@ -440,6 +451,10 @@ export class Game {
     // Préchauffage des ressources graphiques partagées (Warmup standard, agile et cadavres)
     Zombie.warmup();
     SpitterZombie.warmup();
+    CrawlerZombie.warmup();
+    GuardianZombie.warmup();
+    GuardianProjectile.warmup();
+    PortraitProjectileImpacts.warmup();
 
     // Initialisation du premier palier
     this.startTier(1);
@@ -452,6 +467,8 @@ export class Game {
     // Détonation, recul de caméra (View Punch) différencié et alerte sonore immédiate à t = 0
     this.weapon.setOnShoot((aimAmount, weaponId) => {
       this.tierDiagnostics?.recordShot(weaponId);
+      if (weaponId === 'axe') return;
+      this.hud.notifyShot();
       const isShotgun = weaponId === 'shotgun';
       const pitchRecoil = isShotgun
         ? (aimAmount > 0.5 ? 0.05 : 0.09)
@@ -645,6 +662,7 @@ export class Game {
         && !document.hidden && (document.hasFocus?.() ?? true);
       const wasControlActive = this.wasControlActive;
       this.wasControlActive = controlActive;
+      if (!controlActive && wasControlActive) this.portraitAudio?.stop();
 
       const isCombat = this.state === 'playing' && controlActive;
       this.perfTracker?.recordFrame(rawDeltaMs, isCombat, isTabSwitch);
@@ -702,7 +720,8 @@ export class Game {
               zombie.update(delta, this.player.camera.position,
                 this.zombies.filter((z): z is Zombie => z instanceof Zombie),
                 (damage) => this.applyEnemyDamage(damage),
-                (origin, target) => this.spitProjectiles.push(new GuardianProjectile(this.scene, origin, target)));
+                (origin, target) => this.spitProjectiles.push(new GuardianProjectile(this.scene, origin, target, this.portraitProjectileEffects)));
+              this.updateGuardianSupplies(delta, zombie);
               this.updateBossDisplay();
               continue;
             }
@@ -763,6 +782,8 @@ export class Game {
         this.advanceRespite(delta);
       }
 
+      this.portraitParticles?.update(controlActive && this.state === 'playing' ? delta : 0, this.player.camera);
+      this.portraitProjectileImpacts?.update(controlActive && this.state === 'playing' ? delta : 0, this.player.camera);
       this.updateZombieRemains(delta);
 
       // Animation des portes et détection d'interaction avec sécurité anti-pincement
@@ -820,8 +841,11 @@ export class Game {
   private getInteractionPrompt(): HudPrompt | null {
     const position = this.player.camera.position;
     const direction = this.player.camera.getWorldDirection(new THREE.Vector3());
+    if (this.pistolPickup?.canInteract(position, direction)) {
+      return { key: 'E', action: 'RAMASSER', object: 'PISTOLET · ARME 2' };
+    }
     if (this.shotgunPickup.canInteract(position, direction)) {
-      return { key: 'E', action: 'RAMASSER', object: 'FUSIL À POMPE' };
+      return { key: 'E', action: 'RAMASSER', object: 'FUSIL À POMPE · ARME 3' };
     }
     // Ces dispositifs restent inactifs dans la boucle actuelle.
     if (this.state === 'exploration') {
@@ -849,14 +873,20 @@ export class Game {
     // Même garde que le déplacement, notamment pendant Échap, alt-tab et le bilan.
     if (!controlActive) return;
     const position = this.player.camera.position;
+    this.pistolPickup?.update(delta, position);
+    if (this.pistolPickup?.tryPickup(position, this.weapon)) {
+      this.recordWeaponGain('pistol', 0);
+      this.updateAmmoDisplay();
+      this.hud?.notifyWeapon('pistol');
+    }
     this.shotgunPickup.update(delta, position);
     const shotgunBefore = this.weapon.getAmmoStocks().shotgun;
     if (this.shotgunPickup.tryPickup(position, this.weapon)) {
-      this.recordShotgunGain(shotgunBefore.unlocked ? shotgunBefore.magazine + shotgunBefore.reserve : 0);
+      this.recordWeaponGain('shotgun', shotgunBefore.unlocked ? shotgunBefore.magazine + shotgunBefore.reserve : 0);
       this.updateAmmoDisplay();
-      this.hud?.notifyWeapon();
+      this.hud?.notifyWeapon('shotgun');
     }
-    for (const medkit of this.medkits) {
+    for (const medkit of [...this.medkits, ...(this.guardianMedkitDrops ?? [])]) {
       medkit.update(delta, position);
       const before = this.player.getHealth();
       if (medkit.tryPickup(this.player)) {
@@ -878,6 +908,20 @@ export class Game {
       box.dispose();
       return false;
     });
+    for (const box of this.guardianAmmoDrops ?? []) {
+      box.update(delta, position);
+      this.collectAmmoBox(box);
+    }
+    this.guardianAmmoDrops = (this.guardianAmmoDrops ?? []).filter((box) => {
+      if (!box.isConsumed()) return true;
+      box.dispose();
+      return false;
+    });
+    this.guardianMedkitDrops = (this.guardianMedkitDrops ?? []).filter((medkit) => {
+      if (!medkit.isConsumed()) return true;
+      medkit.dispose();
+      return false;
+    });
   }
 
   private collectAmmoBox(box: AmmoBox): boolean {
@@ -891,9 +935,63 @@ export class Game {
     return true;
   }
 
-  private recordShotgunGain(before: number): void {
-    const stock = this.weapon.getAmmoStocks().shotgun;
-    this.tierDiagnostics?.recordAmmoGain('shotgun', stock.magazine + stock.reserve - before);
+  private recordWeaponGain(weaponId: FirearmId, before: number): void {
+    const stock = this.weapon.getAmmoStocks()[weaponId];
+    this.tierDiagnostics?.recordAmmoGain(weaponId, stock.magazine + stock.reserve - before);
+  }
+
+  private collectWeaponPickup(weaponId: FirearmId): boolean {
+    const pickup = weaponId === 'pistol' ? this.pistolPickup : this.shotgunPickup;
+    if (!pickup) return false;
+    const stock = this.weapon.getAmmoStocks()[weaponId];
+    if (!pickup.collect(this.weapon)) return false;
+    this.recordWeaponGain(weaponId, stock.unlocked ? stock.magazine + stock.reserve : 0);
+    this.updateAmmoDisplay();
+    this.hud?.notifyWeapon(weaponId);
+    return true;
+  }
+
+  private offerProgressionWeapon(completedTier: number): string | null {
+    const weaponId = completedTier === 1 ? 'pistol' : completedTier === 3 ? 'shotgun' : null;
+    if (!weaponId) return null;
+    const pickup = weaponId === 'pistol' ? this.pistolPickup : this.shotgunPickup;
+    if (!pickup || this.weapon.isWeaponUnlocked(weaponId)) return null;
+    const position = this.player.camera.position;
+    const direction = this.player.camera.getWorldDirection(new THREE.Vector3());
+    const angle = Math.atan2(direction.z, direction.x);
+    const playerFloor = this.level.getFloorHeightAt(position.x, position.z);
+    let chosen = { x: position.x, z: position.z, floor: playerFloor };
+    // Même sol et chemin réel : ne pas poser la récompense derrière une porte ou à l'étage.
+    search: for (const radius of [2, 2.5, 1.8]) {
+      for (const offset of [0, Math.PI / 4, -Math.PI / 4, Math.PI / 2, -Math.PI / 2, Math.PI]) {
+        const x = position.x + Math.cos(angle + offset) * radius;
+        const z = position.z + Math.sin(angle + offset) * radius;
+        const floor = this.level.getFloorHeightAt(x, z);
+        if (Math.abs(floor - playerFloor) > 0.45 || this.level.isColliding(x, z, 0.3)) continue;
+        const target = new THREE.Vector3(x, floor + 0.6, z);
+        if (!this.level.hasLineOfSight(position, target)
+          || !this.level.findNextWaypoint(target, position, 0.3)) continue;
+        chosen = { x, z, floor };
+        break search;
+      }
+    }
+    pickup.activateAt(chosen.x, chosen.z, chosen.floor + 0.4);
+    return weaponId === 'pistol' ? 'PISTOLET À PROXIMITÉ · ARME 2' : 'FUSIL À POMPE À PROXIMITÉ · ARME 3';
+  }
+
+  private ensureProgressionWeapons(tierNumber: number): string[] {
+    const granted: string[] = [];
+    for (const [weaponId, tier] of [['pistol', 2], ['shotgun', 4]] as const) {
+      const pickup = weaponId === 'pistol' ? this.pistolPickup : this.shotgunPickup;
+      if (!pickup || tierNumber < tier || this.weapon.isWeaponUnlocked(weaponId)) continue;
+      const position = this.player.camera.position;
+      const floor = this.level.getFloorHeightAt(position.x, position.z);
+      pickup.activateAt(position.x, position.z, floor + 0.4);
+      if (this.collectWeaponPickup(weaponId)) {
+        granted.push(weaponId === 'pistol' ? 'PISTOLET ACQUIS · [2]' : 'FUSIL À POMPE ACQUIS · [3]');
+      }
+    }
+    return granted;
   }
 
   private perfTimer = 0;
@@ -1061,9 +1159,10 @@ export class Game {
     this.encounterBell?.setActive(false);
     this.respiteTimer = 10;
     if (configs?.[this.pendingTierStart - 1]?.finalEncounter) this.prepareFinaleSupplies();
-    this.hud?.announce(unlockedNames.length > 0
+    const weaponNotice = this.offerProgressionWeapon(this.currentTier);
+    this.hud?.announce(weaponNotice ?? (unlockedNames.length > 0
       ? `ACCÈS OUVERTS · ${unlockedNames.join(' · ')}`
-      : 'PALIER PURGÉ · RÉCUPÉREZ VOS RESSOURCES');
+      : 'PALIER PURGÉ · RÉCUPÉREZ VOS RESSOURCES'), weaponNotice ? 6 : 3);
 
     // 6. Proposer jusqu'à deux bonus encore inédits ; le ravitaillement reste indépendant.
     const offers = drawTierUpgrades(this.appliedUpgrades ?? []);
@@ -1116,10 +1215,14 @@ export class Game {
   public startTier(tierNumber: number): void {
     const configs = this.encounterConfigs ?? (this as unknown as { tierCandidateSpawns?: EncounterSpec[] }).tierCandidateSpawns;
     if (!Number.isInteger(tierNumber) || tierNumber < 1 || tierNumber > (configs?.length ?? 0)) return;
+    this.clearGuardianSupplies();
     this.footsteps?.reset();
     this.weaponMotion?.reset();
     this.weapon?.suspendMechanicalAudio?.();
+    this.weapon?.cancelMeleeAttack?.();
     this.currentTier = tierNumber;
+    // Une récompense oubliée pendant l'accalmie ne doit pas bloquer la progression.
+    const grantedWeapons = this.ensureProgressionWeapons(tierNumber);
     this.pendingTierStart = 0;
     this.respiteTimer = 0;
     this.horrorDirector?.resetRespite();
@@ -1128,7 +1231,7 @@ export class Game {
     this.tierSpitterSpawned = 0;
     this.tierCrawlerSpawned = 0;
     this.tierStandardSpawned = 0;
-    this.dropBudget = configs?.[tierNumber - 1]?.finalEncounter ? 0
+    this.dropBudget = tierNumber === 1 || configs?.[tierNumber - 1]?.finalEncounter ? 0
       : Math.max(2, Math.ceil((configs?.[tierNumber - 1]?.totalZombies ?? 4) / 3));
     this.dropsMade = 0;
     this.killsThisTier = 0;
@@ -1150,6 +1253,9 @@ export class Game {
     this.zombies = [];
     for (const projectile of (this.spitProjectiles ?? [])) projectile.dispose(this.scene);
     this.spitProjectiles = [];
+    this.portraitParticles?.clear();
+    this.portraitAudio?.stop();
+    this.portraitProjectileImpacts?.clear();
     this.weapon?.setTargets([]);
 
     // 2. Gestion et verrouillage des portes du manoir selon la progression
@@ -1190,7 +1296,8 @@ export class Game {
     if (config?.finalEncounter) this.prepareFinaleSupplies();
     // Une nouvelle rencontre remplace les retours de la précédente.
     this.hud?.clear();
-    if (config?.finalEncounter) this.hud?.announce('DERNIÈRE RENCONTRE · LE GARDIEN DU MANOIR');
+    if (config?.finalEncounter) this.hud?.announce('DERNIÈRE RENCONTRE · LE MAÎTRE DU PORTRAIT');
+    else if (grantedWeapons.length > 0) this.hud?.announce(grantedWeapons.join(' · '), 5);
     this.updateObjectiveDisplay();
     this.updateBossDisplay();
     this.perfTracker?.recordTransition(tierNumber, performance.now() - t0);
@@ -1316,7 +1423,8 @@ export class Game {
       this.lastSpawnQuadrant = chosen.quadrant;
       const zombie = kind === 'spitter' ? new SpitterZombie(this.scene, this.level, chosen.x, chosen.z)
         : kind === 'crawler' ? new CrawlerZombie(this.scene, this.level, chosen.x, chosen.z)
-        : config.finalEncounter ? new GuardianZombie(this.scene, this.level, chosen.x, chosen.z)
+        : config.finalEncounter ? new GuardianZombie(this.scene, this.level, chosen.x, chosen.z,
+          { cue: (event) => this.onPortraitCue(event) })
         : new Zombie(this.scene, this.level, chosen.x, chosen.z, kind);
       if (kind === 'standard') this.tierStandardSpawned = spawned.standard + 1;
       else if (kind === 'agile') this.tierAgileSpawned = spawned.agile + 1;
@@ -1366,7 +1474,78 @@ export class Game {
       chosen.push(point);
       if (this.finaleSupplyLots === 3) break;
     }
-    if (chosen.length > 0) this.hud?.announce('LE GARDIEN APPROCHE · MUNITIONS À PROXIMITÉ', 4);
+    if (chosen.length > 0) this.hud?.announce('LA TOILE REMUE · MUNITIONS À PROXIMITÉ', 4);
+  }
+
+  private updateGuardianSupplies(delta: number, boss: GuardianZombie): void {
+    if (this.state !== 'playing' || !boss.isAlive() || !this.player.isAlive()
+      || !this.encounterConfigs[this.currentTier - 1]?.finalEncounter
+      || this.debugMenuOpen || this.runSummaryOpen || document.hidden
+      || document.pointerLockElement !== this.renderer.domElement || !(document.hasFocus?.() ?? true)
+      || !Number.isFinite(delta) || delta <= 0) return;
+    // Même temps plafonné que l'IA : un retour de pause ne produit jamais une rafale de lots.
+    const activeDelta = Math.min(delta, 0.05);
+    this.guardianSupplyElapsed = (this.guardianSupplyElapsed ?? 0) + activeDelta;
+    this.guardianHealthSupplyElapsed = (this.guardianHealthSupplyElapsed ?? 0) + activeDelta;
+    if (this.guardianSupplyElapsed + 1e-8 < guardianConfig.supplyInterval) return;
+    this.guardianSupplyElapsed = Math.max(0, this.guardianSupplyElapsed - guardianConfig.supplyInterval);
+    const healthDue = this.guardianHealthSupplyElapsed + 1e-8 >= guardianConfig.healthSupplyInterval;
+    if (healthDue) this.guardianHealthSupplyElapsed = Math.max(0,
+      this.guardianHealthSupplyElapsed - guardianConfig.healthSupplyInterval);
+    const ammoDrops = this.guardianAmmoDrops ??= [];
+    const medkitDrops = this.guardianMedkitDrops ??= [];
+    const origin = boss.getPosition();
+    const originFloor = this.level.getFloorHeightAt(origin.x, origin.z);
+    const playerPosition = this.player.camera.position;
+    const rotation = (this.guardianSupplyIndex ?? 0) * 0.7;
+    this.guardianSupplyIndex = (this.guardianSupplyIndex ?? 0) + 1;
+    const points: Array<Point2D & { floor: number }> = [];
+    for (const radius of [1.3, 2, 2.8]) {
+      for (let i = 0; i < 8; i++) {
+        const angle = Math.atan2(playerPosition.z - origin.z, playerPosition.x - origin.x) + rotation + i * Math.PI / 4;
+        const x = origin.x + Math.cos(angle) * radius, z = origin.z + Math.sin(angle) * radius;
+        const floor = this.level.getFloorHeightAt(x, z);
+        if (this.level.isColliding(x, z, 0.4) || Math.abs(floor - originFloor) > 0.7
+          || !this.level.findNextWaypoint(new THREE.Vector3(x, floor + 1, z), playerPosition, 0.4)) continue;
+        points.push({ x, z, floor });
+      }
+    }
+    const chosen: Point2D[] = [];
+    const nextPoint = () => {
+      const point = points.find((candidate) => chosen.every((other) => Math.hypot(candidate.x - other.x, candidate.z - other.z) >= 0.9));
+      if (point) chosen.push(point);
+      return point;
+    };
+    let created = false;
+    for (const kind of ['pistol', 'shotgun'] as const) {
+      if (!this.weapon.isWeaponUnlocked(kind)
+        || ammoDrops.filter((box) => !box.isConsumed() && box.getWeaponType() === kind).length >= guardianConfig.maxSupplyAmmoPerType) continue;
+      const point = nextPoint();
+      if (!point) continue;
+      ammoDrops.push(new AmmoBox(this.scene, point.x, point.z,
+        kind === 'pistol' ? guardianConfig.supplyPistolAmmo : guardianConfig.supplyShotgunAmmo, kind, point.floor));
+      this.tierDiagnostics?.recordAmmoDrop();
+      created = true;
+    }
+    if (healthDue && this.player.getHealth() <= guardianConfig.supplyHealthThreshold
+      && medkitDrops.filter((medkit) => !medkit.isConsumed()).length < guardianConfig.maxSupplyMedkits) {
+      const point = nextPoint();
+      if (point) {
+        medkitDrops.push(new Medkit(this.scene, point.x, point.z, guardianConfig.supplyHealth, point.floor));
+        created = true;
+      }
+    }
+    if (created) this.hud?.announce('LE CADRE S\u2019EFFRITE · RESSOURCES AU SOL', 3);
+  }
+
+  private clearGuardianSupplies(): void {
+    for (const drop of this.guardianAmmoDrops ?? []) drop.dispose();
+    for (const medkit of this.guardianMedkitDrops ?? []) medkit.dispose();
+    this.guardianAmmoDrops = [];
+    this.guardianMedkitDrops = [];
+    this.guardianSupplyElapsed = 0;
+    this.guardianHealthSupplyElapsed = 0;
+    this.guardianSupplyIndex = 0;
   }
 
   private applyEnemyDamage(damage: number): void {
@@ -1395,12 +1574,51 @@ export class Game {
     }
   }
 
+  private handleWeaponHit(target: THREE.Mesh, damage: number, shot: ShotDamage): void {
+    const zombie = this.zombies.find(candidate => candidate.getMesh() === target);
+    if (zombie) {
+      const wasAlive = zombie.isAlive();
+      const bossHealthBefore = zombie instanceof GuardianZombie ? zombie.getHealth() : 0;
+      const headDamage = shot.headDamage ?? shot.headHits * (shot.weaponId === 'pistol' ? 80 : 24);
+      const appliedDamage = zombie instanceof GuardianZombie && !zombie.isMaskExposed()
+        ? Math.max(0, damage - Math.min(damage, headDamage) * 0.5) : damage;
+      zombie.takeDamage(appliedDamage, shot.headHits > 0, shot.impactForce, shot.impact);
+      if (shot.stunSeconds) zombie.stun(shot.stunSeconds);
+      this.tierDiagnostics?.recordHit(shot.headHits, shot.bodyHits, shot.weaponId);
+      if (wasAlive && !zombie.isAlive()) this.onZombieKilled(zombie);
+      if (!(zombie instanceof GuardianZombie) || zombie.getHealth() < bossHealthBefore) {
+        this.tierDiagnostics?.recordDamageDealt();
+      }
+    }
+    this.checkTierCompletion();
+    this.updateObjectiveDisplay();
+  }
+
+  private onPortraitCue(event: PortraitCue): void {
+    if (event.kind === 'cancel') {
+      this.portraitParticles?.clear();
+      this.portraitAudio?.stop();
+      this.portraitProjectileImpacts?.clear();
+      return;
+    }
+    if (this.disposed || this.state !== 'playing') return;
+    if (event.kind === 'prepare' && event.attack) {
+      this.portraitParticles?.prepare(event.position, event.direction, event.attack);
+    } else if (event.kind === 'transform-start' || event.kind === 'transform-burst') {
+      const stage = event.kind === 'transform-start' ? 'gather' : 'burst';
+      this.portraitParticles?.transformation(event.position, stage);
+      this.portraitAudio?.play(stage, event.position.clone().add(new THREE.Vector3(0, 1.2, 0)));
+    }
+  }
+
   private updateBossDisplay(): void {
     const boss = this.zombies.find((z): z is GuardianZombie => z instanceof GuardianZombie && z.isAlive());
     this.hud?.setBoss?.(this.state === 'playing' && boss
       ? { health: boss.getHealth(), maxHealth: boss.getMaxHealth(), phase: boss.getPhase(),
         attack: boss.getState() === 'ATTACK' ? boss.getAttackKind() : null,
-        recovering: boss.getState() === 'RECOVER' } : null);
+        recovering: boss.getState() === 'RECOVER' && !boss.isComboTransition() && !boss.isTransforming(),
+        transforming: boss.isTransforming(), comboTransition: boss.isComboTransition(),
+        maskExposed: boss.isMaskExposed(), volleyIndex: boss.getVolleyIndex(), frameResisting: boss.isFrameResisting() } : null);
   }
 
   private updateObjectiveDisplay(): void {
@@ -1412,14 +1630,14 @@ export class Game {
         : this.state === 'exploration' || this.state === 'respite' ? 'respite' : this.state,
       tier: this.currentTier,
       total: this.encounterConfigs?.length ?? 0,
-      sector: encounter?.finalEncounter ? 'FINALE · LE GARDIEN' : encounter?.sectorName ?? `SECTEUR ${this.currentTier}`,
+      sector: encounter?.finalEncounter ? 'FINALE · LE MAÎTRE DU PORTRAIT' : encounter?.sectorName ?? `SECTEUR ${this.currentTier}`,
       remaining: livingZombies + this.spawnQueue,
       respiteSeconds: this.respiteTimer,
     });
   }
 
   private updateAmmoDisplay(): void {
-    this.hud?.setAmmo(this.weapon.getAmmoState(), this.weapon.isWeaponUnlocked('shotgun'));
+    this.hud?.setAmmo(this.weapon.getAmmoState(), this.weapon.isWeaponUnlocked('shotgun'), this.weapon.isWeaponUnlocked('pistol'));
   }
 
   private updateHealthDisplay(): void {
@@ -1439,6 +1657,9 @@ export class Game {
     this.respiteTimer = 0;
     for (const projectile of (this.spitProjectiles ?? [])) projectile.dispose(this.scene);
     this.spitProjectiles = [];
+    this.portraitParticles?.clear();
+    this.portraitAudio?.stop();
+    this.portraitProjectileImpacts?.clear();
     this.weapon.cancelReload();
     this.hud?.clear();
     this.updateObjectiveDisplay();
@@ -1537,7 +1758,8 @@ export class Game {
     this.appliedUpgrades = [];
     this.player.resetForNewRun();
     this.weapon.resetForNewRun();
-    this.shotgunPickup.respawn();
+    this.pistolPickup?.resetForNewRun();
+    this.shotgunPickup.resetForNewRun();
     for (const door of this.level.getDoors()) door.resetForNewRun();
     this.tierDiagnostics.clear();
     this.completedTiers = new Set<number>();
@@ -1585,6 +1807,7 @@ export class Game {
       this.footsteps?.reset();
       this.weaponMotion?.reset();
       this.weapon?.suspendMechanicalAudio?.();
+      this.portraitAudio?.stop();
       for (const zombie of this.zombies) zombie.stopAudio();
     }
   }
@@ -1625,12 +1848,14 @@ export class Game {
     this.weapon.setEffectsVolume(effects);
     this.player.setEffectsVolume(effects);
     this.footsteps?.setVolume(effects);
+    this.portraitAudio?.setVolume(effects);
     this.encounterBell.setEffectsVolume(effects);
     for (const zombie of this.zombies) zombie.setAudioVolume(effects);
   }
 
   public dispose(): void {
     this.disposed = true;
+    this.clearGuardianSupplies();
     this.hud?.dispose();
     window.removeEventListener('keydown', this.onDebugKeyDown);
     this.debugDisplay?.removeEventListener('click', this.onDebugClick);
@@ -1645,6 +1870,9 @@ export class Game {
       zombie.dispose(this.scene);
     }
     this.zombies = [];
+    this.portraitParticles?.dispose();
+    this.portraitAudio?.dispose();
+    this.portraitProjectileImpacts?.dispose();
     this.encounterBell?.dispose(this.scene);
     for (const p of (this.upgradePedestals ?? [])) p.dispose(this.scene);
     this.horrorDirector?.dispose();
@@ -1652,7 +1880,13 @@ export class Game {
     this.footsteps?.dispose();
     this.weaponMotion?.dispose();
     this.weapon?.dispose?.();
+    this.pistolPickup?.dispose();
+    this.shotgunPickup?.dispose();
     this.level?.disposeDecor();
     disposeAllZombieResources();
+    GuardianZombie.disposeSharedResources();
+    GuardianProjectile.disposeSharedResources();
+    PortraitProjectileImpacts.disposeSharedResources();
+    CrawlerZombie.disposeSharedResources();
   }
 }

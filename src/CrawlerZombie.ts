@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { Level } from './Level.ts';
+import { EnemyImpact, type EnemyShotImpact } from './EnemyImpact.ts';
 import { crawlerConfig, crawlerAnimation, crawlerGroundOffsetY, type CrawlerPose } from './CrawlerAnimation.ts';
 import { prepareSpriteHitMask } from './SpriteHitMask.ts';
 
@@ -26,6 +27,9 @@ function getShared(): CrawlerSharedResources {
     map.colorSpace = THREE.SRGBColorSpace;
     materials[pose] = new THREE.MeshStandardMaterial({
       map,
+      emissiveMap: map,
+      emissive: 0xd4c6a5,
+      emissiveIntensity: 0.035,
       roughness: 1,
       metalness: 0,
       transparent: true,
@@ -53,13 +57,17 @@ export class CrawlerZombie {
   private attackTimer = 0;
   private isHurt = false;
   private hurtTimer = 0;
+  private stunRemaining = 0;
   private isDying = false;
   private deathTimer = 0;
   private hissAudio: THREE.PositionalAudio | null = null;
 
-  // 1. Ghostly Stutter : Mouvement paranormal saccadé
+  // Traque au ras du sol : traction des bras, arrêt net, nouvelle traction.
   private stutterPhaseTimer = 0;
   private isStutterLunge = true;
+  private fixationTimer = 0;
+  private fixationCooldown = 0;
+  private wasObserved = false;
 
   // 2. Phobie de la lampe, Fuite & Frénésie
   private isFrenzy = false;
@@ -89,6 +97,8 @@ export class CrawlerZombie {
   private readonly baseSpeed = crawlerConfig.speed;
   private readonly radius = crawlerConfig.collisionRadius;
   private healthLeft = crawlerConfig.health;
+  private readonly shotReaction = new EnemyImpact();
+  private fatalImpactTime = Infinity;
 
   constructor(scene: THREE.Scene, level: Level, x: number, z: number, startOnCeiling = false) {
     this.level = level;
@@ -115,6 +125,16 @@ export class CrawlerZombie {
 
   public static warmup(): void {
     getShared();
+  }
+
+  public static disposeSharedResources(): void {
+    if (!shared) return;
+    shared.geometry.dispose();
+    for (const material of Object.values(shared.materials)) {
+      material.map?.dispose();
+      material.dispose();
+    }
+    shared = null;
   }
 
   public getKind(): 'crawler' {
@@ -200,7 +220,20 @@ export class CrawlerZombie {
     }
   }
 
-  public takeDamage(amount: number, isHeadshot = false, _impactForce = 0): void {
+  public stun(seconds: number): void {
+    if (!this.alive || this.disposed || this.isDying || !Number.isFinite(seconds) || seconds <= 0) return;
+    this.stunRemaining = Math.max(this.stunRemaining, seconds);
+    this.isHurt = true;
+    this.hurtTimer = Math.max(this.hurtTimer, seconds);
+    this.isAttacking = false;
+    this.attackTimer = 0;
+    this.isEvadingAim = false;
+    this.fleeDodgeTimer = 0;
+    this.stopAudio();
+    this.setPose('hurt');
+  }
+
+  public takeDamage(amount: number, isHeadshot = false, _impactForce = 0, impact?: EnemyShotImpact): void {
     if (!this.alive || this.isDying) return;
 
     // Si touchée au plafond, décroche et tombe immédiatement
@@ -215,11 +248,23 @@ export class CrawlerZombie {
 
     if (this.healthLeft <= 0) {
       this.die();
+      this.shotReaction.start(impact, 0.72, true);
+      if (impact && impact.power >= 0.35) {
+        this.fatalImpactTime = 0;
+        this.setPose('hurt');
+      }
     } else {
+      this.shotReaction.start(impact, 0.72);
       this.isHurt = true;
-      this.hurtTimer = crawlerConfig.hurtDuration;
+      this.hurtTimer = Math.max(this.hurtTimer, crawlerConfig.hurtDuration, impact ? 0.26 * impact.power : 0);
+      if (impact && impact.power >= 0.35) {
+        this.isAttacking = false;
+        this.attackTimer = 0;
+        this.stopAudio();
+      }
       this.setPose('hurt');
     }
+    this.shotReaction.apply(this.mesh, -crawlerGroundOffsetY);
   }
 
   private die(): void {
@@ -239,11 +284,17 @@ export class CrawlerZombie {
     this.isDropping = false;
   }
 
-  public updateDeath(_delta: number, viewer: THREE.Vector3): void {
+  public updateDeath(delta: number, viewer: THREE.Vector3): void {
     if (this.disposed) return;
+    if (!this.alive) {
+      this.shotReaction.update(delta, this.mesh.position, this.level, this.radius, crawlerGroundOffsetY);
+      if (delta > 0 && Number.isFinite(delta)) this.fatalImpactTime += delta;
+      if (this.fatalImpactTime >= 0.08) this.setPose('death');
+    }
     const dx = viewer.x - this.mesh.position.x;
     const dz = viewer.z - this.mesh.position.z;
     this.mesh.rotation.y = Math.atan2(dx, dz);
+    this.shotReaction.apply(this.mesh, -crawlerGroundOffsetY);
   }
 
   private setPose(newPose: CrawlerPose): void {
@@ -259,16 +310,32 @@ export class CrawlerZombie {
     onAttackPlayer?: (damage: number, isAnkleGrab?: boolean) => void,
     playerContext?: { isFlashlightOn: boolean; cameraDirection: THREE.Vector3 }
   ): void {
-    if (this.disposed) return;
+    if (this.disposed || delta <= 0) return;
 
     // Orientation face au joueur (billboard Y-axis)
     const dx = playerPosition.x - this.mesh.position.x;
     const dz = playerPosition.z - this.mesh.position.z;
     this.mesh.rotation.y = Math.atan2(dx, dz);
 
+    if (this.alive) {
+      // La chute du plafond garde sa propre altitude et ses vérifications d'atterrissage.
+      this.shotReaction.update(delta, this.mesh.position,
+        this.isDropping || this.isCeilingAmbush ? undefined : this.level, this.radius, crawlerGroundOffsetY);
+      this.shotReaction.apply(this.mesh, -crawlerGroundOffsetY);
+    }
+
     if (this.isDying) {
       this.deathTimer -= delta;
       return;
+    }
+
+    const stunned = this.stunRemaining > 0;
+    if (stunned) {
+      this.stunRemaining = Math.max(0, this.stunRemaining - delta);
+      this.hurtTimer = Math.max(0, this.hurtTimer - delta);
+      if (this.stunRemaining < 1e-6) this.stunRemaining = 0;
+      if (this.hurtTimer < 1e-6) this.hurtTimer = 0;
+      this.isHurt = this.hurtTimer > 0;
     }
 
     // =========================================================================
@@ -289,13 +356,18 @@ export class CrawlerZombie {
         this.mesh.scale.y = 1; // Remise à l'endroit
         this.isDropping = false;
         this.setPose('hurt');
-        this.hurtTimer = 0.16;
+        this.hurtTimer = Math.max(this.hurtTimer, 0.16);
         this.isHurt = true;
 
-        if (this.canReachPlayer(playerPosition, 1.8)) {
+        if (!stunned && this.canReachPlayer(playerPosition, 1.8)) {
           onAttackPlayer?.(crawlerConfig.attackDamage, true);
         }
       }
+      return;
+    }
+
+    if (stunned) {
+      this.setPose('hurt');
       return;
     }
 
@@ -412,6 +484,8 @@ export class CrawlerZombie {
     }
 
     if (this.isAttacking) {
+      // Une blessure ou la lampe peut suspendre le geste, jamais masquer sa reprise.
+      this.setPose('attack');
       this.attackTimer += delta;
       if (this.attackTimer >= crawlerConfig.attackWindup && this.attackTimer - delta < crawlerConfig.attackWindup) {
         if (this.canReachPlayer(playerPosition, crawlerConfig.attackRange + 0.35)) {
@@ -434,6 +508,10 @@ export class CrawlerZombie {
       this.isAttacking = true;
       this.attackTimer = 0;
       this.setPose('attack');
+      // L'indice sonore commence avec la préparation, avant la saisie.
+      if (this.hissAudio && !this.hissAudio.isPlaying) {
+        try { this.hissAudio.play(); } catch { /* Audio facultatif. */ }
+      }
       return;
     }
 
@@ -487,7 +565,33 @@ export class CrawlerZombie {
     }
 
     // =========================================================================
-    // 1. DÉPLACEMENT SACCADÉ PARANORMAL (Ghostly Stutter) OU FUITE
+    // 5. FIXATION AU REGARD, PUIS REPRISE HORS CHAMP
+    // =========================================================================
+    this.fixationCooldown = Math.max(0, this.fixationCooldown - delta);
+    const canStalk = !this.isFrenzy && !this.isFleeing && !this.isCeilingAmbush;
+    const observed = canStalk && !!playerContext
+      && this.isObservedByPlayer(playerPosition, playerContext.cameraDirection);
+    if (!observed) {
+      if (this.wasObserved && canStalk) {
+        // Pas d'attente artificielle lorsque le joueur lui tourne le dos.
+        this.stutterPhaseTimer = 0;
+        this.isStutterLunge = true;
+      }
+      this.fixationTimer = 0;
+    } else if (distToPlayer >= 3 && this.fixationTimer <= 0 && this.fixationCooldown <= 0) {
+      this.fixationTimer = 0.55;
+      this.fixationCooldown = 2.1;
+    }
+    this.wasObserved = observed;
+    if (this.fixationTimer > 0) {
+      this.fixationTimer = Math.max(0, this.fixationTimer - delta);
+      this.setPose('idle');
+      this.syncVerticalPosition();
+      return;
+    }
+
+    // =========================================================================
+    // 6. REPTATION PAR APPUIS OU FUITE
     // =========================================================================
     let tdx: number;
     let tdz: number;
@@ -514,34 +618,11 @@ export class CrawlerZombie {
     const moveDist = Math.hypot(tdx, tdz);
 
     if (moveDist > 0.05) {
-      // Rythme de pulsation : propulsion nerveuse vs micro-arrêt convulsif
-      const lungeDuration = this.isFrenzy ? 0.12 : (this.isFleeing ? 0.10 : 0.16);
-      const pauseDuration = this.isFrenzy ? 0.05 : (this.isFleeing ? 0.04 : 0.08);
-      this.stutterPhaseTimer += delta;
-
-      if (this.isStutterLunge && this.pose === 'idle') {
-        this.setPose(this.walkStep === 0 ? 'crawl-a' : 'crawl-b');
-      }
-
-      if (this.isStutterLunge && this.stutterPhaseTimer >= lungeDuration) {
-        this.isStutterLunge = false;
-        this.stutterPhaseTimer = 0;
-        this.setPose('idle');
-      } else if (!this.isStutterLunge && this.stutterPhaseTimer >= pauseDuration) {
-        this.isStutterLunge = true;
-        this.stutterPhaseTimer = 0;
-        this.walkStep = (this.walkStep + 1) % 2;
-        this.setPose(this.walkStep === 0 ? 'crawl-a' : 'crawl-b');
-      }
-
-      // Vitesse instantanée selon la phase
-      const currentMultiplier = this.isStutterLunge
-        ? (this.isFrenzy ? 1.85 : (this.isFleeing ? 1.70 : 1.50))
-        : 0.12;
-      const currentSpeed = this.baseSpeed * currentMultiplier;
-
-      let vx = (tdx / moveDist) * currentSpeed * delta;
-      let vz = (tdz / moveDist) * currentSpeed * delta;
+      const unseen = canStalk && !!playerContext && !observed;
+      const strokeDistance = this.advanceCrawlStroke(delta, unseen);
+      const forwardDistance = Math.min(moveDist, strokeDistance);
+      let vx = (tdx / moveDist) * forwardDistance;
+      let vz = (tdz / moveDist) * forwardDistance;
 
       // Décrochage latéral d'esquive si visée active
       if (this.isEvadingAim && playerContext?.cameraDirection) {
@@ -550,14 +631,14 @@ export class CrawlerZombie {
         if (hLen > 0.01) {
           const latX = -(camDir.z / hLen) * this.evasionSign;
           const latZ = (camDir.x / hLen) * this.evasionSign;
-          const evadeSpeed = currentSpeed * 1.35 * delta;
+          const evadeSpeed = strokeDistance * 1.35;
           vx += latX * evadeSpeed;
           vz += latZ * evadeSpeed;
         }
       }
 
       // Évitement des autres ennemis
-      for (const other of allZombies) {
+      for (const other of strokeDistance > 0 ? allZombies : []) {
         if (other === this || !other.isAlive()) continue;
         const op = other.getPosition();
         const sepX = this.mesh.position.x - op.x;
@@ -570,19 +651,26 @@ export class CrawlerZombie {
         }
       }
 
-      const nextX = this.mesh.position.x + vx;
-      const nextZ = this.mesh.position.z + vz;
       const prevX = this.mesh.position.x;
       const prevZ = this.mesh.position.z;
-
-      const collX = this.level.isColliding(nextX, this.mesh.position.z, this.radius);
-      if (!collX) {
-        this.mesh.position.x = nextX;
+      const steps = Math.max(1, Math.ceil(Math.hypot(vx, vz) / 0.08));
+      let collX = false;
+      let collZ = false;
+      for (let step = 0; step < steps; step++) {
+        const nextX = this.mesh.position.x + vx / steps;
+        const nextZ = this.mesh.position.z + vz / steps;
+        if (this.level.isColliding(nextX, this.mesh.position.z, this.radius)) {
+          collX = true;
+        } else {
+          this.mesh.position.x = nextX;
+        }
+        if (this.level.isColliding(this.mesh.position.x, nextZ, this.radius)) {
+          collZ = true;
+        } else {
+          this.mesh.position.z = nextZ;
+        }
       }
-      const collZ = this.level.isColliding(this.mesh.position.x, nextZ, this.radius);
-      if (!collZ) {
-        this.mesh.position.z = nextZ;
-      }
+      if (collX || collZ) this.routeReplanTimer = 0;
 
       // Si heurt d'un mur pendant l'esquive de visée, inverser le côté de zigzag
       if (this.isEvadingAim && (collX || collZ)) {
@@ -590,7 +678,7 @@ export class CrawlerZombie {
       }
 
       // Détection de coin bloquant pendant la fuite : si acculée contre un mur, bascule en furie
-      if (this.isFleeing) {
+      if (this.isFleeing && strokeDistance > 0) {
         const actualMoved = Math.hypot(this.mesh.position.x - prevX, this.mesh.position.z - prevZ);
         if (actualMoved < 0.003) {
           this.fleeBlockedTimer += delta;
@@ -607,25 +695,65 @@ export class CrawlerZombie {
           this.fleeBlockedTimer = 0;
         }
       }
-
-      if (this.isCeilingAmbush) {
-        const ceilingY = typeof (this.level as unknown as { getCeilingHeightAt?: (x: number, z: number) => number }).getCeilingHeightAt === 'function'
-          ? (this.level as unknown as { getCeilingHeightAt: (x: number, z: number) => number }).getCeilingHeightAt(this.mesh.position.x, this.mesh.position.z)
-          : (this.mesh.position.z > 6 ? 4.0 : 6.4);
-        this.mesh.position.y = ceilingY - 0.775;
-        this.mesh.scale.y = -1;
-      } else {
-        const floorY = typeof this.level.getFloorHeightAt === 'function'
-          ? this.level.getFloorHeightAt(this.mesh.position.x, this.mesh.position.z)
-          : 0;
-        this.mesh.position.y = floorY + crawlerGroundOffsetY;
-        this.mesh.scale.y = 1;
-      }
     } else {
       this.setPose('idle');
-      if (this.isCeilingAmbush) {
-        this.mesh.scale.y = -1;
+    }
+    this.syncVerticalPosition();
+  }
+
+  private isObservedByPlayer(player: THREE.Vector3, cameraDirection: THREE.Vector3): boolean {
+    const direction = this.mesh.position.clone().sub(player);
+    const distance = direction.length();
+    if (distance < 0.001 || distance > 16) return false;
+    direction.multiplyScalar(1 / distance);
+    if (cameraDirection.dot(direction) < 0.78) return false;
+    this.sightRay.set(player, direction);
+    this.sightRay.near = 0;
+    this.sightRay.far = distance;
+    const blockers = this.level.getSolidMeshes();
+    for (const blocker of blockers) blocker.updateWorldMatrix(true, false);
+    return this.sightRay.intersectObjects(blockers, false).length === 0;
+  }
+
+  private advanceCrawlStroke(delta: number, unseen: boolean): number {
+    const lungeDuration = this.isFrenzy ? 0.12 : this.isFleeing ? 0.10 : unseen ? 0.18 : 0.14;
+    const pauseDuration = this.isFrenzy ? 0.05 : this.isFleeing ? 0.04 : unseen ? 0.07 : 0.12;
+    const multiplier = this.isFrenzy ? 2.1 : this.isFleeing ? 1.95 : unseen ? 1.9 : 1.7;
+    let remaining = delta;
+    let distance = 0;
+    // Intégrer chaque appui : les temps d'arrêt restent réellement immobiles,
+    // même si une image couvre la fin d'une traction et le début de la suivante.
+    while (remaining > 0.000001) {
+      const duration = this.isStutterLunge ? lungeDuration : pauseDuration;
+      const slice = Math.min(remaining, Math.max(0, duration - this.stutterPhaseTimer));
+      if (this.isStutterLunge) {
+        const start = this.stutterPhaseTimer / duration;
+        const end = (this.stutterPhaseTimer + slice) / duration;
+        // Traction franche puis poids du corps qui retombe, sans flottement.
+        distance += this.baseSpeed * multiplier * slice * (1.25 - 0.375 * (start + end));
       }
+      remaining -= slice;
+      this.stutterPhaseTimer += slice;
+      if (this.stutterPhaseTimer >= duration - 0.000001) {
+        this.stutterPhaseTimer = 0;
+        this.isStutterLunge = !this.isStutterLunge;
+        if (this.isStutterLunge) this.walkStep = (this.walkStep + 1) % 2;
+      }
+    }
+    this.setPose(this.isStutterLunge ? this.walkStep === 0 ? 'crawl-a' : 'crawl-b' : 'idle');
+    return distance;
+  }
+
+  private syncVerticalPosition(): void {
+    if (this.isCeilingAmbush) {
+      const ceilingY = typeof this.level.getCeilingHeightAt === 'function'
+        ? this.level.getCeilingHeightAt(this.mesh.position.x, this.mesh.position.z)
+        : this.mesh.position.z > 6 ? 4.0 : 6.4;
+      this.mesh.position.y = ceilingY - 0.775;
+      this.mesh.scale.y = -1;
+    } else {
+      this.mesh.position.y = this.level.getFloorHeightAt(this.mesh.position.x, this.mesh.position.z) + crawlerGroundOffsetY;
+      this.mesh.scale.y = 1;
     }
   }
 
@@ -667,6 +795,7 @@ export class CrawlerZombie {
   public dispose(scene: THREE.Scene): void {
     if (this.disposed) return;
     this.disposed = true;
+    this.shotReaction.dispose();
     this.stopAudio();
     if (this.hissAudio) {
       this.hissAudio.disconnect();

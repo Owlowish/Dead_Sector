@@ -198,9 +198,9 @@
         "scripts/check-room-composition.mjs"
       ],
       "roomFoci": {
-        "vestibule": "Pendule",
+        "vestibule": "Piano et fenêtre d'orage ; lot SALON_MUSIQUE_2026-11-06",
         "salon": "Cheminée et feu",
-        "galerie": "Buste et portraits",
+        "galerie": "Autel démoniaque ; lot AUTEL_DEMONIAQUE_2026-11-06",
         "grand_hall": "Lustre et piliers",
         "bibliotheque": "Rayonnages et livres",
         "atelier": "Établi et outils"
@@ -220,12 +220,12 @@
         "src/MansionFurnishings.ts",
         "src/MansionConfig.ts"
       ],
-      "purpose": "Dos et chants rigides, socle 1,10 m, piliers 5,80 m, établi 3×1,35 m haut de 1 m.",
+      "purpose": "Dos et chants rigides, piliers 5,80 m, établi 3×1,35 m haut de 1 m. Le socle/buste d'origine est remplacé par AUTEL_DEMONIAQUE_2026-11-06 ; mesures de validation ci-dessous historiques.",
       "reusedImages": [
         "public/assets/decor/mansion-details-v1.png",
         "public/assets/textures/portrait_v2.png"
       ],
-      "shotBlocking": "Le batch existant Galerie arrête les tirs sur le buste et les corniches réelles, sans nouveau dessin ni géométrie. Retiré des solides avant destruction.",
+      "shotBlocking": "Depuis le 6 novembre, DemonicAltar expose les surfaces de tir de la Galerie ; MansionFurnishings conserve seulement ses corniches et ne bloque plus les tirs. Contrat courant dans AUTEL_DEMONIAQUE_2026-11-06 ; mesures du buste conservées ci-dessous pour provenance.",
       "validation": {
         "geometry": "conforme",
         "shotRays": "six intersections depuis les côtés opposés ; trois rayons hors sculpture libres",

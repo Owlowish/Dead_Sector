@@ -306,8 +306,8 @@ export const MANSION_WALLS: BoxCollider[] = [
   // 1B. Grand Salon : Cheminée monumentale en pierre
   { x: -14, y: 1.5, z: 13, width: 2.4, height: 3.0, depth: 4.0, materialType: 'obstacle' },
 
-  // 1C. Galerie Ouest : Piédestal de sculpture adossé au mur ouest
-  { x: -18, y: 0.55, z: 0.0, width: 1.4, height: 1.1, depth: 1.4, materialType: 'obstacle', surface: 'stone' },
+  // 1C. Galerie Ouest : autel démoniaque ; accès latéraux et nœuds à Z±2 conservés.
+  { x: -18, y: 0.65, z: 0.0, width: 2.8, height: 1.3, depth: 1.8, materialType: 'obstacle', surface: 'stone' },
 
   // 2. Grand Hall Nord : Deux colonnes monumentales bordant l'allée centrale (dégagement complet devant l'escalier Est)
   { x: 5.0, y: 2.9, z: -2.5, width: 1.4, height: 5.8, depth: 1.4, materialType: 'obstacle', surface: 'stone' },
@@ -410,8 +410,8 @@ export const MANSION_WAYPOINTS: Point3D[] = [
 
   // --- Secteur 1 : Galerie Ouest (Y = 1.0) ---
   { x: -12, y: 1.0, z: 3.0 },
-  { x: -18, y: 1.0, z: 2.0 },  // Nord piédestal
-  { x: -18, y: 1.0, z: -2.0 }, // Sud piédestal
+  { x: -18, y: 1.0, z: 2.0 },  // Sud autel
+  { x: -18, y: 1.0, z: -2.0 }, // Nord autel
   { x: -12.25, y: 1.0, z: 0.5 },// Abords pied escalier ouest
   { x: -5.5, y: 1.0, z: -1.0 },// Abords grille Grand Hall
 

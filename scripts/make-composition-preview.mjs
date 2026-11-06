@@ -30,7 +30,7 @@ const lamp=new THREE.SpotLight(0xfffaec,22,28,Math.PI/5.2,.5,1.8),aim=new THREE.
 const views={
   vestibule:{overview:{position:[8,1.7,16],look:[10.5,1.6,10]},focus:{position:[12.7,1.7,15.1],look:[10.5,1.0,11.5]},start:{position:[8,1.7,16],look:[8,1.7,8]},archNorth:{position:[-1.4,1.7,9.5],look:[10.5,1.3,11.5]},archSouth:{position:[-1.4,1.7,16.5],look:[10.5,1.3,11.5]},console:{position:[18,1.7,15.5],look:[21.5,1.35,18.7]}},
   salon:{overview:{position:[-4.6,1.7,16.5],look:[-14,1.5,13]},focus:{position:[-8.8,1.7,13],look:[-13.3,1,13]}},
-  galerie:{overview:{position:[-5.5,1.7,4],look:[-18,1.8,0]},focus:{position:[-18,1.7,4.7],look:[-18,1.9,0]}},
+  galerie:{overview:{position:[-9,1.7,4],look:[-18,2.1,0]},focus:{position:[-18,1.7,4.7],look:[-18,2.0,0]},archNorth:{position:[-16,1.7,-3.5],look:[-18,2.0,0]},archSouth:{position:[-12,1.7,5.1],look:[-18,2.1,0]}},
   grand_hall:{overview:{position:[0,1.7,4],look:[8,3.6,0]},focus:{position:[8,1.7,4.2],look:[8,4,0]}},
   bibliotheque:{overview:{position:[-5.5,4.1,-9],look:[-13,4.4,-14]},focus:{position:[-6.5,4.1,-14],look:[-13,4.4,-14]}},
   atelier:{overview:{position:[18,4.1,-9.5],look:[12,3.7,-14]},focus:{position:[12,4.1,-10.7],look:[12,3.6,-14]}}
@@ -60,7 +60,7 @@ for(const button of document.querySelectorAll('[data-view]'))button.onclick=()=>
 document.querySelector('#lamp').onclick=event=>{lamp.intensity=lamp.intensity?0:22;event.currentTarget.textContent=lamp.intensity?'Lampe allumée':'Lampe éteinte';event.currentTarget.setAttribute('aria-pressed',String(lamp.intensity>0))};
 document.querySelector('#animation').onclick=event=>{animated=!animated;event.currentTarget.textContent=animated?'Feu et poussière animés':'Feu et poussière figés';event.currentTarget.setAttribute('aria-pressed',String(animated))};
 document.querySelector('#capture').onclick=()=>{renderer.render(scene,camera);const link=document.createElement('a');link.download='composition-'+roomId+'-'+viewName+'-'+(lamp.intensity?'lampe':'sans-lampe')+'.png';link.href=renderer.domElement.toDataURL('image/png');link.click()};
-function resize(){const width=Math.max(1,stage.clientWidth),height=Math.max(1,stage.clientHeight);renderer.setSize(Math.max(1,Math.floor(width/3)),Math.max(1,Math.floor(height/3)),false);camera.aspect=width/height;camera.updateProjectionMatrix()}
+function resize(){const width=Math.max(1,stage.clientWidth),height=Math.max(1,stage.clientHeight);renderer.setSize(Math.max(320,Math.floor(width/3)),Math.max(240,Math.floor(height/3)),false);camera.aspect=width/height;camera.updateProjectionMatrix()}
 window.addEventListener('resize',resize);resize();move();
 let previous=null,last=0;
 renderer.setAnimationLoop(time=>{

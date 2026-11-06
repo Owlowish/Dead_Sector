@@ -67,7 +67,11 @@ function key(target, type, code) {
 
 document.pointerLockElement = canvas;
 
-// 1. Verrouillage initial du fusil à pompe
+// 1. La hache précède le pistolet acquis, puis le fusil encore verrouillé.
+assert.equal(weapon.getActiveWeaponId(), 'axe', 'Hache équipée au départ');
+assert.equal(weapon.isWeaponUnlocked('pistol'), false, 'Pistolet verrouillé au départ');
+assert.equal(weapon.switchWeapon('shotgun'), false, 'Fusil verrouillé avec la hache');
+weapon.unlockWeapon('pistol');
 assert.equal(weapon.getActiveWeaponId(), 'pistol', 'Pistolet actif au départ');
 assert.equal(weapon.switchWeapon('shotgun'), false, 'Fusil verrouillé au départ');
 assert.equal(weapon.getActiveWeaponId(), 'pistol', 'Reste sur pistolet');

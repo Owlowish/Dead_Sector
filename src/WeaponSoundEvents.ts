@@ -2,7 +2,7 @@ import { reloadPoses } from './WeaponAnimation.ts';
 import { shotgunPump } from './ShotgunAnimation.ts';
 
 export type WeaponMechanicalSoundId =
-  | 'mag-out' | 'mag-in' | 'seat' | 'shell-insert' | 'pump-back' | 'pump-forward';
+  | 'mag-out' | 'mag-in' | 'seat' | 'shell-insert' | 'pump-back' | 'pump-forward' | 'axe-swing';
 
 export interface WeaponSoundEvent {
   at: number;

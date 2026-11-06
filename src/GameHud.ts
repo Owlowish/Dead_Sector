@@ -1,7 +1,8 @@
-import type { Weapon } from './Weapon.ts';
+import type { Weapon, FirearmId } from './Weapon.ts';
 import { getHeartFrame, heartAnimation } from './HeartAnimation.ts';
 
 const motionStorageKey = 'dead-sector-hud-motion-v1';
+const shotFeedbackSeconds = 0.3;
 
 export interface HudProgression {
   phase: 'combat' | 'respite' | 'won' | 'lost' | 'terminal';
@@ -24,14 +25,20 @@ export interface HudBoss {
   health: number;
   maxHealth: number;
   phase: 1 | 2;
-  attack: 'sweep' | 'throw' | null;
+  attack: 'sweep' | 'blades' | 'tear' | null;
   recovering?: boolean;
+  transforming?: boolean;
+  comboTransition?: boolean;
+  maskExposed?: boolean;
+  volleyIndex?: 1 | 2;
+  frameResisting?: boolean;
 }
 interface PickupNotice {
   kind: GainKind | 'weapon';
   amount: number;
   remaining: number;
   element: HTMLElement;
+  weaponId?: FirearmId;
 }
 
 function write(element: HTMLElement | null, value: string): void {
@@ -53,12 +60,17 @@ export class GameHud {
   private readonly capacity = document.querySelector<HTMLElement>('[data-hud-capacity]');
   private readonly reserve = document.querySelector<HTMLElement>('[data-hud-reserve]');
   private readonly ammoState = document.querySelector<HTMLElement>('[data-hud-ammo-state]');
+  private readonly axeSlot = document.querySelector<HTMLElement>('[data-hud-slot="axe"]');
   private readonly pistolSlot = document.querySelector<HTMLElement>('[data-hud-slot="pistol"]');
   private readonly shotgunSlot = document.querySelector<HTMLElement>('[data-hud-slot="shotgun"]');
   private readonly objective = document.querySelector<HTMLElement>('#objective');
-  private readonly phase = document.querySelector<HTMLElement>('[data-hud-phase]');
+  private readonly phaseLabel = document.querySelector<HTMLElement>('[data-hud-phase-label]');
+  private readonly tier = document.querySelector<HTMLElement>('[data-hud-tier]');
+  private readonly tierTotal = document.querySelector<HTMLElement>('[data-hud-tier-total]');
+  private readonly total = document.querySelector<HTMLElement>('[data-hud-total]');
   private readonly sector = document.querySelector<HTMLElement>('[data-hud-sector]');
-  private readonly progress = document.querySelector<HTMLElement>('[data-hud-progress]');
+  private readonly progressLabel = document.querySelector<HTMLElement>('[data-hud-progress-label]');
+  private readonly remaining = document.querySelector<HTMLElement>('[data-hud-remaining]');
   private readonly respiteBar = document.querySelector<HTMLElement>('[data-hud-respite-bar]');
   private readonly announcement = document.querySelector<HTMLElement>('[data-hud-announcement]');
   private readonly boss = document.querySelector<HTMLElement>('[data-hud-boss]');
@@ -72,6 +84,9 @@ export class GameHud {
   private heartElapsed = 0;
   private heartFrame = -1;
   private healthAlive = true;
+  private shotRemaining = 0;
+  private ammoWeaponId: string | null = null;
+  private ammoReloading = false;
   private reducedMotion = false;
   private motionOverride: boolean | null = null;
   private readonly motionInput = document.querySelector<HTMLInputElement>('#reduce-heart-motion');
@@ -98,6 +113,7 @@ export class GameHud {
       if (stored === 'reduced' || stored === 'full') this.motionOverride = stored === 'reduced';
     } catch { /* Les préférences système restent applicables sans stockage. */ }
     this.setReducedMotion(this.motionOverride ?? this.motionPreference?.matches ?? false);
+    this.resetShotFeedback();
     this.motionInput?.addEventListener('change', this.onMotionInput);
     this.motionPreference?.addEventListener('change', this.onMotionPreference);
   }
@@ -113,6 +129,7 @@ export class GameHud {
     if (!this.healthAlive) {
       this.heartElapsed = 0;
       this.renderHeart();
+      this.resetShotFeedback();
     }
     this.healthBar?.style.setProperty('--fill', `${ratio * 100}%`);
     this.healthBar?.setAttribute('aria-valuenow', String(health));
@@ -124,23 +141,48 @@ export class GameHud {
     this.flashlight?.classList.toggle('off', !enabled);
   }
 
-  public setAmmo(state: ReturnType<Weapon['getAmmoState']>, shotgunUnlocked: boolean): void {
+  public setAmmo(state: ReturnType<Weapon['getAmmoState']>, shotgunUnlocked: boolean, pistolUnlocked = true): void {
+    if (this.ammoWeaponId !== state.weaponId || state.isReloading) this.resetShotFeedback();
+    this.ammoWeaponId = state.weaponId;
+    this.ammoReloading = state.isReloading;
     write(this.weaponName, state.weaponName);
     write(this.magazine, String(state.magazine));
     write(this.capacity, String(state.capacity));
     write(this.reserve, String(state.reserve));
-    write(this.ammoState, state.isReloading ? 'RECHARGEMENT…'
+    const melee = state.weaponId === 'axe';
+    write(this.ammoState, melee ? 'COUP LENT · ÉTOURDIT AU CONTACT' : state.isReloading ? 'RECHARGEMENT…'
       : state.magazine === 0 ? (state.reserve > 0 ? '[R] RECHARGER' : 'MUNITIONS ÉPUISÉES')
       : state.reserve === 0 ? 'RÉSERVE ÉPUISÉE' : '');
-    this.ammo?.classList.toggle('is-empty', state.magazine === 0);
+    this.ammo?.classList.toggle('is-empty', !melee && state.magazine === 0);
     this.ammo?.classList.toggle('is-reloading', state.isReloading);
+    if (this.ammo) this.ammo.dataset.weapon = state.weaponId;
+    this.axeSlot?.classList.toggle('is-active', melee);
     this.pistolSlot?.classList.toggle('is-active', state.weaponId === 'pistol');
     this.shotgunSlot?.classList.toggle('is-active', state.weaponId === 'shotgun');
     if (this.shotgunSlot) this.shotgunSlot.hidden = !shotgunUnlocked;
+    if (this.pistolSlot) this.pistolSlot.hidden = !pistolUnlocked;
+  }
+
+  public notifyShot(): void {
+    if (!this.healthAlive || this.ammoReloading || this.ammoWeaponId === 'axe') return;
+    this.shotRemaining = shotFeedbackSeconds;
+    this.renderShotFeedback();
+  }
+
+  private renderShotFeedback(): void {
+    const flash = this.shotRemaining / shotFeedbackSeconds;
+    this.ammo?.style.setProperty('--shot-progress', String(this.shotRemaining > 0 ? 1 - flash : 0));
+    this.ammo?.style.setProperty('--shot-flash', String(flash));
+  }
+
+  private resetShotFeedback(): void {
+    this.shotRemaining = 0;
+    this.renderShotFeedback();
   }
 
   public setReducedMotion(reduced: boolean): void {
     this.reducedMotion = reduced;
+    this.ammo?.classList.toggle('has-reduced-motion', reduced);
     if (this.motionInput) this.motionInput.checked = reduced;
     if (reduced) this.heartElapsed = 0;
     this.renderHeart();
@@ -161,28 +203,39 @@ export class GameHud {
       this.progressionKey = key;
       this.sectorRemaining = this.combatSector ? 3 : 0;
     }
-    let phase = `PALIER ${state.tier} / ${state.total}`;
+    let phase = 'PALIER';
     let sector = state.sector;
-    let progress = `${state.remaining} ${state.remaining === 1 ? 'MENACE' : 'MENACES'}`;
+    let progress = state.remaining === 1 ? 'MENACE' : 'MENACES';
+    let remaining = String(state.remaining);
     if (state.phase === 'respite') {
-      phase = `ACCALMIE · ${state.tier} / ${state.total}`;
+      phase = 'ACCALMIE';
       sector = 'PALIER PURGÉ';
-      progress = `PROCHAIN COMBAT DANS ${Math.ceil(Math.max(0, state.respiteSeconds))} S`;
+      progress = 'PROCHAIN COMBAT DANS';
+      remaining = `${Math.ceil(Math.max(0, state.respiteSeconds))} S`;
     } else if (state.phase === 'won') {
       phase = 'TENTATIVE SURVÉCUE';
       sector = 'LE MANOIR EST PURGÉ';
-      progress = '[B] CONSULTER LE BILAN';
+      progress = '[B]';
+      remaining = 'CONSULTER LE BILAN';
     } else if (state.phase === 'lost') {
       phase = 'TENTATIVE INTERROMPUE';
-      progress = '[B] CONSULTER LE BILAN';
+      progress = '[B]';
+      remaining = 'CONSULTER LE BILAN';
     } else if (state.phase === 'terminal') {
       phase = 'MANOIR EXPLORABLE';
-      progress = 'EXPLORATION LIBRE';
+      progress = '';
+      remaining = 'EXPLORATION LIBRE';
     }
-    write(this.phase, phase);
+    write(this.phaseLabel, phase);
+    write(this.tier, String(state.tier));
+    write(this.total, String(state.total));
+    const showTier = state.phase === 'combat' || state.phase === 'respite';
+    if (this.tier) this.tier.hidden = !showTier;
+    if (this.tierTotal) this.tierTotal.hidden = !showTier;
     write(this.sector, sector);
     if (this.sector) this.sector.hidden = this.combatSector && this.sectorRemaining <= 0;
-    write(this.progress, progress);
+    write(this.progressLabel, progress);
+    write(this.remaining, remaining);
     if (this.respiteBar) {
       this.respiteBar.hidden = state.phase !== 'respite';
       if (state.phase === 'respite') {
@@ -198,10 +251,15 @@ export class GameHud {
     this.bossBar?.style.setProperty('--fill', `${ratio * 100}%`);
     this.bossBar?.setAttribute('aria-valuenow', String(state.health));
     this.bossBar?.setAttribute('aria-valuemax', String(state.maxHealth));
-    write(this.bossPhase, state.phase === 2 ? 'II · DÉCHAÎNÉ' : 'I · LE GARDIEN');
-    write(this.bossAttack, state.recovering ? 'RÉCUPÉRATION · TIREZ OU RECHARGEZ'
+    const phaseLabel = state.phase === 2 ? 'II · HORS DU CADRE' : 'I · DANS LE CADRE';
+    write(this.bossPhase, state.frameResisting ? `${phaseLabel} · LE CADRE ABSORBE LES COUPS` : phaseLabel);
+    write(this.bossAttack, state.transforming ? 'LA TOILE SE DÉCHIRE'
+      : state.comboTransition ? 'ENCHAÎNEMENT · RESTEZ MOBILE'
+      : state.recovering ? 'RÉCUPÉRATION · MASQUE EXPOSÉ'
       : state.attack === 'sweep' ? 'BALAYAGE · ÉCARTEZ-VOUS'
-      : state.attack === 'throw' ? 'JET DE CLÉS · DÉCALEZ-VOUS' : 'GARDEZ UNE ISSUE');
+      : state.attack === 'blades' ? `LAMES DE PEINTURE · SALVE ${state.volleyIndex ?? 1}/2 · DÉCALEZ-VOUS`
+      : state.attack === 'tear' ? 'DÉCHIRURE · QUITTEZ LA TRACE'
+      : state.maskExposed === false ? 'MASQUE PROTÉGÉ · GARDEZ UNE ISSUE' : 'GARDEZ UNE ISSUE');
   }
 
   public setPrompt(prompt: HudPrompt | null): void {
@@ -226,25 +284,25 @@ export class GameHud {
     this.addNotice(kind, amount);
   }
 
-  public notifyWeapon(): void {
-    this.addNotice('weapon', 0);
+  public notifyWeapon(weaponId: FirearmId = 'shotgun'): void {
+    this.addNotice('weapon', 0, weaponId);
   }
 
-  private addNotice(kind: PickupNotice['kind'], amount: number): void {
+  private addNotice(kind: PickupNotice['kind'], amount: number, weaponId?: FirearmId): void {
     if (!this.notifications) return;
-    let notice = this.notices.find((entry) => entry.kind === kind);
+    let notice = this.notices.find((entry) => entry.kind === kind && entry.weaponId === weaponId);
     if (!notice) {
       if (this.notices.length === 2) this.notices.shift()?.element.remove();
       const element = document.createElement('div');
       element.className = 'hud-notification';
       element.dataset.kind = kind === 'health' ? 'health' : kind === 'weapon' ? 'weapon' : 'ammo';
-      notice = { kind, amount: 0, remaining: 2.2, element };
+      notice = { kind, amount: 0, remaining: 2.2, element, weaponId };
       this.notices.push(notice);
       this.notifications.appendChild(element);
     }
     notice.amount += amount;
     notice.remaining = 2.2;
-    write(notice.element, kind === 'weapon' ? 'FUSIL À POMPE ACQUIS · [2]'
+    write(notice.element, kind === 'weapon' ? (weaponId === 'pistol' ? 'PISTOLET ACQUIS · [2]' : 'FUSIL À POMPE ACQUIS · [3]')
       : `+${notice.amount} ${kind === 'health' ? 'PV' : kind === 'shotgun' ? 'CARTOUCHES · CAL. 12' : 'MUNITIONS · 9 MM'}`);
   }
 
@@ -253,6 +311,10 @@ export class GameHud {
       const elapsed = Math.max(0, delta);
       if (this.healthAlive && !this.reducedMotion) {
         this.heartElapsed = (this.heartElapsed + elapsed) % heartAnimation.cycleSeconds;
+      }
+      if (this.shotRemaining > 0) {
+        this.shotRemaining = Math.max(0, this.shotRemaining - elapsed);
+        this.renderShotFeedback();
       }
       this.sectorRemaining = Math.max(0, this.sectorRemaining - elapsed);
       for (const notice of this.notices) notice.remaining -= delta;
@@ -271,6 +333,7 @@ export class GameHud {
 
   public clear(): void {
     this.setBoss(null);
+    this.resetShotFeedback();
     for (const notice of this.notices) notice.element.remove();
     this.notices = [];
     this.announcementRemaining = 0;

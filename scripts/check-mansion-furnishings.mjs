@@ -103,7 +103,11 @@ for (const part of mansionFurnishingParts) {
 for (const room of MANSION_ROOMS) {
   const parts = mansionFurnishingParts.filter(part => part.roomId === room.id);
   assert.ok(parts.some(part => part.feature === 'cornice-body'), `Couronnement dans ${room.id}`);
-  assert.ok(parts.some(part => !part.feature.startsWith('cornice')), `Repère propre à ${room.id}`);
+  if (room.id === 'galerie') {
+    assert.ok(parts.every(part => part.feature.startsWith('cornice')), 'L’autel autonome remplace le buste de la Galerie');
+  } else {
+    assert.ok(parts.some(part => !part.feature.startsWith('cornice')), `Repère propre à ${room.id}`);
+  }
   assert.equal(offsets.get(room.id), group.getObjectByName(`mansion-furnishings-${room.id}`).geometry.getAttribute('position').count);
 }
 for (const mesh of supportMeshes) mesh.geometry.dispose();
@@ -116,4 +120,5 @@ furnishings.dispose();
 furnishings.dispose();
 assert.equal(disposed, 7, 'Six géométries et matériau libérés une seule fois');
 assert.equal(group.parent, null);
+assert.deepEqual(furnishings.getShotBlockers(), [], 'Les corniches ne deviennent pas des obstacles de tir');
 console.log(`PASS : ${mansionFurnishingParts.length} primitives, six pièces, ${triangles} triangles, six appels au plus ; supports, emprises basses, plafonds et nettoyage.`);

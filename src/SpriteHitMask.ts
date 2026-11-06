@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { crawlerSprite } from './CrawlerAnimation.ts';
+import { portraitSprite } from './PortraitAnimation.ts';
 
 interface AlphaMask {
   width: number;
@@ -86,14 +87,15 @@ export function isHeadSpriteHit(mesh: THREE.Mesh, uv: THREE.Vector2 | undefined)
   const name = path.substring(path.lastIndexOf('/') + 1);
   const isSpitter = path.includes('/spitter/');
   const isCrawler = path.includes('/crawler/');
-  const regions = isSpitter
+  const isPortrait = path.includes('/portrait/');
+  const regions = isPortrait ? portraitSprite.heads[name] : isSpitter
     ? [[400, 50, 630, 265] as [number, number, number, number]]
     : isCrawler
     ? crawlerSprite.heads[name]
     : heads[name];
   if (!regions) return false;
-  const refWidth = isSpitter ? 1024 : isCrawler ? crawlerSprite.width : (refDimensions[name]?.[0] ?? image.width);
-  const refHeight = isSpitter ? 1536 : isCrawler ? crawlerSprite.height : (refDimensions[name]?.[1] ?? image.height);
+  const refWidth = isPortrait ? portraitSprite.width : isSpitter ? 1024 : isCrawler ? crawlerSprite.width : (refDimensions[name]?.[0] ?? image.width);
+  const refHeight = isPortrait ? portraitSprite.height : isSpitter ? 1536 : isCrawler ? crawlerSprite.height : (refDimensions[name]?.[1] ?? image.height);
   const scaleX = image.width / refWidth;
   const scaleY = image.height / refHeight;
   const point = texture.transformUv(uv.clone());

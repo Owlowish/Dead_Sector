@@ -4,7 +4,7 @@
  * sans télémétrie externe ni modification de l'interface utilisateur en jeu.
  */
 
-import type { AmmoStocks, WeaponId } from './Weapon.ts';
+import type { AmmoStocks, FirearmId, WeaponId } from './Weapon.ts';
 
 export interface WeaponDiagnosticStats {
   shotsFired: number;
@@ -84,6 +84,7 @@ export class TierDiagnosticsTracker {
       bodyHits: 0,
       ammoDropsCreated: 0,
       weaponStats: {
+        axe: { shotsFired: 0, headHits: 0, bodyHits: 0, ammoGained: 0 },
         pistol: { shotsFired: 0, headHits: 0, bodyHits: 0, ammoGained: 0 },
         shotgun: { shotsFired: 0, headHits: 0, bodyHits: 0, ammoGained: 0 },
       },
@@ -159,13 +160,13 @@ export class TierDiagnosticsTracker {
     if (Number.isFinite(healthGained) && healthGained > 0) this.currentRecord.healthRestored += healthGained;
   }
 
-  public recordAmmoBox(weaponId?: WeaponId, ammoGained = 0): void {
+  public recordAmmoBox(weaponId?: FirearmId, ammoGained = 0): void {
     if (!this.enabled || !this.currentRecord) return;
     this.currentRecord.ammoBoxesCollected++;
     if (weaponId) this.recordAmmoGain(weaponId, ammoGained);
   }
 
-  public recordAmmoGain(weaponId: WeaponId, ammoGained: number): void {
+  public recordAmmoGain(weaponId: FirearmId, ammoGained: number): void {
     if (!this.enabled || !this.currentRecord || !Number.isFinite(ammoGained) || ammoGained <= 0) return;
     this.currentRecord.weaponStats[weaponId].ammoGained += ammoGained;
   }

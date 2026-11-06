@@ -8,6 +8,8 @@ import {
   buildFrameGeometry,
 } from './AgileZombieAnimation.ts';
 import { spitterAnimation, spitterDeathFrame } from './SpitterAnimation.ts';
+import type { Level } from './Level.ts';
+import { EnemyImpact, type EnemyShotImpact } from './EnemyImpact.ts';
 
 export type ZombieKind = 'standard' | 'agile' | 'spitter' | 'crawler';
 
@@ -159,9 +161,15 @@ export class ZombieRemains {
   private reversing = false;
   private revivalFinished = false;
   private disposed = false;
+  private readonly level?: Level;
+  private readonly shotReaction = new EnemyImpact();
+  private readonly position = new THREE.Vector3();
+  private openingPose: Pick<THREE.Mesh, 'geometry' | 'material' | 'customDepthMaterial' | 'customDistanceMaterial'> | null = null;
+  private openingDuration = 0;
 
-  constructor(scene: THREE.Scene, kind: ZombieKind = 'standard') {
+  constructor(scene: THREE.Scene, kind: ZombieKind = 'standard', level?: Level) {
     this.kind = kind;
+    this.level = level;
     let res = sharedByType.get(kind);
     if (!res) {
       res = kind === 'agile' ? createAgileResources() : kind === 'spitter' ? createSpitterResources() : createStandardResources();
@@ -178,12 +186,20 @@ export class ZombieRemains {
     scene.add(this.mesh);
   }
 
-  public start(position: THREE.Vector3, facingAngle: number, scale = 1): void {
+  public start(position: THREE.Vector3, facingAngle: number, scale = 1, impact?: EnemyShotImpact, recoilPose?: THREE.Mesh): void {
     if (this.disposed || this.elapsed !== null) return;
     this.elapsed = 0;
     this.displayScale = scale;
     const standingCenter = this.kind === 'spitter' ? 1.35 : 1;
     this.baseFloorY = position.y - standingCenter * scale;
+    this.position.copy(position);
+    // Le coup fatal commence par la vraie pose de choc, avant les poses de chute.
+    this.openingDuration = impact && impact.power >= 0.35 && recoilPose ? 0.08 : 0;
+    this.openingPose = this.openingDuration > 0 ? {
+      geometry: recoilPose!.geometry, material: recoilPose!.material,
+      customDepthMaterial: recoilPose!.customDepthMaterial, customDistanceMaterial: recoilPose!.customDistanceMaterial,
+    } : null;
+    this.shotReaction.start(impact, this.kind === 'spitter' ? 0.55 : this.kind === 'agile' ? 1.15 : 1, true);
     this.mesh.scale.setScalar(scale);
     this.mesh.position.set(position.x, this.baseFloorY, position.z);
     this.mesh.rotation.set(0, facingAngle, 0);
@@ -191,11 +207,15 @@ export class ZombieRemains {
     this.mesh.castShadow = true;
     if (this.kind === 'spitter') this.mesh.castShadow = false;
     this.showFrame(0);
+    this.showOpeningPose();
   }
 
   public beginRevival(): void {
     if ((this.kind !== 'standard' && this.kind !== 'agile') || this.elapsed === null || this.disposed) return;
     this.reversing = true;
+    this.shotReaction.clear();
+    this.openingPose = null;
+    this.openingDuration = 0;
     this.settled = false;
     this.elapsed = this.resources.duration;
   }
@@ -208,6 +228,11 @@ export class ZombieRemains {
 
   public update(delta: number, viewerPosition: THREE.Vector3): void {
     if (this.disposed || this.elapsed === null) return;
+    const offset = (this.kind === 'spitter' ? 1.35 : 1) * this.displayScale;
+    this.shotReaction.update(delta, this.position, this.level, this.kind === 'spitter' ? 0.5 : 0.4, offset);
+    this.baseFloorY = this.position.y - offset;
+    this.mesh.position.x = this.position.x;
+    this.mesh.position.z = this.position.z;
     // Le corps est dessiné couché, mais son support reste vertical, comme les vivants face au joueur
     this.mesh.rotation.set(
       0,
@@ -217,10 +242,12 @@ export class ZombieRemains {
     if (this.settled) return;
     this.elapsed = this.reversing
       ? Math.max(0, this.elapsed - Math.max(0, delta))
-      : Math.min(this.resources.duration, this.elapsed + Math.max(0, delta));
+      : Math.min(this.resources.duration + this.openingDuration, this.elapsed + Math.max(0, delta));
+    const fallTime = Math.max(0, this.elapsed - this.openingDuration);
     const frameIdx =
-      this.kind === 'agile' ? agileDeathFrameIndex(this.elapsed) : this.kind === 'spitter' ? spitterDeathFrame(this.elapsed) : deathFrame(this.elapsed);
+      this.kind === 'agile' ? agileDeathFrameIndex(fallTime) : this.kind === 'spitter' ? spitterDeathFrame(fallTime) : deathFrame(fallTime);
     this.showFrame(frameIdx);
+    if (this.elapsed < this.openingDuration) this.showOpeningPose();
     if (this.reversing && this.elapsed <= 0) {
       this.mesh.visible = false;
       this.reversing = false;
@@ -228,7 +255,7 @@ export class ZombieRemains {
       this.revivalFinished = true;
       return;
     }
-    if (this.elapsed >= this.resources.duration - 1e-6) {
+    if (this.elapsed >= this.resources.duration + this.openingDuration - 1e-6) {
       this.mesh.castShadow = false;
       this.settled = true;
     }
@@ -236,7 +263,9 @@ export class ZombieRemains {
 
   private showFrame(index: number): void {
     this.mesh.geometry = this.resources.frames[index];
-    if (this.kind === 'spitter') this.mesh.material = this.resources.poseMaterials![index];
+    this.mesh.material = this.kind === 'spitter' ? this.resources.poseMaterials![index] : this.resources.deathMaterial;
+    this.mesh.customDepthMaterial = this.resources.depthMaterial;
+    this.mesh.customDistanceMaterial = this.resources.distanceMaterial;
     if (this.kind === 'standard') {
       const pose = standardConfig.frames[index];
       this.mesh.position.y =
@@ -248,7 +277,20 @@ export class ZombieRemains {
     } else {
       this.mesh.position.y = this.baseFloorY + 1.35 * this.displayScale;
     }
+    this.shotReaction.apply(this.mesh, (this.baseFloorY - this.mesh.position.y) / this.displayScale);
   }
+
+  private showOpeningPose(): void {
+    if (!this.openingPose) return;
+    this.mesh.geometry = this.openingPose.geometry;
+    this.mesh.material = this.openingPose.material as THREE.MeshStandardMaterial;
+    this.mesh.customDepthMaterial = this.openingPose.customDepthMaterial;
+    this.mesh.customDistanceMaterial = this.openingPose.customDistanceMaterial;
+    this.mesh.position.y = this.position.y;
+    this.shotReaction.apply(this.mesh, (this.baseFloorY - this.mesh.position.y) / this.displayScale);
+  }
+
+  public getPosition(): THREE.Vector3 { return this.position; }
 
   public static warmup(): void {
     warmupRemainsResources();
@@ -261,6 +303,7 @@ export class ZombieRemains {
   public dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
+    this.shotReaction.dispose();
     this.mesh.visible = false;
     this.mesh.removeFromParent();
     this.resources.users--;

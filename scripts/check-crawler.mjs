@@ -114,6 +114,65 @@ try {
   crawler.update(0.1, new THREE.Vector3(0, 1.7, 5), [crawler]);
   assert.equal(crawler.getPose(), 'idle', 'Phase de convulsion / pause saccadée');
 
+  // Une pause est un véritable arrêt d'appui, sans glissement de la racine.
+  const strokeCrawler = new CrawlerZombie(scene, level, 0, 0);
+  const distantPlayer = new THREE.Vector3(0, 1.7, 12);
+  strokeCrawler.update(0.14, distantPlayer, [strokeCrawler]);
+  const plantedPosition = strokeCrawler.getPosition().clone();
+  strokeCrawler.update(0.05, distantPlayer, [strokeCrawler]);
+  assert.equal(strokeCrawler.getPose(), 'idle');
+  assert.equal(strokeCrawler.getPosition().distanceTo(plantedPosition), 0, 'Les appuis plantés ne glissent pas pendant le silence');
+  strokeCrawler.dispose(scene);
+
+  const coarseCrawler = new CrawlerZombie(scene, level, 0, 0);
+  const fineCrawler = new CrawlerZombie(scene, level, 0, 0);
+  coarseCrawler.update(0.5, distantPlayer, [coarseCrawler]);
+  for (let i = 0; i < 10; i++) fineCrawler.update(0.05, distantPlayer, [fineCrawler]);
+  assert.ok(coarseCrawler.getPosition().distanceTo(fineCrawler.getPosition()) < 1e-6, 'La distance des tractions reste stable entre images fines et longue image');
+  coarseCrawler.dispose(scene);
+  fineCrawler.dispose(scene);
+
+  // Fixation visible, bornée ; la poursuite reprend immédiatement hors champ.
+  const watchedContext = { isFlashlightOn: false, cameraDirection: new THREE.Vector3(0, 0, -1) };
+  const turnedContext = { isFlashlightOn: false, cameraDirection: new THREE.Vector3(0, 0, 1) };
+  const watchedCrawler = new CrawlerZombie(scene, level, 0, 0);
+  watchedCrawler.update(0.1, distantPlayer, [watchedCrawler], undefined, watchedContext);
+  assert.equal(watchedCrawler.getPosition().z, 0, 'À distance, la Rampeuse fixe le joueur qui la regarde');
+  assert.equal(watchedCrawler.getPose(), 'idle', 'La fixation garde une silhouette immobile lisible');
+  watchedCrawler.update(0.05, distantPlayer, [watchedCrawler], undefined, turnedContext);
+  assert.ok(watchedCrawler.getPosition().z > 0, 'Tourner le regard libère immédiatement une nouvelle traction');
+  watchedCrawler.dispose(scene);
+
+  const persistentGaze = new CrawlerZombie(scene, level, 0, 0);
+  const unseenCrawler = new CrawlerZombie(scene, level, 0, 0);
+  for (let i = 0; i < 24; i++) {
+    persistentGaze.update(0.05, distantPlayer, [persistentGaze], undefined, watchedContext);
+    unseenCrawler.update(0.05, distantPlayer, [unseenCrawler], undefined, turnedContext);
+  }
+  assert.ok(persistentGaze.getPosition().z > 0.5, 'Regarder en continu ne neutralise pas indéfiniment la menace');
+  assert.ok(unseenCrawler.getPosition().z > persistentGaze.getPosition().z + 1, 'La traque est plus rapide hors du regard');
+  persistentGaze.dispose(scene);
+  unseenCrawler.dispose(scene);
+
+  const sightBlocker = new THREE.Mesh(new THREE.BoxGeometry(3, 3, 0.1), new THREE.MeshBasicMaterial());
+  sightBlocker.position.set(0, 1.5, 6);
+  blockers = [sightBlocker];
+  const hiddenCrawler = new CrawlerZombie(scene, level, 0, 0);
+  hiddenCrawler.update(0.05, distantPlayer, [hiddenCrawler], undefined, watchedContext);
+  assert.ok(hiddenCrawler.getPosition().z > 0, 'Un mur interrompt réellement le regard : aucune fixation à travers le décor');
+  hiddenCrawler.dispose(scene);
+  blockers = [];
+  sightBlocker.geometry.dispose();
+  sightBlocker.material.dispose();
+
+  // Un bond rapide reste un déplacement balayé, même si une image est longue.
+  collision = (_x, z) => z >= 0.3 && z <= 0.5;
+  const sweptCrawler = new CrawlerZombie(scene, level, 0, 0);
+  sweptCrawler.update(0.4, distantPlayer, [sweptCrawler], undefined, turnedContext);
+  assert.ok(sweptCrawler.getPosition().z < 0.3, 'Une longue image ne fait pas traverser un obstacle mince');
+  sweptCrawler.dispose(scene);
+  collision = () => false;
+
   // Test 2.2 : Réaction à la lampe torche (50% Furie, 50% Fuite)
   const origRandom = Math.random;
   try {
@@ -173,6 +232,15 @@ try {
   assert.equal(grabbed, true, 'L’attaque transmet l’agrippement aux chevilles (isAnkleGrab = true)');
 
   attackCrawler.dispose(scene);
+  const hurtAttack = new CrawlerZombie(scene, level, 0, 0);
+  let attackCues = 0;
+  hurtAttack.hissAudio = { isPlaying: false, play: () => attackCues++, stop: () => {}, disconnect: () => {}, gain: { disconnect: () => {} }, removeFromParent: () => {} };
+  hurtAttack.update(0.01, closePlayerPos, [hurtAttack]);
+  assert.equal(attackCues, 1, 'Le sifflement annonce la préparation plutôt que les seuls dégâts');
+  hurtAttack.takeDamage(1);
+  hurtAttack.update(crawlerConfig.hurtDuration + 0.01, closePlayerPos, [hurtAttack]);
+  assert.equal(hurtAttack.getPose(), 'attack', 'Une blessure ne laisse pas la préparation reprise cachée sous la pose de douleur');
+  hurtAttack.dispose(scene);
   // Un coup préparé peut rater : porte fermée, changement d'étage ou sortie de portée.
   const door = new THREE.Mesh(new THREE.BoxGeometry(2, 3, 0.1), new THREE.MeshBasicMaterial());
   door.position.set(0, 1.5, 0.4);
@@ -308,10 +376,23 @@ try {
   }
   assert.equal(ceilingCrawler.isDroppingState(), false, 'Atterrissage au sol réussi');
   assert.equal(ceilingCrawler.getMesh().scale.y, 1, 'Sprite remis à l’endroit au sol');
+  const oldGeometry = ceilingCrawler.getMesh().geometry;
+  const oldMaterial = ceilingCrawler.getMesh().material;
+  let geometryDisposals = 0, materialDisposals = 0, textureDisposals = 0;
+  oldGeometry.addEventListener('dispose', () => geometryDisposals++);
+  oldMaterial.addEventListener('dispose', () => materialDisposals++);
+  oldMaterial.map.addEventListener('dispose', () => textureDisposals++);
   ceilingCrawler.dispose(scene);
+  CrawlerZombie.disposeSharedResources();
+  CrawlerZombie.disposeSharedResources();
+  assert.deepEqual([geometryDisposals, materialDisposals, textureDisposals], [1, 1, 1], 'Nettoyage partagé complet et idempotent');
+  CrawlerZombie.warmup();
+  const recreatedCrawler = new CrawlerZombie(scene, level, 0, 0);
+  assert.notEqual(recreatedCrawler.getMesh().geometry, oldGeometry, 'Un nouveau jeu recrée les ressources après destruction globale');
+  recreatedCrawler.dispose(scene);
+  CrawlerZombie.disposeSharedResources();
 
-
-  console.log('   -> PASS : proportions, Stutter, réaction lampe, grab, esquive visée et embuscade plafond validés.\n');
+  console.log('   -> PASS : proportions, appuis, regard/traque, collisions balayées, indice d’attaque, lampe, grab, fuite et plafond contrôlés.\n');
 } finally {
   THREE.TextureLoader.prototype.load = originalLoad;
   Math.random = originalRandom;

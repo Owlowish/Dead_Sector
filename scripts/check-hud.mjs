@@ -100,6 +100,8 @@ const field = (name) => {
 };
 const notifications = () => document.querySelector('#hud-notifications').children;
 const hud = new GameHud();
+const shotFeedback = () => ['--shot-progress', '--shot-flash'].map((name) =>
+  Number(document.querySelector('#ammo').style.getPropertyValue(name)));
 
 // Santé et disponibilité des actions : la couleur n'est jamais l'unique signal.
 hud.setHealth(24, 100);
@@ -116,14 +118,34 @@ assert.equal(field('lamp-state').textContent, 'ÉTEINTE');
 assert.equal(document.querySelector('#flashlight-status').classList.contains('off'), true);
 
 const ammo = { weaponId: 'pistol', weaponName: 'Pistolet 9mm', magazine: 0, capacity: 15, reserve: 0, maxReserve: 60, isReloading: false };
-hud.setBoss({ health: 800, maxHealth: 800, phase: 1, attack: 'throw' });
+hud.setBoss({ health: 800, maxHealth: 800, phase: 1, attack: 'blades' });
 assert.equal(field('boss').hidden, false);
 assert.equal(field('boss-bar').getAttribute('aria-valuenow'), '800');
-assert.match(field('boss-attack').textContent, /JET DE CLÉS/);
+assert.match(field('boss-attack').textContent, /LAMES DE PEINTURE/);
+assert.match(field('boss-phase').textContent, /DANS LE CADRE/);
+assert.match(field('boss-attack').textContent, /SALVE 1\/2/);
+assert.match(field('boss-attack').textContent, /DÉCALEZ-VOUS/);
+hud.setBoss({ health: 2300, maxHealth: 2400, phase: 1, attack: 'tear', frameResisting: true });
+assert.match(field('boss-phase').textContent, /LE CADRE ABSORBE LES COUPS/);
+assert.match(field('boss-attack').textContent, /QUITTEZ LA TRACE/, 'La résistance ne masque pas le signal dangereux');
+hud.setBoss({ health: 360, maxHealth: 800, phase: 2, attack: 'blades', volleyIndex: 2, maskExposed: false });
+assert.doesNotMatch(field('boss-phase').textContent, /ABSORBE/, 'La protection est signalée uniquement quand un coup est absorbé');
+assert.match(field('boss-phase').textContent, /HORS DU CADRE/);
+assert.match(field('boss-attack').textContent, /SALVE 2\/2/);
+hud.setBoss({ health: 360, maxHealth: 800, phase: 2, attack: null, maskExposed: false });
+assert.match(field('boss-attack').textContent, /MASQUE PROTÉGÉ/);
+hud.setBoss({ health: 700, maxHealth: 800, phase: 1, attack: 'tear' });
+assert.match(field('boss-attack').textContent, /QUITTEZ LA TRACE/);
+hud.setBoss({ health: 400, maxHealth: 800, phase: 2, attack: null, recovering: true, transforming: true });
+assert.match(field('boss-attack').textContent, /LA TOILE SE DÉCHIRE/);
+hud.setBoss({ health: 390, maxHealth: 800, phase: 2, attack: null, comboTransition: true, recovering: true });
+assert.match(field('boss-attack').textContent, /ENCHAÎNEMENT/);
+assert.doesNotMatch(field('boss-attack').textContent, /RÉCUPÉRATION/, 'Une transition de combo ne promet pas une ouverture finale');
 hud.setBoss({ health: 360, maxHealth: 800, phase: 2, attack: null, recovering: true });
 assert.equal(field('boss-bar').style.getPropertyValue('--fill'), '45%');
 assert.match(field('boss-phase').textContent, /II/);
 assert.match(field('boss-attack').textContent, /RÉCUPÉRATION/);
+assert.match(field('boss-attack').textContent, /MASQUE EXPOSÉ/);
 hud.clear();
 assert.equal(field('boss').hidden, true, 'aucune jauge après victoire ou redémarrage');
 hud.setAmmo(ammo, false);
@@ -165,6 +187,39 @@ hud.update(2, true); assert.equal(heartFrame(), 0, 'aucun battement après la mo
 hud.setHealth(100, 100); hud.update(0.35, true); hud.clear();
 assert.equal(heartFrame(), 0, 'un redémarrage remet le cycle au repos');
 
+// Le retour de tir n'avance qu'en temps actif et ne survit pas à un changement de contexte.
+assert.deepEqual(shotFeedback(), [0, 0]);
+hud.notifyShot();
+assert.deepEqual(shotFeedback(), [0, 1]);
+hud.update(0.1, true);
+const movingShot = shotFeedback();
+assert.ok(movingShot.every((value) => value > 0 && value < 1));
+hud.update(20, false);
+assert.deepEqual(shotFeedback(), movingShot, 'la pause conserve la pose et le flash');
+hud.setReducedMotion(true);
+assert.equal(document.querySelector('#ammo').classList.contains('has-reduced-motion'), true);
+hud.update(0.05, true);
+assert.ok(shotFeedback()[1] < movingShot[1], 'le flash reste temporaire quand le déplacement est réduit');
+hud.clear();
+assert.deepEqual(shotFeedback(), [0, 0], 'clear ne conserve aucune balle animée');
+hud.notifyShot(); hud.setHealth(0, 100);
+assert.deepEqual(shotFeedback(), [0, 0], 'la mort interrompt le retour de tir');
+hud.notifyShot();
+assert.deepEqual(shotFeedback(), [0, 0], 'aucun retour de tir à vie nulle');
+hud.setHealth(100, 100); hud.setReducedMotion(false);
+assert.equal(document.querySelector('#ammo').classList.contains('has-reduced-motion'), false);
+hud.notifyShot();
+hud.setAmmo({ ...ammo, weaponId: 'shotgun', magazine: 1 }, true);
+assert.deepEqual(shotFeedback(), [0, 0], 'le changement d’arme annule la présentation précédente');
+hud.notifyShot();
+hud.setAmmo({ ...ammo, weaponId: 'shotgun', magazine: 1, isReloading: true }, true);
+assert.deepEqual(shotFeedback(), [0, 0], 'le rechargement interrompt le retour de tir');
+hud.notifyShot();
+assert.deepEqual(shotFeedback(), [0, 0], 'un transfert de munition ne déclenche pas de détonation');
+hud.setAmmo(ammo, false); hud.notifyShot(); hud.update(1, true);
+assert.deepEqual(shotFeedback(), [0, 0], 'le retour se termine même avec un grand delta actif');
+hud.clear();
+
 // Le secteur apparaît à l’entrée du palier, pas à chaque mise à jour du compteur.
 const combat = { phase: 'combat', tier: 1, total: 8, sector: 'VESTIBULE', remaining: 4, respiteSeconds: 0 };
 hud.setProgression(combat); hud.update(0, true);
@@ -185,6 +240,28 @@ assert.equal(field('sector').textContent, 'HALL');
 hud.update(2, true); hud.setProgression(nextCombat); hud.update(1.1, true);
 assert.equal(field('sector').hidden, true, 'le nouveau palier réarme une seule fenêtre de visibilité');
 assert.equal(field('sector').textContent, 'HALL', 'le nom réel reste disponible dans le DOM');
+
+// Les champs du bandeau restent utilisables après un changement de présentation ou de phase.
+hud.setProgression({ ...nextCombat, tier: 9, total: 12, remaining: 1 });
+assert.equal(field('tier').textContent, '9');
+assert.equal(field('total').textContent, '12', 'le total provient de la tentative, sans valeur figée dans le HUD');
+assert.equal(field('progress-label').textContent, 'MENACE');
+assert.equal(field('remaining').textContent, '1');
+hud.setProgression({ ...nextCombat, phase: 'respite', respiteSeconds: 6.1 });
+assert.equal(field('phase-label').textContent, 'ACCALMIE');
+assert.equal(field('progress-label').textContent, 'PROCHAIN COMBAT DANS');
+assert.equal(field('remaining').textContent, '7 S');
+for (const phase of ['won', 'lost', 'terminal']) {
+  hud.setProgression({ ...nextCombat, phase });
+  assert.equal(field('tier').hidden, true, 'la fin ne laisse pas un numéro de palier isolé');
+  assert.equal(field('tier-total').hidden, true);
+  assert.match(field('remaining').textContent, phase === 'terminal' ? /EXPLORATION LIBRE/ : /CONSULTER LE BILAN/);
+}
+hud.setProgression(nextCombat);
+assert.equal(field('tier').hidden, false, 'la reprise restaure les compteurs après les états de fin');
+assert.equal(field('tier-total').hidden, false);
+assert.equal(field('phase-label').textContent, 'PALIER');
+assert.equal(field('remaining').textContent, '4');
 hud.clear();
 
 // Deux avis au plus, fusion de gains de même type, durée en temps de contrôle.
@@ -243,8 +320,18 @@ player.camera.position.set(0, 1.7, 0);
 const game = Object.create(Game.prototype);
 const canvas = new Element('canvas');
 const weapon = new Weapon(player.camera, canvas, [], [], () => {}, () => game.isSimulationActive(), (amount) => player.setAimAmount(amount));
+hud.setAmmo(weapon.getAmmoState(), false, false);
+assert.equal(document.querySelector('#ammo').dataset.weapon, 'axe');
+assert.equal(document.querySelector('#ammo').classList.contains('is-empty'), false, 'La hache ne signale pas de chargeur vide');
+assert.equal(document.querySelector('[data-hud-slot="pistol"]').hidden, true);
+assert.equal(document.querySelector('[data-hud-slot="shotgun"]').hidden, true);
+hud.notifyShot();
+assert.deepEqual(shotFeedback(), [0, 0], 'La hache ne déclenche pas de balle animée');
+weapon.unlockWeapon('pistol');
 weapon.reserveAmmo = 58;
 weapon.setOnAmmoChange(() => game.updateAmmoDisplay());
+let shotCallbacks = 0;
+weapon.setOnShoot(() => { shotCallbacks++; hud.notifyShot(); });
 let frame;
 Object.assign(game, {
   scene, level, player, weapon, hud, encounterConfigs: ENCOUNTER_CONFIGS,
@@ -267,11 +354,13 @@ Object.assign(game, {
 const revival = Object.assign(Object.create(Zombie.prototype), { alive: false, revivalPending: true });
 game.zombies = [revival, { isAlive: () => true }];
 game.updateObjectiveDisplay();
-assert.match(field('phase').textContent, /1 \/ 8/);
-assert.match(field('progress').textContent, /^4\b.*MENACES/i);
+assert.equal(field('tier').textContent, '1');
+assert.equal(field('total').textContent, String(ENCOUNTER_CONFIGS.length));
+assert.equal(field('progress-label').textContent, 'MENACES');
+assert.equal(field('remaining').textContent, '4');
 revival.revivalPending = false;
 game.updateObjectiveDisplay();
-assert.match(field('progress').textContent, /^3\b.*MENACES/i);
+assert.equal(field('remaining').textContent, '3');
 game.zombies = []; game.spawnQueue = 0;
 
 // Les vrais soins et réserves plafonnés doivent produire le delta réellement appliqué.
@@ -329,6 +418,20 @@ assert.equal(field('magazine').textContent, '1', 'interrompre après insertion c
 assert.equal(document.querySelector('#ammo').classList.contains('is-reloading'), false);
 weapon.shoot();
 assert.equal(field('magazine').textContent, '0', 'le tir consomme la cartouche engagée');
+assert.equal(shotCallbacks, 1, 'un vrai tir émet un unique retour de détonation');
+assert.deepEqual(shotFeedback(), [0, 1], 'la dernière cartouche anime aussi le pictogramme');
+assert.equal(weapon.getIsReloading(), false, 'le retour de tir n’amorce pas un rechargement');
+assert.equal(weapon.getReserveAmmo(), 2);
+weapon.shoot();
+assert.equal(shotCallbacks, 1, 'un clic pendant la cadence ne déclenche pas un second retour');
+hud.update(1, true); weapon.lastShot = -Infinity; weapon.shoot();
+assert.equal(shotCallbacks, 1, 'un tir à vide n’émet pas de retour de détonation');
+assert.deepEqual(shotFeedback(), [0, 0]);
+assert.equal(weapon.getIsReloading(), false, 'le clic à vide conserve le rechargement volontaire');
+assert.equal(weapon.reload(), true);
+weapon.shoot(); weapon.update(0.49);
+assert.equal(shotCallbacks, 1, 'recharger ou essayer de tirer avant insertion ne simule pas une détonation');
+assert.deepEqual(shotFeedback(), [0, 0]);
 assert.equal(weapon.switchWeapon('pistol'), true);
 assert.equal(field('capacity').textContent, '15');
 assert.equal(field('magazine').textContent, String(weapon.getAmmo()));
@@ -337,23 +440,29 @@ assert.equal(field('magazine').textContent, String(weapon.getAmmo()));
 game.state = 'exploration'; game.pendingTierStart = 2; game.respiteTimer = 9.4;
 game.updateObjectiveDisplay();
 assert.equal(document.querySelector('#objective').dataset.phase, 'respite');
-assert.match(field('progress').textContent, /10 S/);
+assert.equal(field('remaining').textContent, '10 S');
 assert.equal(field('respite-bar').hidden, false);
 game.start();
 const tick = () => { game.lastFrameTime = performance.now() - 125; frame(); };
 hud.clear();
 for (let step = 0; step < 140 && heartFrame() === 0; step++) hud.update(0.01, true);
+weapon.lastShot = -Infinity; weapon.shoot(); hud.update(0.01, true);
 const heartBeforeFocusLoss = heartFrame();
 assert.notEqual(heartBeforeFocusLoss, 0);
+const shotBeforeFocusLoss = shotFeedback();
+assert.ok(shotBeforeFocusLoss[1] > 0);
 document.pointerLockElement = null; tick();
 assert.equal(game.respiteTimer, 9.4, 'Échap suspend le décompte');
 assert.equal(heartFrame(), heartBeforeFocusLoss, 'Échap suspend le cœur animé');
+assert.deepEqual(shotFeedback(), shotBeforeFocusLoss, 'Échap suspend le retour de tir');
 document.pointerLockElement = canvas; document.focused = false; tick();
 assert.equal(game.respiteTimer, 9.4, 'le focus est requis même avec la souris capturée');
 assert.equal(heartFrame(), heartBeforeFocusLoss, 'le cœur ne bat pas dans une application sans focus');
+assert.deepEqual(shotFeedback(), shotBeforeFocusLoss, 'le retour de tir reste figé sans focus');
 document.focused = true; document.hidden = true; tick();
 assert.equal(game.respiteTimer, 9.4, 'un onglet masqué ne consomme pas le décompte');
 assert.equal(heartFrame(), heartBeforeFocusLoss, 'le cœur reste figé dans un onglet masqué');
+assert.deepEqual(shotFeedback(), shotBeforeFocusLoss, 'un onglet masqué conserve la pose du pictogramme');
 document.hidden = false; tick();
 assert.ok(game.respiteTimer < 9.4 && game.respiteTimer > 9.3);
 game.respiteTimer = 0.04; tick();
@@ -369,6 +478,8 @@ weapon.switchWeapon('pistol'); weapon.reserveAmmo = 58;
 game.shotgunPickup = new ShotgunPickup(scene, 0, 0);
 const deathDrop = new AmmoBox(scene, 0, 0, 10, 'pistol');
 game.ammoDrops = [deathDrop]; hud.clear();
+weapon.magazineAmmo = 1; weapon.lastShot = -Infinity; weapon.shoot();
+assert.ok(shotFeedback()[1] > 0);
 game.spitProjectiles = [{
   update(_delta, _scene, _level, _position, onDamage) { onDamage(10); return false; },
   dispose() {},
@@ -379,6 +490,7 @@ assert.equal(weapon.getReserveAmmo(), 58, 'la frame de mort ne ramasse pas de mu
 assert.equal(deathDrop.isConsumed(), false);
 assert.equal(game.shotgunPickup.isConsumed(), false);
 assert.equal(notifications().length, 0);
+assert.deepEqual(shotFeedback(), [0, 0], 'la vraie fin de partie nettoie aussi le retour de tir');
 
 // Le début d'une nouvelle tentative ne conserve aucune notification/annonce/invite.
 for (let run = 0; run < 2; run++) {
@@ -389,11 +501,14 @@ for (let run = 0; run < 2; run++) {
   assert.equal(field('announcement').hidden, true);
   assert.equal(document.querySelector('#prompt').hidden, true);
   assert.equal(field('health-value').textContent, '100');
-  assert.equal(field('magazine').textContent, '10');
-  assert.equal(field('reserve').textContent, '30');
+  assert.equal(field('magazine').textContent, '0');
+  assert.equal(field('reserve').textContent, '0');
+  assert.equal(document.querySelector('#ammo').dataset.weapon, 'axe');
+  assert.equal(document.querySelector('[data-hud-slot="pistol"]').hidden, true);
   assert.equal(document.querySelector('[data-hud-slot="shotgun"]').hidden, true);
   assert.equal(document.querySelector('#objective').dataset.phase, 'combat');
-  assert.match(field('phase').textContent, /1 \/ 8/);
+  assert.equal(field('tier').textContent, '1');
+  assert.equal(field('total').textContent, String(ENCOUNTER_CONFIGS.length));
 }
 console.log('Intégration HUD : file/relèves, vrais gains partiels, collectes sous contrôle, accalmie/focus et deux redémarrages : OK. DOM/audio simulés ; rendu et gameplay non validés.');
 

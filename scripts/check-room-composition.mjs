@@ -130,18 +130,23 @@ const paths = [
   [new THREE.Vector3(6, 3.4, -14), new THREE.Vector3(18, 3.4, -14)],
 ];
 const before = paths.map(([from, to]) => level.findNextWaypoint(from, to, 0.4));
-// Le socle abaissé révèle le buste : les deux côtés de sa vraie surface arrêtent les tirs.
+// L’autel remplace le buste : seuls ses volumes réels arrêtent les tirs.
 const blockerArray = level.getSolidMeshes();
-const galleryBlocker = blockerArray.find(mesh => mesh.name === 'mansion-furnishings-galerie');
-assert.ok(galleryBlocker);
-for (const [start, end] of [[-16, -20], [-20, -16]]) {
-  const from = new THREE.Vector3(start, 1.7, 0), to = new THREE.Vector3(end, 1.7, 0);
-  assert.equal(level.hasLineOfSight(from, to), false, 'Les épaules visibles bloquent les tirs des deux côtés');
-  assert.equal(level.hasLineOfSight(new THREE.Vector3(start, 1.7, 0.8), new THREE.Vector3(end, 1.7, 0.8)), true,
-    'Le vide à côté du buste ne devient pas un bloqueur invisible');
+const belongsToAltar = mesh => {
+  for (let object = mesh; object; object = object.parent) {
+    if (object.name === 'demonic-altar') return true;
+  }
+  return false;
+};
+assert.ok(blockerArray.some(belongsToAltar), 'L’autel est intégré aux surfaces réelles du niveau');
+for (const [start, end] of [[-15, -21], [-21, -15]]) {
+  const from = new THREE.Vector3(start, 0.6, 0), to = new THREE.Vector3(end, 0.6, 0);
+  assert.equal(level.hasLineOfSight(from, to), false, 'Le corps de pierre arrête les tirs des deux côtés');
+  assert.equal(level.hasLineOfSight(new THREE.Vector3(start, 1.7, 1.5), new THREE.Vector3(end, 1.7, 1.5)), true,
+    'Le passage à côté de l’autel ne contient pas de bloqueur invisible');
 }
-assert.equal(level.isColliding(-18, 0, 0.35), true, 'Le socle garde une emprise physique');
-assert.equal(level.isColliding(-18, 1.2, 0.35), false, 'Le passage longeant le socle reste libre');
+assert.equal(level.isColliding(-18, 0, 0.35), true, 'L’autel garde une emprise physique');
+assert.equal(level.isColliding(-18, 1.5, 0.4), false, 'Le passage longeant l’autel reste libre');
 const bench = MANSION_WALLS.find(wall => wall.materialType === 'obstacle' && wall.x === 12 && wall.z === -14);
 assert.ok(bench.depth < bench.width / 2 && bench.height === 1, 'L’établi garde une profondeur de meuble et la hauteur corrigée');
 assert.equal(level.hasLineOfSight(new THREE.Vector3(12, 4.1, -12), new THREE.Vector3(12, 4.1, -16)), true,
@@ -149,7 +154,7 @@ assert.equal(level.hasLineOfSight(new THREE.Vector3(12, 4.1, -12), new THREE.Vec
 assert.equal(level.hasLineOfSight(new THREE.Vector3(12, 3, -12), new THREE.Vector3(12, 3, -16)), false,
   'La géométrie de l’établi bloque toujours les tirs bas');
 const isOwnedDecor = mesh => {
-  if (mesh === galleryBlocker) return true;
+  if (belongsToAltar(mesh)) return true;
   for (let object = mesh; object; object = object.parent) {
     if (object.name === 'salon-fireplace' || object.name === 'piano-room-decor') return true;
   }

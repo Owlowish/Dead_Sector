@@ -36,11 +36,11 @@ export const crawlerSprite = {
   height: 512,
   groundY: 504,
   heads: {
-    'idle.png': [[230, 278, 284, 370]],
-    'crawl-a.png': [[230, 280, 284, 372]],
-    'crawl-b.png': [[230, 282, 284, 374]],
-    'attack.png': [[230, 290, 286, 382]],
-    'hurt.png': [[230, 272, 288, 364]],
+    'idle.png': [[247, 302, 303, 399]],
+    'crawl-a.png': [[226, 296, 282, 395]],
+    'crawl-b.png': [[247, 302, 306, 399]],
+    'attack.png': [[249, 306, 306, 404]],
+    'hurt.png': [[264, 308, 315, 394]],
     'death.png': [],
   } as Record<string, [number, number, number, number][]>,
 } as const;

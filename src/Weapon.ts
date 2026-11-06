@@ -17,9 +17,13 @@ import { getImpactSurface, type ImpactSurface } from './ImpactSurface.ts';
 import { WeaponMechanicalAudio } from './WeaponMechanicalAudio.ts';
 import { crossedWeaponSoundEvents, pistolReloadSoundEvents, shotgunPumpSoundEvents } from './WeaponSoundEvents.ts';
 import type { WeaponMechanicalSoundId } from './WeaponSoundEvents.ts';
+import { shotgunImpactPower, type EnemyShotImpact } from './EnemyImpact.ts';
+import { axeAttack } from './AxeAnimation.ts';
+import { AxeView } from './AxeView.ts';
 
-export type WeaponId = 'pistol' | 'shotgun';
-export interface ShotDamage { headHits: number; bodyHits: number; impactForce: number; weaponId: WeaponId }
+export type FirearmId = 'pistol' | 'shotgun';
+export type WeaponId = 'axe' | FirearmId;
+export interface ShotDamage { headHits: number; bodyHits: number; headDamage?: number; impactForce: number; weaponId: WeaponId; impact?: EnemyShotImpact; stunSeconds?: number }
 
 export type AmmoStocks = Record<WeaponId, { magazine: number; reserve: number; unlocked: boolean }>;
 
@@ -41,10 +45,16 @@ export interface WeaponState {
 
 function createInitialWeapons(): Record<WeaponId, WeaponState> {
   return {
+    axe: {
+      id: 'axe', name: 'HACHE RUSTIQUE', unlocked: true,
+      magazine: 0, capacity: 0, reserve: 0, maxReserve: 0,
+      cooldownMs: axeAttack.duration * 1000, range: axeAttack.range,
+      pellets: 1, damagePerPellet: axeAttack.damage, hipSpreadDeg: 0, adsSpreadDeg: 0,
+    },
     pistol: {
       id: 'pistol',
       name: 'PISTOLET 9MM',
-      unlocked: true,
+      unlocked: false,
       magazine: 10,
       capacity: 15,
       reserve: 30,
@@ -78,7 +88,7 @@ export class Weapon {
   private readonly raycaster = new THREE.Raycaster();
   private weapons = createInitialWeapons();
 
-  private activeWeaponId: WeaponId = 'pistol';
+  private activeWeaponId: WeaponId = 'axe';
   private lastShot = -Infinity;
   private readonly recoilDuration = 2; // Réglage utilisateur conservé
 
@@ -110,9 +120,13 @@ export class Weapon {
 
   private shotAnimationTime = Infinity;
   private spentShellScheduled = false;
+  private axeAttackTime = Infinity;
+  private axeContactResolved = false;
+  private axeSwingSoundPlayed = false;
 
   // Éléments DOM du HUD
   private readonly weaponView = document.querySelector<HTMLElement>('.weapon-view');
+  private readonly axeView: AxeView;
   private readonly hud = document.querySelector<HTMLElement>('.hud');
   private readonly pistolRig = document.querySelector<HTMLElement>('#pistol-rig');
   private readonly shotgunRig = document.querySelector<HTMLElement>('#shotgun-rig');
@@ -172,6 +186,7 @@ export class Weapon {
     this.onHit = onHit;
     this.canPlay = canPlay;
     this.onAimChange = onAimChange;
+    this.axeView = new AxeView(this.weaponView);
     this.muzzleLight.position.set(0.08, -0.12, -0.45);
     this.camera.add(this.muzzleLight);
 
@@ -194,7 +209,7 @@ export class Weapon {
     this.listen(canvas, 'mousedown', (event: MouseEvent) => {
       if (!this.canPlay() || document.pointerLockElement !== this.canvas) return;
       if (event.button === 2) {
-        if (!this.isReloading) this.aimHeld = true;
+        if (!this.isReloading && this.activeWeaponId !== 'axe') this.aimHeld = true;
       }
       if (event.button === 0) this.shoot();
     });
@@ -203,14 +218,16 @@ export class Weapon {
       if (event.button === 2) this.aimHeld = false;
     });
 
-    // Sélection d'armes avec touches 1 / 2 et molette
+    // Sélection d'armes avec touches 1 / 2 / 3 et molette
     this.listen(window, 'keydown', (event: KeyboardEvent) => {
       // Ignorer si la simulation n'est pas active ou si le curseur n'est pas capturé
       if (!this.canPlay() || document.pointerLockElement !== this.canvas) return;
 
       if ((event.code === 'Digit1' || event.code === 'Numpad1') && !event.repeat) {
-        this.switchWeapon('pistol');
+        this.switchWeapon('axe');
       } else if ((event.code === 'Digit2' || event.code === 'Numpad2') && !event.repeat) {
+        this.switchWeapon('pistol');
+      } else if ((event.code === 'Digit3' || event.code === 'Numpad3') && !event.repeat) {
         this.switchWeapon('shotgun');
       } else if (event.code === 'KeyR' && !event.repeat) {
         this.reload();
@@ -260,7 +277,10 @@ export class Weapon {
   public resetForNewRun(): void {
     this.suspendMechanicalAudio();
     this.weapons = createInitialWeapons();
-    this.activeWeaponId = 'pistol';
+    this.activeWeaponId = 'axe';
+    this.axeAttackTime = Infinity;
+    this.axeContactResolved = false;
+    this.axeSwingSoundPlayed = false;
     this.lastShot = -Infinity;
     this.isReloading = false;
     this.reloadTimer = 0;
@@ -344,12 +364,16 @@ export class Weapon {
   public switchWeapon(id: WeaponId): boolean {
     if (this.disposed) return false;
     if (!this.weapons[id].unlocked || this.activeWeaponId === id) return false;
+    if (this.activeWeaponId === 'axe' && this.axeAttackTime < axeAttack.duration) return false;
 
     // Interrompre le rechargement en cours
     this.cancelReload();
     this.suspendMechanicalAudio();
 
     this.activeWeaponId = id;
+    this.axeAttackTime = Infinity;
+    this.axeContactResolved = false;
+    this.resetAim();
     this.shotAnimationTime = Infinity;
     this.spentShellScheduled = false;
 
@@ -363,7 +387,7 @@ export class Weapon {
   }
 
   public nextWeapon(): void {
-    const list: WeaponId[] = ['pistol', 'shotgun'];
+    const list: WeaponId[] = ['axe', 'pistol', 'shotgun'];
     const unlocked = list.filter((id) => this.weapons[id].unlocked);
     if (unlocked.length <= 1) return;
     const currentIndex = unlocked.indexOf(this.activeWeaponId);
@@ -372,7 +396,7 @@ export class Weapon {
   }
 
   public prevWeapon(): void {
-    const list: WeaponId[] = ['pistol', 'shotgun'];
+    const list: WeaponId[] = ['axe', 'pistol', 'shotgun'];
     const unlocked = list.filter((id) => this.weapons[id].unlocked);
     if (unlocked.length <= 1) return;
     const currentIndex = unlocked.indexOf(this.activeWeaponId);
@@ -381,6 +405,7 @@ export class Weapon {
   }
 
   private updateWeaponDOM(): void {
+    this.axeView.setVisible(this.activeWeaponId === 'axe');
     if (this.pistolRig) {
       this.pistolRig.hidden = this.activeWeaponId !== 'pistol';
     }
@@ -395,6 +420,7 @@ export class Weapon {
     if (this.isReloading) return false;
 
     const w = this.getActiveWeapon();
+    if (w.id === 'axe') return false;
     if (w.magazine >= w.capacity || w.reserve <= 0) return false;
 
     this.isReloading = true;
@@ -448,6 +474,15 @@ export class Weapon {
 
   private shoot(): void {
     if (this.disposed) return;
+    if (this.activeWeaponId === 'axe') {
+      if (this.axeAttackTime < axeAttack.duration) return;
+      this.axeAttackTime = 0;
+      this.axeContactResolved = false;
+      this.axeSwingSoundPlayed = false;
+      this.onShoot?.(0, 'axe');
+      this.renderShotEffects();
+      return;
+    }
     if (this.isReloading) {
       if (this.activeWeaponId === 'shotgun' && this.getActiveWeapon().magazine > 0) {
         // Interruption immédiate du rechargement cartouche par cartouche si au moins une cartouche est chambrée
@@ -497,7 +532,7 @@ export class Weapon {
     }
 
     // Accumulation des dégâts par cible touchée (pour appliquer un unique retour de blessure)
-    const zombieHits = new Map<THREE.Mesh, { damage: number; headHits: number; bodyHits: number; hitPoint: THREE.Vector3; normal: THREE.Vector3 }>();
+    const zombieHits = new Map<THREE.Mesh, { damage: number; headHits: number; bodyHits: number; headDamage: number; hitPoint: THREE.Vector3; normal: THREE.Vector3; direction: THREE.Vector3; distance: number }>();
     let nearestSurface: { surface: ImpactSurface; distance: number } | null = null;
 
     // 3. Résolution instantanée de tous les plombs (1 pour pistolet, 8 pour fusil)
@@ -531,14 +566,20 @@ export class Weapon {
           const current = zombieHits.get(targetMesh);
           if (current) {
             current.damage += damage;
+            if (head) current.headDamage += damage;
+            current.hitPoint.add(hit.point);
+            current.direction.add(this.raycaster.ray.direction);
             if (head) current.headHits++; else current.bodyHits++;
           } else {
             zombieHits.set(targetMesh, {
               damage,
               headHits: head ? 1 : 0,
               bodyHits: head ? 0 : 1,
+              headDamage: head ? damage : 0,
               hitPoint: hit.point.clone(),
               normal,
+              direction: this.raycaster.ray.direction.clone(),
+              distance: hit.distance,
             });
           }
         } else {
@@ -561,16 +602,22 @@ export class Weapon {
     // Appliquer les dégâts cumulés à chaque zombie touché
     if (zombieHits.size > 0) {
       this.playSound(this.zombieImpactSound);
-      zombieHits.forEach(({ damage, headHits, bodyHits, hitPoint, normal }, targetMesh) => {
+      zombieHits.forEach(({ damage, headHits, bodyHits, headDamage, hitPoint, normal, direction, distance }, targetMesh) => {
         console.log(`Zombie touché par ${this.activeWeaponId} (${damage} dégâts cumulés) !`);
+        const hits = headHits + bodyHits;
+        hitPoint.divideScalar(hits);
+        direction.normalize();
+        const impact = config.id === 'shotgun' ? { direction, power: shotgunImpactPower(hits, distance) } : undefined;
         this.onImpact?.({
           kind: 'zombie',
           object: targetMesh,
           point: hitPoint,
           normal,
-          direction: new THREE.Vector3(0, 0, -1).applyQuaternion(camQuat),
+          direction,
+          weaponId: config.id,
+          power: impact?.power,
         });
-        this.onHit(targetMesh, damage, { headHits, bodyHits, impactForce: config.damagePerPellet * (headHits + bodyHits), weaponId: config.id });
+        this.onHit(targetMesh, damage, { headHits, bodyHits, headDamage, impactForce: config.damagePerPellet * hits, weaponId: config.id, impact });
         if (headHits > 0) {
           this.crosshair?.classList.add('head-hit');
           if (this.headMarkerTimer) clearTimeout(this.headMarkerTimer);
@@ -582,6 +629,59 @@ export class Weapon {
       this.playSurfaceImpact(nearestSurface.surface);
     } else {
       console.log('Tir manqué.');
+    }
+  }
+
+  private resolveAxeContact(): void {
+    // Éventail vertical du tranchant, sans aimantation ni cible multiple.
+    // Chaque rayon rencontre aussi le décor : portes et murs arrêtent le coup.
+    this.camera.updateWorldMatrix(true, false);
+    const origin = this.camera.getWorldPosition(new THREE.Vector3());
+    const rotation = this.camera.getWorldQuaternion(new THREE.Quaternion());
+    const targets = this.targets.filter(target => target.visible);
+    const objects = [...targets, ...this.blockers];
+    for (const object of objects) object.updateWorldMatrix(true, false);
+    this.raycaster.far = axeAttack.range;
+    type Contact = { hit: THREE.Intersection<THREE.Object3D>; direction: THREE.Vector3; angle: number };
+    let targetContact: Contact | undefined;
+    let surfaceContact: Contact | undefined;
+    for (const yaw of [0, -5, 5]) {
+      for (const pitch of [0, -7, 7, -14, 14]) {
+        const direction = new THREE.Vector3(
+          Math.tan(THREE.MathUtils.degToRad(yaw)),
+          Math.tan(THREE.MathUtils.degToRad(pitch)), -1,
+        ).normalize().applyQuaternion(rotation);
+        this.raycaster.set(origin, direction);
+        const hit = this.raycaster.intersectObjects(objects, false).find(candidate =>
+          !targets.includes(candidate.object as THREE.Mesh) || isOpaqueSpriteHit(candidate.object as THREE.Mesh, candidate.uv));
+        if (!hit) continue;
+        const candidate = { hit, direction, angle: Math.abs(yaw) + Math.abs(pitch) };
+        if (targets.includes(hit.object as THREE.Mesh)) {
+          // Un bord de porte périphérique ne masque pas une cible exposée au centre.
+          if (!targetContact || candidate.angle < targetContact.angle
+            || (candidate.angle === targetContact.angle && hit.distance < targetContact.hit.distance)) targetContact = candidate;
+        } else if (!surfaceContact || hit.distance < surfaceContact.hit.distance) surfaceContact = candidate;
+      }
+    }
+    const selected = targetContact ?? surfaceContact;
+    if (!selected) return;
+    const { hit: contact, direction: contactDirection } = selected;
+    const mesh = contact.object as THREE.Mesh;
+    const normal = contact.face
+      ? contact.face.normal.clone().applyNormalMatrix(new THREE.Matrix3().getNormalMatrix(mesh.matrixWorld))
+      : contactDirection.clone().negate();
+    if (normal.dot(contactDirection) > 0) normal.negate();
+    if (targets.includes(mesh)) {
+      this.playSound(this.zombieImpactSound);
+      this.onImpact?.({ kind: 'zombie', object: mesh, point: contact.point.clone(), normal,
+        direction: contactDirection, weaponId: 'axe' });
+      this.onHit(mesh, axeAttack.damage, { headHits: 0, bodyHits: 1, headDamage: 0,
+        impactForce: axeAttack.damage, weaponId: 'axe', stunSeconds: axeAttack.stunSeconds });
+    } else {
+      const surface = getImpactSurface(contact);
+      this.playSurfaceImpact(surface);
+      this.onImpact?.({ kind: 'surface', surface, object: mesh, point: contact.point.clone(), normal,
+        direction: contactDirection, weaponId: 'axe' });
     }
   }
 
@@ -619,7 +719,7 @@ export class Weapon {
       const { magazine, reserve, unlocked } = this.weapons[id];
       return { magazine, reserve, unlocked };
     };
-    return { pistol: stock('pistol'), shotgun: stock('shotgun') };
+    return { axe: stock('axe'), pistol: stock('pistol'), shotgun: stock('shotgun') };
   }
 
   public getMaxReserve(): number {
@@ -672,6 +772,13 @@ export class Weapon {
     this.targets = targets;
   }
 
+  public cancelMeleeAttack(): void {
+    this.axeAttackTime = Infinity;
+    this.axeContactResolved = false;
+    this.axeSwingSoundPlayed = false;
+    this.axeView.update(Infinity);
+  }
+
   public setEnvironmentalLighting(brightness: number, warmth: number, stormFlash = 0): void {
     this.targetBrightness = weaponAmbientBrightness(brightness);
     this.targetWarmth = warmth;
@@ -693,6 +800,7 @@ export class Weapon {
   }
 
   public addAmmo(count: number, weaponId: WeaponId = this.activeWeaponId): boolean {
+    if (weaponId === 'axe') return false;
     if (!Number.isFinite(count) || Math.floor(count) <= 0) return false;
     const target = this.weapons[weaponId];
     if (target.reserve >= target.maxReserve) return false;
@@ -710,6 +818,20 @@ export class Weapon {
     }
 
     const currentWeapon = this.getActiveWeapon();
+    // La mêlée utilise le temps actif : pause/focus perdus figent préparation et contact.
+    const axeControlActive = this.canPlay() && document.pointerLockElement === this.canvas
+      && !document.hidden && (typeof document.hasFocus !== 'function' || document.hasFocus());
+    if (this.activeWeaponId === 'axe' && axeControlActive && delta > 0 && Number.isFinite(this.axeAttackTime)) {
+      this.axeAttackTime = Math.min(axeAttack.duration, this.axeAttackTime + delta);
+      if (!this.axeSwingSoundPlayed && this.axeAttackTime >= axeAttack.windup) {
+        this.axeSwingSoundPlayed = true;
+        this.playMechanicalSound('axe-swing');
+      }
+      if (!this.axeContactResolved && this.axeAttackTime >= axeAttack.impactTime) {
+        this.axeContactResolved = true;
+        this.resolveAxeContact();
+      }
+    }
 
     // Gestion du rechargement
     if (this.isReloading) {
@@ -764,7 +886,7 @@ export class Weapon {
     }
 
     // Gestion de l'ADS (interdit pendant le rechargement)
-    const target = this.aimHeld && !this.isReloading ? 1 : 0;
+    const target = this.activeWeaponId !== 'axe' && this.aimHeld && !this.isReloading ? 1 : 0;
     const step = delta / this.aimTransitionDuration;
     const nextAim = this.aimAmount + THREE.MathUtils.clamp(target - this.aimAmount, -step, step);
     if (nextAim !== this.aimAmount) {
@@ -830,6 +952,7 @@ export class Weapon {
   }
 
   private renderShotEffects(): void {
+    this.axeView.update(this.axeAttackTime);
     const loadingPose = getShotgunReloadPose(this.reloadTimer);
     this.shotgunRig?.style.setProperty('--load-x', `${loadingPose.x}%`);
     this.shotgunRig?.style.setProperty('--load-y', `${loadingPose.y}%`);
@@ -888,7 +1011,7 @@ export class Weapon {
     }
 
     this.muzzleFlashes.forEach((flash) =>
-      flash.classList.toggle('visible', this.shotAnimationTime < 0.07 && !this.isReloading)
+      flash.classList.toggle('visible', this.activeWeaponId !== 'axe' && this.shotAnimationTime < 0.07 && !this.isReloading)
     );
   }
 
@@ -926,6 +1049,7 @@ export class Weapon {
     }
     this.muzzleLight.removeFromParent();
     this.muzzleLight.dispose();
+    this.axeView.dispose();
     this.disposed = true;
   }
 }
