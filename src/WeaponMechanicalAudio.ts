@@ -21,7 +21,7 @@ const timbres: Record<WeaponMechanicalSoundId, { seed: number; scrape: number; c
   'axe-swing': { seed: 1237, scrape: 0.8, clickAt: 1, body: 120 },
 };
 
-/** Frottement filtré et contact amorti, sans oscillateur aigu ni impulsion abrupte. */
+/** Frottement métallique et contact net : claquement bref et résonances aiguës pour plus de présence. */
 export function createWeaponMechanicalSamples(id: WeaponMechanicalSoundId, sampleRate: number): Float32Array {
   const duration = WEAPON_MECHANICAL_DURATIONS[id];
   const timbre = timbres[id];
@@ -31,7 +31,8 @@ export function createWeaponMechanicalSamples(id: WeaponMechanicalSoundId, sampl
   let smooth = 0;
   // Les filtres suivent le temps en secondes, y compris à 44,1 kHz.
   const lowAlpha = 1 - Math.exp(-2 * Math.PI * 260 / sampleRate);
-  const smoothAlpha = 1 - Math.exp(-2 * Math.PI * 2200 / sampleRate);
+  const smoothAlpha = 1 - Math.exp(-2 * Math.PI * 4200 / sampleRate);
+  const bodyFrequency = 2 * Math.PI * timbre.body;
   for (let i = 0; i < samples.length; i++) {
     seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
     const noise = seed / 0x80000000 - 1;
@@ -44,10 +45,13 @@ export function createWeaponMechanicalSamples(id: WeaponMechanicalSoundId, sampl
     const scrape = Math.sin(Math.PI * u) ** 1.2 * timbre.scrape;
     const contactTime = t - timbre.clickAt;
     const contact = contactTime <= 0 ? 0
-      : (1 - Math.exp(-contactTime / 0.0025)) * Math.exp(-contactTime / 0.018);
+      : (1 - Math.exp(-contactTime / 0.0008)) * Math.exp(-contactTime / 0.016);
     const friction = (smooth - low) * (scrape + contact * 0.75);
-    const body = (low * 0.7 + Math.sin(2 * Math.PI * timbre.body * Math.max(0, contactTime)) * 0.07) * contact;
-    samples[i] = Math.max(-0.65, Math.min(0.65, (friction + body) * envelope));
+    const ring = contactTime <= 0 ? 0
+      : (Math.sin(bodyFrequency * 6.5 * contactTime) * 0.5
+        + Math.sin(bodyFrequency * 10.3 * contactTime) * 0.35) * Math.exp(-contactTime / 0.011);
+    const body = (low * 0.7 + Math.sin(bodyFrequency * Math.max(0, contactTime)) * 0.1) * contact;
+    samples[i] = Math.max(-0.65, Math.min(0.65, (friction * 1.5 + body + ring * 0.28) * envelope * 0.47));
   }
   samples[0] = 0;
   samples[samples.length - 1] = 0;
@@ -56,7 +60,7 @@ export function createWeaponMechanicalSamples(id: WeaponMechanicalSoundId, sampl
 
 interface MechanicalVoice { source: AudioBufferSourceNode }
 
-/** Six buffers mono et quatre sources au plus, sur le contexte audio déjà possédé par le joueur. */
+/** Sept buffers mono et quatre sources au plus, sur le contexte audio déjà possédé par le joueur. */
 export class WeaponMechanicalAudio {
   private readonly context: AudioContext;
   private readonly gain: GainNode;

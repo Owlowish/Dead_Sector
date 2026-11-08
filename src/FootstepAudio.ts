@@ -13,25 +13,33 @@ export function getFootstepSurfaceAt(x: number, z: number): FootstepSurface {
 export const FOOTSTEP_DURATIONS = { wood: 0.16, carpet: 0.14, stairs: 0.18 } as const;
 export const FOOTSTEP_BASE_GAIN = 0.06;
 
-/** Synthèse locale de trois appuis sourds : aucun téléchargement ni nouveau contexte audio. */
+/** Synthèse locale d'appuis : talon sec (claquement aigu), corps sourd, léger frottement. Aucun téléchargement. */
 export function createFootstepSamples(surface: FootstepSurface, sampleRate: number): Float32Array {
   const duration = FOOTSTEP_DURATIONS[surface];
   const samples = new Float32Array(Math.ceil(sampleRate * duration));
   let seed = surface === 'wood' ? 173 : surface === 'carpet' ? 479 : 829;
-  let low = 0;
-  const frequency = surface === 'carpet' ? 76 : surface === 'stairs' ? 136 : 104;
+  let low = 0, high = 0;
+  const frequency = surface === 'carpet' ? 82 : surface === 'stairs' ? 150 : 118;
+  const lowAlpha = 1 - Math.exp(-2 * Math.PI * (surface === 'carpet' ? 260 : 700) / sampleRate);
+  const highAlpha = 1 - Math.exp(-2 * Math.PI * 1800 / sampleRate);
+  const clickTau = surface === 'carpet' ? 0.012 : 0.0045;
+  const clickGain = surface === 'carpet' ? 0.22 : surface === 'stairs' ? 0.62 : 0.55;
   for (let i = 0; i < samples.length; i++) {
     seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
     const noise = seed / 0x80000000 - 1;
-    low += (noise - low) * (surface === 'carpet' ? 0.035 : 0.1);
+    low += (noise - low) * lowAlpha;
+    high += (noise - high) * highAlpha;
     const t = i / sampleRate;
-    const attack = Math.min(1, t / 0.003);
-    const tail = Math.max(0, 1 - t / duration);
-    const body = Math.sin(2 * Math.PI * frequency * (t - 0.7 * t * t));
-    const thump = (low * 1.5 + body * 0.23) * Math.exp(-t * (surface === 'carpet' ? 38 : 30));
-    const contact = noise * Math.exp(-t * 115) * (surface === 'carpet' ? 0.055 : 0.13);
-    samples[i] = (thump + contact) * attack * tail * (surface === 'carpet' ? 0.62 : 1);
+    const attack = Math.min(1, t / 0.0008);
+    const tail = Math.max(0, 1 - t / duration) ** 1.5;
+    const body = Math.sin(2 * Math.PI * frequency * (t - 2.2 * t * t)) * Math.exp(-t * (surface === 'carpet' ? 34 : 26));
+    const knock = low * Math.exp(-t * 55) * 0.9;
+    const click = (noise - high) * Math.exp(-t / clickTau) * clickGain;
+    const toe = t > 0.052 ? (noise - high) * Math.exp(-(t - 0.052) / 0.006) * clickGain * 0.35 : 0;
+    samples[i] = (body * 0.75 + knock + click + toe) * attack * tail * 0.7;
   }
+  samples[0] = 0;
+  samples[samples.length - 1] = 0;
   return samples;
 }
 

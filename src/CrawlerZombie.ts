@@ -198,7 +198,6 @@ export class CrawlerZombie {
       this.hissAudio.setBuffer(buffer);
       this.hissAudio.setRefDistance(3);
       this.hissAudio.setMaxDistance(18);
-      this.hissAudio.setPlaybackRate(1.45);
       this.setAudioVolume(effectsVolume);
       this.mesh.add(this.hissAudio);
     } catch {

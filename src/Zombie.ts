@@ -302,10 +302,6 @@ export class Zombie {
     this.groanAudio.setRefDistance(2.5);
     this.groanAudio.setMaxDistance(16);
     this.groanAudio.setRolloffFactor(1.5);
-    // Le Coureur a une tonalité légèrement plus haute
-    if (this.kind === 'agile') {
-      this.groanAudio.setPlaybackRate(1.25);
-    }
     this.setAudioVolume(effectsVolume);
     this.mesh.add(this.groanAudio);
   }
@@ -443,22 +439,17 @@ export class Zombie {
     console.log(`Zombie [${this.kind}] éliminé !`);
   }
 
-  public updateDeath(delta: number, viewerPosition: THREE.Vector3): void {
+  public updateDeath(delta: number, viewerPosition: THREE.Vector3, onRise?: (position: THREE.Vector3) => void): void {
     if (this.alive || this.disposed) return;
     this.remains.update(delta, viewerPosition);
     this.mesh.position.copy(this.remains.getPosition());
     if (!this.revivalPending) return;
     if (!this.reviving) {
-      const prevDelay = this.revivalDelay;
       this.revivalDelay = Math.max(0, this.revivalDelay - delta);
-      if (prevDelay > 0.4 && this.revivalDelay <= 0.4) {
-        if (this.groanAudio && !this.groanAudio.isPlaying) {
-          this.groanAudio.play();
-        }
-      }
       if (this.revivalDelay === 0) {
         this.reviving = true;
         this.remains.beginRevival();
+        onRise?.(this.mesh.position);
       }
     } else if (this.remains.consumeRevivalFinished()) {
       this.reviving = false;

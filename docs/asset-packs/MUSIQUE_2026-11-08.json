@@ -1,0 +1,137 @@
+{
+  "documentType": "asset-pack",
+  "templateVersion": 1,
+  "updatedAt": "2026-11-08",
+  "id": "MUSIQUE_2026-11-08",
+  "revision": "Mesures de la première intégration. Les trois pistes du Portrait sont remplacées en jeu par celles du manifeste AUDIO_V2_2026-11-08.json.",
+  "request": "Intégrer les huit morceaux générés par un collègue et transmis dans Downloads/musique.",
+  "provenance": {
+    "author": "Collègue de l'utilisateur, nom non communiqué",
+    "promptExact": null,
+    "toolAndModelActuallyUsed": null,
+    "transformations": [
+      "Copie à l'identique",
+      "Décodage Web Audio à la fréquence du contexte du navigateur"
+    ]
+  },
+  "technicalContract": {
+    "format": "Ogg Vorbis, mono, 44 100 Hz",
+    "playback": "Une source à la fois sur l'AudioListener existant. Pause et masquage mémorisent la position. Les résultats sont joués une seule fois par tentative.",
+    "gain": "0,3 × réglage Musique. Présence de 1/3 entre combats pour la piste principale.",
+    "totalBytes": 3322659,
+    "decodedPcmBytesAt48000Hz": 59750400
+  },
+  "assets": [
+    {
+      "id": "menu",
+      "purpose": "Accueil avant la première prise de contrôle",
+      "productionStatus": "reused",
+      "sourceFile": "Downloads/musique/01_menu.ogg",
+      "exportFile": "public/assets/music/01_menu.ogg",
+      "loop": true,
+      "durationSeconds": 32,
+      "bytes": 448687,
+      "sha256": "3cc30f664e0b4ee4871e924586298ab8748ed0bf1b60a4c39ce99e0b1a60541e",
+      "rmsDbFS": -23,
+      "peakDbFS": -9.9
+    },
+    {
+      "id": "pause",
+      "purpose": "Pause ou panneau de debug",
+      "productionStatus": "reused",
+      "sourceFile": "Downloads/musique/02_pause.ogg",
+      "exportFile": "public/assets/music/02_pause.ogg",
+      "loop": true,
+      "durationSeconds": 32,
+      "bytes": 419745,
+      "sha256": "2095e5ab3f4d09351791a16e59e22cc23da2b6dfb065147459f51b30b174ad9d",
+      "rmsDbFS": -24,
+      "peakDbFS": -11.9
+    },
+    {
+      "id": "main",
+      "purpose": "P1 à P7, volume réduit pendant les accalmies",
+      "productionStatus": "reused",
+      "sourceFile": "Downloads/musique/03_principale.ogg",
+      "exportFile": "public/assets/music/03_principale.ogg",
+      "loop": true,
+      "durationSeconds": 102.4,
+      "bytes": 1312025,
+      "sha256": "8776f74eca5519196abade5604588c690f9732669d00d1b44e6676906e138dda",
+      "rmsDbFS": -17.5,
+      "peakDbFS": -1.2
+    },
+    {
+      "id": "boss1",
+      "purpose": "Entrée en P8 et première forme du Portrait",
+      "productionStatus": "reused",
+      "sourceFile": "Downloads/musique/04_boss_phase1.ogg",
+      "exportFile": "public/assets/music/04_boss_phase1.ogg",
+      "loop": true,
+      "durationSeconds": 64,
+      "bytes": 443990,
+      "sha256": "76c7df247eda555eba8f06fdddcabc8d6bad01f3b7fb1c2edbba9de08082fba3",
+      "rmsDbFS": -19,
+      "peakDbFS": -4.5
+    },
+    {
+      "id": "transformation",
+      "purpose": "Signal transform-start, puis relais au signal transform-end",
+      "productionStatus": "reused",
+      "sourceFile": "Downloads/musique/05_boss_transformation.ogg",
+      "exportFile": "public/assets/music/05_boss_transformation.ogg",
+      "loop": false,
+      "durationSeconds": 1.3,
+      "bytes": 39813,
+      "sha256": "3e4d9c697a0110f91966d239bbc62c7a95872967b5180c639412e92c8eec0eb6",
+      "rmsDbFS": -21.6,
+      "peakDbFS": -1.5
+    },
+    {
+      "id": "boss2",
+      "purpose": "Deuxième forme du Portrait après transform-end",
+      "productionStatus": "reused",
+      "sourceFile": "Downloads/musique/06_boss_phase2.ogg",
+      "exportFile": "public/assets/music/06_boss_phase2.ogg",
+      "loop": true,
+      "durationSeconds": 60,
+      "bytes": 449153,
+      "sha256": "d67926280d4e2cbd10389dbc4c5fefc5fab9065e4429f0b3a268bdadabe4f688",
+      "rmsDbFS": -18,
+      "peakDbFS": -3.5
+    },
+    {
+      "id": "defeat",
+      "purpose": "Mort du joueur",
+      "productionStatus": "reused",
+      "sourceFile": "Downloads/musique/07_defaite.ogg",
+      "exportFile": "public/assets/music/07_defaite.ogg",
+      "loop": false,
+      "durationSeconds": 10.5,
+      "bytes": 114684,
+      "sha256": "456405ca4bd6e609592d6b7a2d809b5d68cee86126db290a2c66cc48c3ee6e84",
+      "rmsDbFS": -17,
+      "peakDbFS": -2.6
+    },
+    {
+      "id": "victory",
+      "purpose": "Dernière élimination définitive, déplacement toujours actif",
+      "productionStatus": "reused",
+      "sourceFile": "Downloads/musique/08_victoire.ogg",
+      "exportFile": "public/assets/music/08_victoire.ogg",
+      "loop": false,
+      "durationSeconds": 9,
+      "bytes": 94562,
+      "sha256": "8dbe0300daab70b9ccd2234987f1457d7ad3ee4311ade3d575d7ac2419d3211b",
+      "rmsDbFS": -17,
+      "peakDbFS": -2.8
+    }
+  ],
+  "validation": {
+    "file": "SHA-256 identiques aux sources, décodage des huit pistes dans Chrome à 48 kHz.",
+    "integration": "Vrai Game sous Chrome headless, verrouillage du pointeur émulé. Activations, transitions, pause, reprise, mute, fin de défaite et redémarrage contrôlés.",
+    "remainingWork": [
+      "Écouter les raccords de boucle et l'équilibre du mix en combat réel."
+    ]
+  }
+}

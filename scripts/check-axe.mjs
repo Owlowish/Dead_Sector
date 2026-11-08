@@ -18,7 +18,15 @@ globalThis.document = Object.assign(new EventTarget(), {
   pointerLockElement: canvas, hidden: false, hasFocus: () => true,
   querySelector: () => hud, querySelectorAll: () => [],
 });
-globalThis.Audio = class { volume = 1; currentTime = 0; play() { return Promise.resolve(); } pause() {} };
+const sounds = [];
+globalThis.Audio = class {
+  volume = 1;
+  currentTime = 0;
+  paused = true;
+  constructor(src) { this.src = src; }
+  play() { this.paused = false; sounds.push(this.src); return Promise.resolve(); }
+  pause() { this.paused = true; }
+};
 const { Weapon } = await import('../src/Weapon.ts');
 const { axeAttack } = await import('../src/AxeAnimation.ts');
 const camera = new THREE.PerspectiveCamera(75, 16 / 9, 0.1, 100);
@@ -46,6 +54,7 @@ function key(code) {
 }
 function reset(targets = [], blockers = []) {
   weapon.resetForNewRun(); hits.length = impacts.length = shots.length = casings.length = 0;
+  sounds.length = 0;
   camera.position.set(0, 1.7, 0); camera.rotation.set(0, 0, 0);
   weapon.setTargets(targets); weapon.blockers = blockers;
   document.pointerLockElement = canvas; document.hidden = false;
@@ -66,6 +75,7 @@ assert.equal(hits.length, 0, 'Pas de dégâts au clic');
 assert.deepEqual(shots, ['axe']);
 weapon.update(axeAttack.impactTime - 0.01);
 assert.equal(hits.length, 0, 'Anticipation complète avant le contact');
+assert.deepEqual(sounds, []);
 weapon.update(0.02);
 assert.equal(hits.length, 1);
 assert.equal(hits[0][0], victim);
@@ -75,6 +85,11 @@ assert.equal(hits[0][2].stunSeconds, 0.85);
 assert.equal(weapon.muzzleLight.intensity, 0);
 assert.equal(casings.length, 0);
 assert.equal(weapon.getAmmo(), 0, 'Aucune fausse munition');
+assert.deepEqual(sounds, ['/assets/sounds/axe-flesh.wav']);
+window.dispatchEvent(new Event('blur'));
+assert.equal(weapon.sounds.axeFlesh.clips[0].paused, true);
+window.dispatchEvent(new Event('focus'));
+assert.equal(sounds.length, 1, 'Le retour du focus ne relance pas le contact');
 mouse(); assert.equal(shots.length, 1, 'Récupération obligatoire');
 weapon.unlockWeapon('pistol');
 assert.equal(weapon.getActiveWeaponId(), 'axe', 'Changer d’arme ne coupe pas la récupération');
@@ -107,6 +122,11 @@ reset([victim], [wall]); mouse(); weapon.update(1);
 assert.equal(hits.length, 0, 'Le mur arrête la hache');
 assert.equal(impacts.length, 1);
 assert.equal(impacts[0].kind, 'surface');
+assert.deepEqual(sounds, ['/assets/sounds/impact-stone-soft.wav']);
+const frame = target();
+frame.userData.impactMaterial = 'portrait';
+reset([frame]); mouse(); weapon.update(1);
+assert.deepEqual(sounds, ['/assets/sounds/impact-wood-soft.wav']);
 // Une cible visible à côté d'un jambage peut recevoir le coup ; le jambage
 // continue d'occulter chacun de ses propres rayons.
 const jamb = new THREE.Mesh(new THREE.PlaneGeometry(0.1, 3), material);

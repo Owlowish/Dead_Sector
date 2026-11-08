@@ -157,12 +157,13 @@ for (const delta of [1 / 30, 1 / 144, 0.073, 0.8]) {
 for (const delta of [1 / 30, 1 / 144, 0.073, 6]) {
   const f = fixture(); f.shotgun();
   f.weapon.magazineAmmo = 0; f.weapon.reserveAmmo = 8;
-  const emptyPlays = f.weapon.emptySound.playCount;
+  const emptyClip = f.weapon.sounds.empty.clips[0];
+  const emptyPlays = emptyClip.playCount;
   assert(f.weapon.reload());
   through(f, 5 * shotgunReload.duration + 0.02, delta);
   assert.deepEqual(f.names(), Array(5).fill('shell-insert'), 'Un son par cartouche réellement engagée');
   assert.equal(f.weapon.getAmmo(), 5); assert.equal(f.weapon.getReserveAmmo(), 3);
-  assert.equal(f.weapon.emptySound.playCount, emptyPlays, 'Le clic vide n’est plus utilisé pour insérer');
+  assert.equal(emptyClip.playCount, emptyPlays, 'Le clic vide n’est plus utilisé pour insérer');
   assert.equal(f.weapon.getIsReloading(), false);
   assert(f.weapon.mechanicalAudio.voices.length <= 4);
   f.weapon.dispose();

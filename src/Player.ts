@@ -23,7 +23,7 @@ export class Player {
   private flashlightTarget: THREE.Object3D;
   private flashlightOn = true;
   private readonly flashlightIntensity = 22;
-  private readonly flashlightClick = new Audio('/assets/sounds/empty-soft.wav');
+  private readonly flashlightClick = new Audio('/assets/sounds/flashlight-click.wav');
 
   private keys = new Set<string>();
   private yaw = 0;
@@ -136,6 +136,10 @@ export class Player {
 
   public setEffectsVolume(volume: number): void {
     this.flashlightClick.volume = 0.35 * THREE.MathUtils.clamp(volume, 0, 1);
+  }
+
+  public suspendFlashlightAudio(): void {
+    this.flashlightClick?.pause?.();
   }
 
   public toggleFlashlight(): boolean {

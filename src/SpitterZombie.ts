@@ -86,7 +86,6 @@ export class SpitterZombie {
     this.groanAudio.setRolloffFactor(1.2);
     this.setAudioVolume(effectsVolume);
     // Timbre guttural, lourd et plus grave que les zombies ordinaires
-    this.groanAudio.setPlaybackRate(0.72);
     this.mesh.add(this.groanAudio);
   }
 

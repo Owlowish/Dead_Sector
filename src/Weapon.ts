@@ -84,6 +84,20 @@ function createInitialWeapons(): Record<WeaponId, WeaponState> {
   };
 }
 
+interface WeaponSound {
+  clips: HTMLAudioElement[];
+  gain: number;
+  nextClip: number;
+}
+
+function createWeaponSound(file: string, gain: number, count = 1): WeaponSound {
+  const clips = Array.from({ length: count }, (_, index) => {
+    const suffix = index === 0 ? '' : `-${index + 1}`;
+    return new Audio(`/assets/sounds/${file}${suffix}.wav`);
+  });
+  return { clips, gain, nextClip: 0 };
+}
+
 export class Weapon {
   private readonly raycaster = new THREE.Raycaster();
   private weapons = createInitialWeapons();
@@ -101,13 +115,16 @@ export class Weapon {
   private currentFrameIndex = -1;
 
   // Effets sonores
-  private readonly emptySound = new Audio('/assets/sounds/empty-soft.wav');
-  private readonly shotSound = new Audio('/assets/sounds/shot-soft.wav');
-  private readonly shotgunSound = new Audio('/assets/sounds/shotgun-shot.wav');
-  private readonly metalImpactSound = new Audio('/assets/sounds/impact-metal-soft.wav');
-  private readonly woodImpactSound = new Audio('/assets/sounds/impact-wood-soft.wav');
-  private readonly stoneImpactSound = new Audio('/assets/sounds/impact-stone-soft.wav');
-  private readonly zombieImpactSound = new Audio('/assets/sounds/impact-zombie-soft.wav');
+  private readonly sounds = {
+    empty: createWeaponSound('empty-soft', 0.3),
+    pistol: createWeaponSound('shot-soft', 0.5, 3),
+    shotgun: createWeaponSound('shotgun-shot', 0.42, 2),
+    metal: createWeaponSound('impact-metal-soft', 0.3, 3),
+    wood: createWeaponSound('impact-wood-soft', 0.3, 3),
+    stone: createWeaponSound('impact-stone-soft', 0.27, 3),
+    enemy: createWeaponSound('impact-zombie-soft', 0.35, 3),
+    axeFlesh: createWeaponSound('axe-flesh', 0.28),
+  };
   private mechanicalAudio: WeaponMechanicalAudio | null = null;
   private mechanicalContext: AudioContext | null = null;
   private effectsVolume = 1;
@@ -247,14 +264,14 @@ export class Weapon {
 
     // Interruption propre sur perte de focus
     this.listen(window, 'blur', () => {
-      this.suspendMechanicalAudio();
+      this.suspendSoundEffects();
       this.resetAim();
       this.cancelReload();
     });
 
     this.listen(document, 'pointerlockchange', () => {
       if (document.pointerLockElement !== this.canvas) {
-        this.suspendMechanicalAudio();
+        this.suspendSoundEffects();
         this.resetAim();
         this.cancelReload();
       }
@@ -262,7 +279,7 @@ export class Weapon {
 
     this.listen(document, 'visibilitychange', () => {
       if (document.hidden) {
-        this.suspendMechanicalAudio();
+        this.suspendSoundEffects();
         this.resetAim();
         this.cancelReload();
       }
@@ -275,7 +292,7 @@ export class Weapon {
   }
 
   public resetForNewRun(): void {
-    this.suspendMechanicalAudio();
+    this.suspendSoundEffects();
     this.weapons = createInitialWeapons();
     this.activeWeaponId = 'axe';
     this.axeAttackTime = Infinity;
@@ -293,10 +310,8 @@ export class Weapon {
     this.headMarkerTimer = null;
     this.crosshair?.classList.toggle('head-hit', false);
     this.shotgunRig?.classList.toggle('is-reloading', false);
-    for (const sound of [this.emptySound, this.shotSound, this.shotgunSound, this.woodImpactSound,
-      this.stoneImpactSound, this.metalImpactSound, this.zombieImpactSound]) {
-      sound.pause?.();
-      sound.currentTime = 0;
+    for (const sound of Object.values(this.sounds)) {
+      sound.nextClip = 0;
     }
     this.currentBrightness = this.targetBrightness;
     this.currentWarmth = this.targetWarmth;
@@ -321,7 +336,7 @@ export class Weapon {
     this.mechanicalAudio = new WeaponMechanicalAudio(context, destination);
     this.mechanicalAudio.setVolume(this.effectsVolume);
     this.listen(context, 'statechange', () => {
-      if (context.state !== 'running') this.suspendMechanicalAudio();
+      if (context.state !== 'running') this.suspendSoundEffects();
     });
   }
 
@@ -331,9 +346,22 @@ export class Weapon {
     this.mechanicalAudio?.suspend();
   }
 
+  public suspendSoundEffects(): void {
+    this.suspendMechanicalAudio();
+    for (const sound of Object.values(this.sounds)) {
+      for (const clip of sound.clips) {
+        if (!clip.paused) clip.pause?.();
+      }
+    }
+  }
+
+  private hasActiveControl(): boolean {
+    return this.canPlay() && document.pointerLockElement === this.canvas
+      && !document.hidden && (document.hasFocus?.() ?? true);
+  }
+
   private canPlayMechanicalAudio(): boolean {
-    return !this.disposed && this.canPlay() && document.pointerLockElement === this.canvas
-      && !document.hidden && (typeof document.hasFocus !== 'function' || document.hasFocus())
+    return !this.disposed && this.hasActiveControl()
       && (!this.mechanicalContext || this.mechanicalContext.state === 'running');
   }
 
@@ -378,7 +406,7 @@ export class Weapon {
     this.spentShellScheduled = false;
 
     // Bruit mécanique de prise en main
-    this.playSound(this.emptySound);
+    this.playSound(this.sounds.empty);
 
     this.updateWeaponDOM();
     this.notifyAmmoChange();
@@ -498,7 +526,7 @@ export class Weapon {
 
     if (config.magazine <= 0) {
       this.lastShot = now;
-      this.playSound(this.emptySound);
+      this.playSound(this.sounds.empty);
       return;
     }
 
@@ -510,7 +538,7 @@ export class Weapon {
     this.spentShellScheduled = false;
     this.muzzleLight.intensity = this.activeWeaponId === 'shotgun' ? 14.0 : 10.0;
     this.renderShotEffects();
-    this.playSound(this.activeWeaponId === 'shotgun' ? this.shotgunSound : this.shotSound);
+    this.playSound(this.sounds[this.activeWeaponId]);
 
     // 1. Enregistrement de la position et de l'orientation de la caméra AVANT le recul de tir
     this.camera.updateWorldMatrix(true, false);
@@ -601,7 +629,7 @@ export class Weapon {
 
     // Appliquer les dégâts cumulés à chaque zombie touché
     if (zombieHits.size > 0) {
-      this.playSound(this.zombieImpactSound);
+      this.playSound(this.sounds.enemy);
       zombieHits.forEach(({ damage, headHits, bodyHits, headDamage, hitPoint, normal, direction, distance }, targetMesh) => {
         console.log(`Zombie touché par ${this.activeWeaponId} (${damage} dégâts cumulés) !`);
         const hits = headHits + bodyHits;
@@ -672,7 +700,7 @@ export class Weapon {
       : contactDirection.clone().negate();
     if (normal.dot(contactDirection) > 0) normal.negate();
     if (targets.includes(mesh)) {
-      this.playSound(this.zombieImpactSound);
+      this.playSound(mesh.userData.impactMaterial === 'portrait' ? this.sounds.wood : this.sounds.axeFlesh);
       this.onImpact?.({ kind: 'zombie', object: mesh, point: contact.point.clone(), normal,
         direction: contactDirection, weaponId: 'axe' });
       this.onHit(mesh, axeAttack.damage, { headHits: 0, bodyHits: 1, headDamage: 0,
@@ -686,15 +714,19 @@ export class Weapon {
   }
 
   private playSurfaceImpact(surface: ImpactSurface): void {
-    const sound = surface === 'wood' ? this.woodImpactSound
-      : surface === 'metal' ? this.metalImpactSound : this.stoneImpactSound;
-    this.playSound(sound);
+    this.playSound(this.sounds[surface]);
   }
 
-  private playSound(sound: HTMLAudioElement): void {
-    sound.currentTime = 0;
-    void sound.play().catch((error: unknown) => {
-      console.warn('Impossible de jouer le son :', error);
+  private playSound(sound: WeaponSound): void {
+    if (!this.hasActiveControl() || this.effectsVolume === 0) return;
+    const clip = sound.clips[sound.nextClip];
+    // Alterner indépendamment des tirages utilisés pour la dispersion.
+    sound.nextClip = (sound.nextClip + 1) % sound.clips.length;
+    clip.currentTime = 0;
+    void clip.play().catch((error: unknown) => {
+      if (!(error instanceof DOMException && error.name === 'AbortError')) {
+        console.warn('Impossible de jouer le son :', error);
+      }
     });
   }
 
@@ -790,13 +822,9 @@ export class Weapon {
     const gain = THREE.MathUtils.clamp(volume, 0, 1);
     this.effectsVolume = gain;
     this.mechanicalAudio?.setVolume(gain);
-    this.shotSound.volume = 0.5 * gain;
-    this.shotgunSound.volume = 0.42 * gain;
-    this.metalImpactSound.volume = 0.3 * gain;
-    this.woodImpactSound.volume = 0.3 * gain;
-    this.stoneImpactSound.volume = 0.27 * gain;
-    this.zombieImpactSound.volume = 0.35 * gain;
-    this.emptySound.volume = 0.3 * gain;
+    for (const sound of Object.values(this.sounds)) {
+      for (const clip of sound.clips) clip.volume = sound.gain * gain;
+    }
   }
 
   public addAmmo(count: number, weaponId: WeaponId = this.activeWeaponId): boolean {
@@ -819,8 +847,7 @@ export class Weapon {
 
     const currentWeapon = this.getActiveWeapon();
     // La mêlée utilise le temps actif : pause/focus perdus figent préparation et contact.
-    const axeControlActive = this.canPlay() && document.pointerLockElement === this.canvas
-      && !document.hidden && (typeof document.hasFocus !== 'function' || document.hasFocus());
+    const axeControlActive = this.hasActiveControl();
     if (this.activeWeaponId === 'axe' && axeControlActive && delta > 0 && Number.isFinite(this.axeAttackTime)) {
       this.axeAttackTime = Math.min(axeAttack.duration, this.axeAttackTime + delta);
       if (!this.axeSwingSoundPlayed && this.axeAttackTime >= axeAttack.windup) {
@@ -1035,6 +1062,7 @@ export class Weapon {
   public dispose(): void {
     if (this.disposed) return;
     this.cancelReload();
+    this.suspendSoundEffects();
     this.mechanicalAudio?.dispose();
     this.mechanicalAudio = null;
     this.mechanicalContext = null;
@@ -1043,10 +1071,6 @@ export class Weapon {
     if (this.headMarkerTimer) clearTimeout(this.headMarkerTimer);
     this.headMarkerTimer = null;
     this.crosshair?.classList.remove?.('head-hit');
-    for (const sound of [this.emptySound, this.shotSound, this.shotgunSound, this.woodImpactSound,
-      this.stoneImpactSound, this.metalImpactSound, this.zombieImpactSound]) {
-      sound.pause?.();
-    }
     this.muzzleLight.removeFromParent();
     this.muzzleLight.dispose();
     this.axeView.dispose();

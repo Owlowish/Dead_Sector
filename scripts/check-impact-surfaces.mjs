@@ -95,6 +95,7 @@ let ejections = 0;
 const impacts = [];
 const weapon = new Weapon(camera, canvas, [], [wall], () => assert.fail('Un mur ne reçoit pas de dégâts ennemi'), () => true, () => {});
 const initial = structuredClone(weapon.weapons);
+weapon.unlockWeapon('pistol');
 weapon.setOnAmmoChange((magazine, capacity, reserve, reloading, name, id) => { hud = { magazine, capacity, reserve, reloading, name, id }; });
 weapon.setOnImpact((impact) => impacts.push(impact));
 weapon.setOnCasingEject(() => ejections++);
@@ -108,6 +109,19 @@ for (const surface of ['wood', 'stone', 'metal']) {
   assert.equal(impacts[0].surface, surface, 'La surface du rayon traverse Weapon et le callback graphique');
   assert.deepEqual(sounds.filter((src) => src.includes('/impact-')), [`/assets/sounds/impact-${surface}-soft.wav`]);
 }
+wall.material[4] = wood;
+sounds.length = 0;
+for (let shot = 0; shot < 3; shot++) {
+  weapon.lastShot = -Infinity;
+  weapon.shoot();
+}
+assert.deepEqual(sounds.filter((src) => src.includes('/impact-wood')), [
+  '/assets/sounds/impact-wood-soft-2.wav', '/assets/sounds/impact-wood-soft-3.wav',
+  '/assets/sounds/impact-wood-soft.wav',
+]);
+assert.deepEqual(sounds.filter((src) => src.includes('/shot-soft')), [
+  '/assets/sounds/shot-soft.wav', '/assets/sounds/shot-soft-2.wav', '/assets/sounds/shot-soft-3.wav',
+]);
 weapon.unlockWeapon('shotgun');
 weapon.getActiveWeapon().hipSpreadDeg = 0;
 weapon.lastShot = -Infinity;
@@ -127,10 +141,10 @@ const listenerCount = canvas.listenerCount + window.listenerCount + document.lis
 const beforeResetEjections = ejections;
 weapon.resetForNewRun();
 assert.deepEqual(weapon.weapons, initial, 'Stocks, capacités, dispersion et verrouillage initiaux restaurés après bonus et tirs');
-assert.equal(weapon.getActiveWeaponId(), 'pistol');
-assert.equal(hud.id, 'pistol');
-assert.equal(hud.magazine, 10);
-assert.equal(hud.reserve, 30);
+assert.equal(weapon.getActiveWeaponId(), 'axe');
+assert.equal(hud.id, 'axe');
+assert.equal(hud.magazine, 0);
+assert.equal(hud.reserve, 0);
 assert.equal(hud.reloading, false);
 assert.equal(weapon.aimAmount, 0);
 assert.equal(weapon.muzzleLight.intensity, 0);
@@ -140,6 +154,7 @@ weapon.update(0.5);
 assert.equal(ejections, beforeResetEjections, 'Aucune douille de fusil différée ne traverse le redémarrage');
 assert.equal(weapon.switchWeapon('shotgun'), false);
 assert.equal(weapon.recoilDuration, 2, 'Réglage du recul conservé');
+weapon.unlockWeapon('pistol');
 assert.equal(weapon.reload(), true);
 weapon.update(0.5);
 weapon.resetForNewRun();

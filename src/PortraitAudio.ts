@@ -11,23 +11,25 @@ export function createPortraitSamples(stage: PortraitSoundStage, sampleRate: num
   let seed = stage === 'gather' ? 3751 : 8219;
   let low = 0, high = 0;
   const lowAlpha = 1 - Math.exp(-2 * Math.PI * 180 / sampleRate);
-  const highAlpha = 1 - Math.exp(-2 * Math.PI * 2400 / sampleRate);
+  const highAlpha = 1 - Math.exp(-2 * Math.PI * 3200 / sampleRate);
+  const gain = stage === 'burst' ? 0.75 : 1;
   for (let i = 0; i < samples.length; i++) {
     seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
     const noise = seed / 0x80000000 - 1;
     low += (noise - low) * lowAlpha;
     high += (noise - high) * highAlpha;
     const t = i / sampleRate, u = t / duration;
-    const edges = Math.min(1, t / 0.006, (duration - t) / 0.025);
+    const edges = Math.min(1, t / (stage === 'burst' ? 0.002 : 0.006), (duration - t) / 0.025);
     const envelope = Math.sin(Math.PI * Math.max(0, edges) / 2) ** 2;
+    const crack = stage === 'burst' ? (noise - high) * Math.exp(-t / 0.004) * 0.9 : 0;
     const tension = Math.sin(Math.PI * u) ** 1.4 * (0.45 + 0.2 * Math.sin(t * 73));
-    const snap = Math.exp(-Math.max(0, t - 0.012) * 55) * Math.min(1, t / 0.012);
+    const snap = Math.exp(-Math.max(0, t - 0.004) * 48) * Math.min(1, t / 0.004);
     const tear = Math.exp(-t * 5) * (0.65 + 0.25 * Math.sin(t * 91));
     const body = Math.sin(2 * Math.PI * (115 * t - 38 * t * t));
     const value = stage === 'gather'
       ? ((high - low) * 0.7 + low * 0.65 + body * 0.05) * tension
-      : (high - low) * (snap * 0.85 + tear * 0.5) + (low * 0.8 + body * 0.13) * snap;
-    samples[i] = Math.max(-0.75, Math.min(0.75, value * envelope));
+      : (high - low) * (snap * 1.1 + tear * 0.5) + (low * 0.8 + body * 0.18) * snap + crack;
+    samples[i] = Math.max(-0.75, Math.min(0.75, value * envelope * gain));
   }
   samples[0] = 0;
   samples[samples.length - 1] = 0;

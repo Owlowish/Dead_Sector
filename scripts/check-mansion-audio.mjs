@@ -153,7 +153,7 @@ const gameMix = new AudioMix({ getItem: () => saved[0][1], setItem: (key, value)
 const volumeSource = () => ({ isPlaying: false, setVolume() {}, setEffectsVolume() {}, pause() {} });
 const game = Object.assign(Object.create(Game.prototype), {
   state: 'playing', audioMix: gameMix, footsteps: liveSteps,
-  ambianceAudio: volumeSource(), musicAudio: volumeSource(), weapon: volumeSource(), player: volumeSource(),
+  ambianceAudio: volumeSource(), music: volumeSource(), weapon: volumeSource(), player: volumeSource(),
   encounterBell: volumeSource(), zombies: [], renderer: { domElement: {} },
   horrorDirector: { setVolume() {}, suspend() {} }, stormController: { setAmbienceVolume() {}, suspend() {} },
 });

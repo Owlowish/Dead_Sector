@@ -5,12 +5,14 @@ export class SpitProjectile {
   private readonly mesh: THREE.Mesh;
   private readonly direction: THREE.Vector3;
   private readonly ray = new THREE.Raycaster();
+  private readonly onImpact?: (point: THREE.Vector3) => void;
   private age = 0;
   private disposed = false;
   private readonly speed = 9;
   private readonly radius = 0.18;
 
-  constructor(scene: THREE.Scene, origin: THREE.Vector3, target: THREE.Vector3) {
+  constructor(scene: THREE.Scene, origin: THREE.Vector3, target: THREE.Vector3, onImpact?: (point: THREE.Vector3) => void) {
+    this.onImpact = onImpact;
     const geometry = new THREE.SphereGeometry(this.radius, 8, 6);
     const material = new THREE.MeshBasicMaterial({ color: 0x75ff28 });
     this.mesh = new THREE.Mesh(geometry, material);
@@ -40,10 +42,14 @@ export class SpitProjectile {
     const wallDistance = wallHit?.distance ?? Number.POSITIVE_INFINITY;
     if (playerHitDistance <= step && playerHitDistance < wallDistance) {
       this.mesh.position.addScaledVector(this.direction, playerHitDistance);
+      this.onImpact?.(this.mesh.position);
       onHit(12);
       return this.destroy(scene);
     }
-    if (wallHit) return this.destroy(scene);
+    if (wallHit) {
+      this.onImpact?.(wallHit.point);
+      return this.destroy(scene);
+    }
     this.mesh.position.addScaledVector(this.direction, step);
     if (this.age >= 5 || this.mesh.position.y < -2 || this.mesh.position.y > 8) return this.destroy(scene);
     return true;

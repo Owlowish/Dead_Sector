@@ -50,9 +50,12 @@ fallen.dispose(scene);
 
 // Un projectile s'arrête au premier solide, même si son pas traverse le mur.
 let hits = 0;
-const blocked = new SpitProjectile(scene, new THREE.Vector3(0, 1.5, 0), new THREE.Vector3(0, 1.5, 4));
+const impacts = [];
+const onImpact = (point) => impacts.push(point.clone());
+const blocked = new SpitProjectile(scene, new THREE.Vector3(0, 1.5, 0), new THREE.Vector3(0, 1.5, 4), onImpact);
 assert.equal(blocked.update(0.3, scene, level, new THREE.Vector3(0, 1.5, 3), () => hits++), false);
 assert.equal(hits, 0, 'Le mur protège le joueur');
+assert.equal(impacts.length, 1, 'Le contact du mur déclenche un seul impact');
 
 // Un grand delta compare aussi l'ordre d'impact : le joueur avant le mur reçoit le coup.
 const behindPlayerWall = new THREE.Mesh(new THREE.BoxGeometry(3, 3, 0.2));
@@ -65,10 +68,15 @@ assert.equal(hits, 1, 'Le joueur croisé avant le mur est touché pendant un gro
 
 // Sans mur, un impact direct transfère les dégâts une fois puis retire le projectile.
 const openLevel = { getSolidMeshes: () => [] };
-const direct = new SpitProjectile(scene, new THREE.Vector3(0, 1.5, 0), new THREE.Vector3(0, 1.5, 4));
+const direct = new SpitProjectile(scene, new THREE.Vector3(0, 1.5, 0), new THREE.Vector3(0, 1.5, 4), onImpact);
 for (let i = 0; i < 8 && direct.update(0.1, scene, openLevel, new THREE.Vector3(0, 1.5, 2), () => hits++); i++);
 assert.equal(hits, 2, 'Un impact direct applique un seul coup de 12 PV');
 assert.equal(scene.children.filter((child) => child === direct.mesh).length, 0, 'Projectile retiré après impact');
+assert.equal(impacts.length, 2, 'Le contact du joueur déclenche un seul impact');
+const expired = new SpitProjectile(scene, new THREE.Vector3(), new THREE.Vector3(0, 0, 4), onImpact);
+assert.equal(expired.update(5, scene, openLevel, new THREE.Vector3(8, 0, 0), () => assert.fail('Joueur hors trajectoire')), false);
+expired.dispose(scene);
+assert.equal(impacts.length, 2, 'Expiration et nettoyage ne déclenchent aucun impact');
 
 // La préparation est annulée par une blessure avant la libération.
 const clearLevel = { getFloorHeightAt: () => 2.4, isColliding: () => false, getSolidMeshes: () => [] };

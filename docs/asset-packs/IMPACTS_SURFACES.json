@@ -2,6 +2,7 @@
   "documentType": "asset-pack",
   "updatedAt": "2026-11-06",
   "id": "surface-impacts",
+  "revision": "Mesures et recettes de la première version. Les fichiers actifs sont inventoriés dans AUDIO_V2_2026-11-08.json.",
   "scope": "Réponses visuelles et sonores bois, pierre et métal à partir du matériau de la face touchée. Deux sons originaux, aucun nouveau bitmap ni changement de dégâts.",
   "referencesInspected": [
     {

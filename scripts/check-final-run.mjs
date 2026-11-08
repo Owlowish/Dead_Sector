@@ -50,6 +50,7 @@ player.resetForDebug();
 const game = Object.create(Game.prototype);
 const portraitParticles = new PortraitParticles(scene, () => 0.5);
 const portraitAudio = { stops: 0, plays: [], stop() { this.stops++; }, play(...args) { this.plays.push(args); } };
+const music = { select(track, audible) { this.track = track; this.audible = audible; }, rewind() {} };
 const weapon = new Weapon(player.camera, canvas, [], level.getSolidMeshes(), () => {}, () => game.isSimulationActive(), (amount) => player.setAimAmount(amount));
 const pickup = new ShotgunPickup(scene);
 const pistolPickup = new PistolPickup(scene);
@@ -74,7 +75,7 @@ Object.assign(game, {
   victoryDisplay: element(), gameOverDisplay: element(), objectiveDisplay: element(),
   promptDisplay: element(), damageOverlay: Object.assign(element(), { style: { opacity: '1' } }),
   zombies: [], spitProjectiles: [], medkits: [], ammoBoxes: [], ammoDrops: [], shellCasings: [],
-  upgradePedestals: [], appliedUpgrades: [], ambianceAudio: null, musicAudio: null,
+  upgradePedestals: [], appliedUpgrades: [], ambianceAudio: null, music, bossMusic: 'boss1',
   hitEffects: { clear() { clearedEffects++; } },
   horrorDirector: { resetRespite() {}, suspend() {} },
   stormController: { suspend() {}, resetForNewRun() { resetStorm++; } },
@@ -92,11 +93,18 @@ game.zombies = [pendingRevival];
 game.checkTierCompletion();
 assert.equal(game.state, 'playing', 'Une relève en attente interdit la victoire');
 pendingRevival.revivalPending = false;
+const transformation = { position: new THREE.Vector3(), direction: new THREE.Vector3(0, 0, 1), phase: 2 };
+game.onPortraitCue({ ...transformation, kind: 'transform-start' });
+assert.equal(music.track, 'transformation');
+game.onPortraitCue({ ...transformation, kind: 'transform-end' });
+assert.equal(music.track, 'boss2');
+portraitAudio.plays.length = 0;
 game.onPortraitCue({ kind: 'transform-burst', position: new THREE.Vector3(), direction: new THREE.Vector3(0, 0, 1), phase: 2 });
 assert.ok(portraitParticles.getStats().active > 0, 'La transformation du vrai Game émet les fragments');
 assert.equal(portraitAudio.plays.length, 1, 'Le signal de transformation commande une seule voix');
 game.checkTierCompletion();
 assert.equal(game.state, 'won');
+assert.equal(music.track, 'victory');
 assert.equal(portraitParticles.getStats().active, 0, 'La victoire nettoie les effets du boss');
 const stoppedAfterWin = portraitAudio.stops;
 assert.ok(stoppedAfterWin > 0, 'La victoire coupe le son de transformation');
@@ -120,6 +128,7 @@ assert.equal(diagnostics.getRecords().length, 2, 'La finale est enregistrée une
 
 game.openRunSummary();
 assert.equal(game.isSimulationActive(), false);
+assert.equal(music.track, 'victory', 'Le bilan ne relance pas une piste de pause');
 assert.equal(summaryDisplay.hidden, false);
 assert.equal(document.exitCount, 1, 'Seule l’ouverture volontaire libère la souris');
 assert.equal(fields[0].textContent, '2:05');
@@ -148,6 +157,7 @@ for (const door of level.getDoors()) {
 }
 game.restartRun();
 assert.equal(game.state, 'playing');
+assert.equal(music.track, 'pause');
 assert.equal(game.currentTier, 1);
 assert.equal(game.spawnQueue, ENCOUNTER_CONFIGS[0].totalZombies);
 assert.equal(game.pendingTierStart, 0); assert.equal(game.respiteTimer, 0);

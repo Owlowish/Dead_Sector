@@ -93,6 +93,8 @@ wall.position.set(0, 1, -2);
 const canvas = new EventTarget();
 const hitObjects = [];
 const weapon = new Weapon(camera, canvas, [a.getMesh()], [wall], () => assert.fail('Un cadavre ne reçoit pas de dégâts'), () => true, () => {});
+weapon.unlockWeapon('pistol');
+weapon.switchWeapon('pistol');
 weapon.aimAmount = 1;
 weapon.setOnImpact(impact => hitObjects.push(impact.object));
 weapon.shoot();

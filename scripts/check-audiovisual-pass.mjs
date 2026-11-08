@@ -76,7 +76,8 @@ const audioSource = () => ({
   play() { this.isPlaying = true; }, pause() { this.isPlaying = false; }, stop() { this.isPlaying = false; },
   disconnect() {}, removeFromParent() {},
 });
-const ambience = audioSource(), music = audioSource(), rain = audioSource(), thunder = audioSource(), creak = audioSource();
+const ambience = audioSource(), rain = audioSource(), thunder = audioSource(), creak = audioSource();
+const music = { volume: -1, presence: -1, setVolume(volume, presence) { Object.assign(this, { volume, presence }); } };
 const storm = new StormController(level.getStormLights(), () => 0);
 storm.setRain(rain);
 storm.setThunder(thunder);
@@ -90,7 +91,7 @@ const enemySources = enemies.map(enemy => {
   return source;
 });
 const game = Object.assign(Object.create(Game.prototype), {
-  state: 'playing', audioMix: new AudioMix(), ambianceAudio: ambience, musicAudio: music,
+  state: 'playing', audioMix: new AudioMix(), ambianceAudio: ambience, music,
   stormController: storm, horrorDirector: horror, weapon, player, zombies: enemies,
   encounterBell: new EncounterBell(scene, 0, 2.5, 0),
 });
@@ -103,11 +104,13 @@ function changeVolume(channel, value) {
 changeVolume('effects', 0);
 game.updateAudioMix(1.5);
 assert.equal(elements.get('#effects-volume-value').value, '0 %');
-for (const name of ['shotSound', 'shotgunSound', 'metalImpactSound', 'zombieImpactSound', 'emptySound']) assert.equal(weapon[name].volume, 0, `${name} suit Effets`);
+for (const [name, sound] of Object.entries(weapon.sounds)) {
+  assert.ok(sound.clips.every(clip => clip.volume === 0), `${name} et ses variantes suivent Effets`);
+}
 assert.equal(player.flashlightClick.volume, 0);
 assert.ok(enemySources.every(source => source.volume === 0), 'Les quatre types ennemis suivent Effets');
 assert.equal(ambience.volume, 0.15, 'Effets ne coupe pas l’ambiance');
-assert.equal(music.volume, 0.12, 'Effets ne coupe pas la musique');
+assert.equal(music.volume, 0.4, 'Effets ne coupe pas la musique');
 changeVolume('ambience', 0);
 game.updateAudioMix(1.5);
 assert.equal(ambience.volume, 0);
@@ -117,17 +120,17 @@ assert.equal(creak.volume, 0, 'Le craquement suit Ambiance et son réglage propr
 const lateRain = audioSource();
 storm.setRain(lateRain);
 assert.equal(lateRain.volume, 0, 'Une source chargée tard reste muette');
-assert.equal(music.volume, 0.12, 'Ambiance ne coupe pas la musique');
+assert.equal(music.volume, 0.4, 'Ambiance ne coupe pas la musique');
 assert.equal(game.audioMix.update(1.5, true), false, 'Les fondus terminés ne provoquent plus de mise à jour des sources');
 changeVolume('effects', 0.5);
 game.updateAudioMix(1.5);
-assert.equal(weapon.shotSound.volume, 0.25);
-assert.equal(weapon.shotgunSound.volume, 0.21);
+assert.ok(weapon.sounds.pistol.clips.every(clip => clip.volume === 0.25));
+assert.ok(weapon.sounds.shotgun.clips.every(clip => clip.volume === 0.21));
 assert.equal(player.flashlightClick.volume, 0.175);
 assert.deepEqual(enemySources.map(source => source.volume), [0.15, 0.125, 0.175, 0.175]);
 game.state = 'exploration';
 game.updateAudioMix(0.05);
-assert.ok(music.volume > 0.04 && music.volume < 0.12, 'La baisse musicale entre combats est progressive');
+assert.ok(music.presence > 1 / 3 && music.presence < 1, 'La baisse musicale entre combats est progressive');
 
 // Une voix créée alors que les effets sont coupés doit être silencieuse dès sa création.
 const param = () => ({ setTargetAtTime(value) { this.value = value; } });

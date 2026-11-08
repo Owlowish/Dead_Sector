@@ -1,0 +1,489 @@
+{
+  "documentType": "asset-pack",
+  "templateVersion": 1,
+  "updatedAt": "2026-11-08",
+  "id": "AUDIO_V2_2026-11-08",
+  "scope": "Trois thèmes du Portrait, quarante-quatre fichiers d'effets et nouveaux timbres des synthèses de jeu.",
+  "provenance": {
+    "source": "Downloads/musique/dead_sector_audio_v2",
+    "author": "Collègue de l'utilisateur",
+    "toolAndModelActuallyUsed": "Synthèse procédurale Python (NumPy/SciPy) et Web Audio TypeScript, sans échantillon externe d'après les consignes fournies.",
+    "promptExact": null,
+    "recipesInSourcePack": [
+      {
+        "file": "musique/dead_sector_musique.py",
+        "sha256": "e20eb0a8058ef48f29593baae83f2d4659a7ff2d250209b5083674422184efd0"
+      },
+      {
+        "file": "scripts/generate_sfx_v2.py",
+        "sha256": "a1c5bf0918a64d1ea1d6e77a5062477f1eb2c1860091afa687819c9fdb5e406e"
+      },
+      {
+        "file": "audio_v2_code.patch",
+        "sha256": "1c4464cedd00a1088e881d95be3353095b9f79c31629f2e9110a6b86355fdb50"
+      }
+    ],
+    "sourceNotes": "docs/CONSIGNES_AUDIO.md dans le lot fourni."
+  },
+  "technicalContract": {
+    "music": "Ogg Vorbis mono 44,1 kHz, export à l'identique. Fondus cosinus de 5 ms aux deux bords des boucles du Portrait sur les buffers décodés, durée de lecture conservée.",
+    "effects": "WAV PCM16 mono, copie à l'identique. Les variantes de tir, d'impact et de blessure joueur alternent sans perturber l'aléatoire des tirs.",
+    "heart": "Boucle de 0,8 s à 25 % de vie ou moins sous contrôle. Arrêt après soin, pause, victoire, mort et reset.",
+    "synthesis": "Timbres V2 des pas, manipulations et transformation. Retour de pompe et claquement du cadre recalés en amplitude pour conserver leurs transitoires sans saturation des bornes.",
+    "budget": {
+      "musicV2Bytes": 1454618,
+      "sfxBytes": 4415466,
+      "maxSimultaneousAdditionalEffects": 12
+    }
+  },
+  "music": [
+    {
+      "file": "public/assets/music/04_boss_phase1_v2.ogg",
+      "role": "Portrait, phase I",
+      "durationSeconds": 60,
+      "loop": true,
+      "bytes": 687510,
+      "sha256": "cc18884f2488588fb4f834e97703511b22f2224a92a8fe816135a7216ec8d64c",
+      "rmsDbFS": -18.97,
+      "peak": 0.70513,
+      "decodedEdgeFadeMs": 5
+    },
+    {
+      "file": "public/assets/music/05_boss_transformation_v2.ogg",
+      "role": "Transformation du Portrait",
+      "durationSeconds": 1.3,
+      "loop": false,
+      "bytes": 40396,
+      "sha256": "d7a5f92ddc2cad84506d710ce25891c7906629e165044f78b0dcb9b7678e5fe3",
+      "rmsDbFS": -20.21,
+      "peak": 0.84999,
+      "decodedEdgeFadeMs": 0
+    },
+    {
+      "file": "public/assets/music/06_boss_phase2_v2.ogg",
+      "role": "Portrait, phase II",
+      "durationSeconds": 60,
+      "loop": true,
+      "bytes": 726712,
+      "sha256": "a48d68ae8328793f10dc0908eeb8c2edd2def5f5ed26c8043dd0a9ac2a880a03",
+      "rmsDbFS": -17.97,
+      "peak": 0.7581,
+      "decodedEdgeFadeMs": 5
+    }
+  ],
+  "retainedThemes": [
+    "01_menu",
+    "02_pause",
+    "03_principale",
+    "07_defaite",
+    "08_victoire"
+  ],
+  "alternatives": "Les variantes clair et les doublons WAV de la musique restent dans le lot source. Les trois thèmes du Portrait V1 restent dans le projet, avec leurs mesures dans MUSIQUE_2026-11-08.json.",
+  "soundDirectory": "public/assets/sounds/",
+  "sounds": [
+    {
+      "file": "ambiance-soft.wav",
+      "sampleRate": 44100,
+      "durationSeconds": 12.0,
+      "bytes": 1058444,
+      "sha256": "a8017cf5917ea85a08a060cfe74d755f2c117f22a594c095f39b611d7fde3db3",
+      "peak": 0.29852,
+      "rmsDbFS": -24.3
+    },
+    {
+      "file": "axe-flesh.wav",
+      "sampleRate": 44100,
+      "durationSeconds": 0.45,
+      "bytes": 39734,
+      "sha256": "042d855317f5b14e13a0c010d6771295d02034d017c10de464ce2a8ea0190e56",
+      "peak": 0.79431,
+      "rmsDbFS": -18.75
+    },
+    {
+      "file": "crawler-hiss.wav",
+      "sampleRate": 44100,
+      "durationSeconds": 0.75,
+      "bytes": 66194,
+      "sha256": "21ff710f0ede1aa6ad43d886d3e8ca5f4025dcfcfa6895c78650e7cb6d268db9",
+      "peak": 0.70792,
+      "rmsDbFS": -18.11
+    },
+    {
+      "file": "creak-soft.wav",
+      "sampleRate": 44100,
+      "durationSeconds": 1.3,
+      "bytes": 114704,
+      "sha256": "ed190f7d2b3e6efe2e17d3429a047e24f429765550e7f59fbce217589c4ba4cd",
+      "peak": 0.3548,
+      "rmsDbFS": -36.05
+    },
+    {
+      "file": "door-close.wav",
+      "sampleRate": 44100,
+      "durationSeconds": 0.699977,
+      "bytes": 61782,
+      "sha256": "e088bc9640c37ebfffc40bbe6d2922aa874d0ae9c5a8a4f72134b158380f8907",
+      "peak": 0.70792,
+      "rmsDbFS": -21.89
+    },
+    {
+      "file": "door-open.wav",
+      "sampleRate": 44100,
+      "durationSeconds": 1.1,
+      "bytes": 97064,
+      "sha256": "7edf6b0adf02263d54f87bd819db063675e9b50759ff8be76f2954febe17c2d9",
+      "peak": 0.56232,
+      "rmsDbFS": -30.37
+    },
+    {
+      "file": "empty-soft.wav",
+      "sampleRate": 44100,
+      "durationSeconds": 0.14,
+      "bytes": 12392,
+      "sha256": "b49376cfb37ba2f0a1add269759aa1e0d477a89dc9cfb22eceb6b08e70bc2920",
+      "peak": 0.50116,
+      "rmsDbFS": -24.54
+    },
+    {
+      "file": "flashlight-click.wav",
+      "sampleRate": 44100,
+      "durationSeconds": 0.12,
+      "bytes": 10628,
+      "sha256": "999a9b649c26a26abde6815344d57f6b3618b5206f986a9636898b29e9d00de5",
+      "peak": 0.3981,
+      "rmsDbFS": -28.85
+    },
+    {
+      "file": "heartbeat.wav",
+      "sampleRate": 44100,
+      "durationSeconds": 0.8,
+      "bytes": 70604,
+      "sha256": "e00c73a3707b06236ddd2f9ba581e8d001b1cb8b9df90509621cab6dc00cf1fc",
+      "peak": 0.70792,
+      "rmsDbFS": -17.77
+    },
+    {
+      "file": "impact-metal-soft-2.wav",
+      "sampleRate": 44100,
+      "durationSeconds": 0.45,
+      "bytes": 39734,
+      "sha256": "78b46afec1a9c839839cbbbccd9102d1e9a4887eb3b343dc23ae66883fd7236b",
+      "peak": 0.70792,
+      "rmsDbFS": -24.09
+    },
+    {
+      "file": "impact-metal-soft-3.wav",
+      "sampleRate": 44100,
+      "durationSeconds": 0.45,
+      "bytes": 39734,
+      "sha256": "8f631e654f1eb6d112004b448e8b86ca511b7f3303406af343b5dc7f94e84a65",
+      "peak": 0.70792,
+      "rmsDbFS": -23.15
+    },
+    {
+      "file": "impact-metal-soft.wav",
+      "sampleRate": 44100,
+      "durationSeconds": 0.45,
+      "bytes": 39734,
+      "sha256": "5633288e4cf57230bdf106824af459a1c5c65906b1e9c2790955a389165c10db",
+      "peak": 0.70792,
+      "rmsDbFS": -23.68
+    },
+    {
+      "file": "impact-stone-soft-2.wav",
+      "sampleRate": 22050,
+      "durationSeconds": 0.210023,
+      "bytes": 9306,
+      "sha256": "c953531a104a8f5f2ff12904a98c1f0c2704eb4794cc3867f8032b7fe60ac3f3",
+      "peak": 0.63095,
+      "rmsDbFS": -25.15
+    },
+    {
+      "file": "impact-stone-soft-3.wav",
+      "sampleRate": 22050,
+      "durationSeconds": 0.210023,
+      "bytes": 9306,
+      "sha256": "39e694893432ea591d471511db4ab227c5206e23e103f5230c1d39a0d3bc0255",
+      "peak": 0.63095,
+      "rmsDbFS": -23.9
+    },
+    {
+      "file": "impact-stone-soft.wav",
+      "sampleRate": 22050,
+      "durationSeconds": 0.210023,
+      "bytes": 9306,
+      "sha256": "dbfd78731094e2b63b6b79e3f0dc23e6d7706bd8b29e6d65edba8b8216ccebed",
+      "peak": 0.63095,
+      "rmsDbFS": -22.6
+    },
+    {
+      "file": "impact-wood-soft-2.wav",
+      "sampleRate": 22050,
+      "durationSeconds": 0.210023,
+      "bytes": 9306,
+      "sha256": "72df69e457b22d2a3d500230d071f53f1d58d3510c16054542616008a6111296",
+      "peak": 0.63095,
+      "rmsDbFS": -19.25
+    },
+    {
+      "file": "impact-wood-soft-3.wav",
+      "sampleRate": 22050,
+      "durationSeconds": 0.210023,
+      "bytes": 9306,
+      "sha256": "58d019cbc77b48ef304c637c35817d465dccfae516772d974dcc1c60d477e4c4",
+      "peak": 0.63095,
+      "rmsDbFS": -20.57
+    },
+    {
+      "file": "impact-wood-soft.wav",
+      "sampleRate": 22050,
+      "durationSeconds": 0.210023,
+      "bytes": 9306,
+      "sha256": "f1cca1a478ce3c8fb0bda626b837517511e3057b42531728616633293e96dafa",
+      "peak": 0.63095,
+      "rmsDbFS": -21.12
+    },
+    {
+      "file": "impact-zombie-soft-2.wav",
+      "sampleRate": 44100,
+      "durationSeconds": 0.45,
+      "bytes": 39734,
+      "sha256": "c247c02b5a39256a1a44d1627a88799e21a2d45a48ffa1433f0268b07a3cdffb",
+      "peak": 0.70792,
+      "rmsDbFS": -28.01
+    },
+    {
+      "file": "impact-zombie-soft-3.wav",
+      "sampleRate": 44100,
+      "durationSeconds": 0.45,
+      "bytes": 39734,
+      "sha256": "e1b549ed9606f8c4bae3cfa8286873167d77ce39a50983d9039e46488be86bf5",
+      "peak": 0.70792,
+      "rmsDbFS": -27.76
+    },
+    {
+      "file": "impact-zombie-soft.wav",
+      "sampleRate": 44100,
+      "durationSeconds": 0.45,
+      "bytes": 39734,
+      "sha256": "9e46ffabdee012e03e5f87c1edb2f3d0f61e5e971b71343df95b8ba6dd6e0d5c",
+      "peak": 0.70792,
+      "rmsDbFS": -28.89
+    },
+    {
+      "file": "pickup-ammo.wav",
+      "sampleRate": 44100,
+      "durationSeconds": 0.5,
+      "bytes": 44144,
+      "sha256": "e243d3d083af227a5277fe47fbc7ac4c1a5309be2c3c145baef63d5d39ddff34",
+      "peak": 0.56232,
+      "rmsDbFS": -21.1
+    },
+    {
+      "file": "pickup-medkit.wav",
+      "sampleRate": 44100,
+      "durationSeconds": 0.75,
+      "bytes": 66194,
+      "sha256": "eafe9f940a79ac5703a86eb208652a63d1b46d151e03f3ff0bb6db062c89ee44",
+      "peak": 0.56232,
+      "rmsDbFS": -18.65
+    },
+    {
+      "file": "pickup-weapon.wav",
+      "sampleRate": 44100,
+      "durationSeconds": 0.9,
+      "bytes": 79424,
+      "sha256": "98391602a49e5dbfd159519ac750245019ed20bffe009728c091828e1d825dc3",
+      "peak": 0.63095,
+      "rmsDbFS": -24.98
+    },
+    {
+      "file": "player-hurt-2.wav",
+      "sampleRate": 44100,
+      "durationSeconds": 0.55,
+      "bytes": 48554,
+      "sha256": "4e25f10e0c4be92897468fe575d6b029e1b308bd66d749a649584de40eb1f7a9",
+      "peak": 0.63095,
+      "rmsDbFS": -21.14
+    },
+    {
+      "file": "player-hurt.wav",
+      "sampleRate": 44100,
+      "durationSeconds": 0.55,
+      "bytes": 48554,
+      "sha256": "3916cf7489eef164ec382c354608c62c9c42d1a04d75c02bd663621be5f7ac42",
+      "peak": 0.63095,
+      "rmsDbFS": -20.54
+    },
+    {
+      "file": "portrait-blade-impact.wav",
+      "sampleRate": 44100,
+      "durationSeconds": 0.25,
+      "bytes": 22094,
+      "sha256": "73f1a9ca2f1254b3743a43ce1007538a03e85b6d5c60f123f5df445c512a40fd",
+      "peak": 0.63095,
+      "rmsDbFS": -26.92
+    },
+    {
+      "file": "portrait-blade-launch.wav",
+      "sampleRate": 44100,
+      "durationSeconds": 0.45,
+      "bytes": 39734,
+      "sha256": "b92f4f2f6a5d9acff5e899cf9cb8f9536e49358a7c223c3c39133e2af68bfc13",
+      "peak": 0.63095,
+      "rmsDbFS": -17.26
+    },
+    {
+      "file": "rain-soft.wav",
+      "sampleRate": 44100,
+      "durationSeconds": 9.0,
+      "bytes": 793844,
+      "sha256": "01247e4730b6694d3a9b0801acb383ce35d68a9bf905b51b5653f7a37224da95",
+      "peak": 0.19952,
+      "rmsDbFS": -28.49
+    },
+    {
+      "file": "shot-soft-2.wav",
+      "sampleRate": 44100,
+      "durationSeconds": 0.65,
+      "bytes": 57374,
+      "sha256": "2a0862300ab3a86a89e740b163fa294578625b44e1821c884901a47e89f0bdc6",
+      "peak": 0.79431,
+      "rmsDbFS": -25.28
+    },
+    {
+      "file": "shot-soft-3.wav",
+      "sampleRate": 44100,
+      "durationSeconds": 0.65,
+      "bytes": 57374,
+      "sha256": "0d23a0ae29b318ecf15d419e63ed7b7802def1d465cb1ebe221d1b12cf49f041",
+      "peak": 0.79431,
+      "rmsDbFS": -25.35
+    },
+    {
+      "file": "shot-soft.wav",
+      "sampleRate": 44100,
+      "durationSeconds": 0.65,
+      "bytes": 57374,
+      "sha256": "f926ccfa5ffc1d7d01eb114f7d2debfc0be71da6c9eae97db3b54b83d9778322",
+      "peak": 0.79431,
+      "rmsDbFS": -26.15
+    },
+    {
+      "file": "shotgun-shot-2.wav",
+      "sampleRate": 44100,
+      "durationSeconds": 1.0,
+      "bytes": 88244,
+      "sha256": "ab85b7e59883588c36074021b702dee72a4f56013086938135ffc002930754b9",
+      "peak": 0.79431,
+      "rmsDbFS": -22.27
+    },
+    {
+      "file": "shotgun-shot.wav",
+      "sampleRate": 44100,
+      "durationSeconds": 1.0,
+      "bytes": 88244,
+      "sha256": "f5771e666f8ce8127c6951630b16dabaad36bb6754805aabd07badbeaf4b5ad5",
+      "peak": 0.79431,
+      "rmsDbFS": -22.56
+    },
+    {
+      "file": "spit-impact.wav",
+      "sampleRate": 44100,
+      "durationSeconds": 0.3,
+      "bytes": 26504,
+      "sha256": "27ef2df1d3e9307113f4b018983d478bbabf3507d832b02822c30b701bc6cd7a",
+      "peak": 0.63095,
+      "rmsDbFS": -21.48
+    },
+    {
+      "file": "spit-launch.wav",
+      "sampleRate": 44100,
+      "durationSeconds": 0.349977,
+      "bytes": 30912,
+      "sha256": "d97d2c9112ef477625be4732c3bd58b1ea5a30ddb7f9d78b70810c2d46642278",
+      "peak": 0.63095,
+      "rmsDbFS": -20.88
+    },
+    {
+      "file": "spitter-gurgle.wav",
+      "sampleRate": 44100,
+      "durationSeconds": 1.5,
+      "bytes": 132344,
+      "sha256": "22efadceee597a8c4fd1046b30c31d6d6948616e29cbde8d28a76ed064a3b08e",
+      "peak": 0.63095,
+      "rmsDbFS": -16.36
+    },
+    {
+      "file": "thunder-soft.wav",
+      "sampleRate": 44100,
+      "durationSeconds": 4.5,
+      "bytes": 396944,
+      "sha256": "8628aec5861e5508a70963c440f6c21609f9d60aafb4dd34f33b226acafa6e51",
+      "peak": 0.3981,
+      "rmsDbFS": -26.08
+    },
+    {
+      "file": "unlock-click.wav",
+      "sampleRate": 44100,
+      "durationSeconds": 0.1,
+      "bytes": 8864,
+      "sha256": "23446b53342a25d70ee672a6afa95eb94c4f928023200146338a79f8c3926ae1",
+      "peak": 0.31622,
+      "rmsDbFS": -29.14
+    },
+    {
+      "file": "zombie-death.wav",
+      "sampleRate": 44100,
+      "durationSeconds": 1.3,
+      "bytes": 114704,
+      "sha256": "7bc84af7be5a8359bacc59c1f26cdc38233b2106ddd6625bcaabbdf6cd1c4848",
+      "peak": 0.70792,
+      "rmsDbFS": -18.99
+    },
+    {
+      "file": "zombie-groan-soft.wav",
+      "sampleRate": 44100,
+      "durationSeconds": 1.9,
+      "bytes": 167624,
+      "sha256": "8bca56bf4ba76d46ce72b4d0a8f6748e952302bca297e3d78f15430ce5584b96",
+      "peak": 0.63095,
+      "rmsDbFS": -17.48
+    },
+    {
+      "file": "zombie-hurt.wav",
+      "sampleRate": 44100,
+      "durationSeconds": 0.4,
+      "bytes": 35324,
+      "sha256": "7f316595e96f77f638038e62a80c951ed4a3ee92e6efd5f7d8569304f1ba7006",
+      "peak": 0.63095,
+      "rmsDbFS": -15.13
+    },
+    {
+      "file": "zombie-rise.wav",
+      "sampleRate": 44100,
+      "durationSeconds": 1.1,
+      "bytes": 97064,
+      "sha256": "5ee916fd91f8423863e579928e3c1391d02429031b65f0c6ffb53fab7861a147",
+      "peak": 0.56232,
+      "rmsDbFS": -20.12
+    },
+    {
+      "file": "zombie-runner.wav",
+      "sampleRate": 44100,
+      "durationSeconds": 1.0,
+      "bytes": 88244,
+      "sha256": "baf8020180b98c5c38606d0849913dedcc0be73ddead2458070b11997b5d87e4",
+      "peak": 0.63095,
+      "rmsDbFS": -16.04
+    }
+  ],
+  "validation": {
+    "files": "44 WAV et 3 Ogg identiques au lot. PCM source sans écrêtage. Contrat 22 050 Hz et moins de 10 000 octets respecté pour les six impacts bois et pierre.",
+    "loops": "Dans Chrome à 48 kHz, rendu des deux boucles V2 avec un écart de raccord nul et transformation de 1,3 s jouée une seule fois.",
+    "integration": "44 WAV décodés dans Chrome. Après rééchantillonnage, crête brute du fusil à 1,110 FS avant son gain de 0,42. Vrai Game en scènes préparées avec Pointer Lock émulé. Voix de famille, portes, ramassages, dégâts, relève, crachat et lames contrôlés. Effets interrompus à la pause et au volume zéro. Battement repris en faible vie et arrêté au soin.",
+    "remainingWork": [
+      "Écoute des raccords et équilibre du mix avec les signaux de combat en partie."
+    ]
+  }
+}
