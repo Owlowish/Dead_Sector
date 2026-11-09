@@ -4,10 +4,11 @@ Mis à jour le 9 novembre 2026. Consulter Git pour l'historique.
 
 ## Demande courante
 
-Accueil « La Nuit » dans le vrai Salon de Musique : fenêtre au centre, caméra basse en dérive lente, pluie, éclairs localisés et tonnerre après activation audio. Pause distincte et panneaux Réglages/Commandes partagés. Le premier palier attend la capture de la souris. La préférence système de mouvement réduit fixe la caméra et coupe l’animation de l’orage à l’accueil.
+Jauge « Le Biseau » du Maître du Portrait : barre bordeaux centrée en haut, nom en ivoire, phase et alertes en dessous. Le compteur de palier reste à gauche sur écran large et passe sous la jauge sur écran étroit.
 
 ## Fonctionnalités présentes
 
+- Accueil « La Nuit » dans le vrai Salon de Musique avec caméra basse en dérive lente, pluie, éclairs et tonnerre après activation audio. Pause distincte et panneaux Réglages/Commandes partagés. Le premier palier attend la capture de la souris. La préférence système de mouvement réduit fixe la caméra et coupe l’animation de l’orage à l’accueil.
 - Manoir de 48 × 40 m, six pièces, demi-niveau à +2,4 m, rampes et portes. Ouverture progressive puis réutilisation de toute la carte.
 - Huit rencontres : quotas 4/5/6/8/10/12/14/1 ; plafonds actifs 3/3/4/4/5/6/7/1, sous la borne globale de huit. P3 introduit Coureurs/Cracheur après deux éliminations définitives, P4 la Rampeuse après deux ; P6 envoie deux groupes de six séparés par trois secondes actives.
 - Apparitions différées et cadencées sur des points sûrs : collision, secteur, distance minimale, regard et chemin vérifiés. Les points proches sont privilégiés ; alerte des vivants vers le joueur toutes les 0,75 s.
@@ -85,6 +86,7 @@ Limites de l'instrumentation : fenêtre de 300 images glissante, donc pics d'app
 
 ## Vérifications réellement effectuées
 
+- **9 novembre, jauge du Maître du Portrait** : build, HUD, Gardien, endurance, finale et F4. Chrome au vrai P8 sur scène préparée : vie/ARIA, alertes, deux phases, retrait à la victoire et redémarrage vérifiés. Disposition contrôlée de 320 × 568 à 2560 × 1080. Captures dans `tmp/boss-hud-review/`. Lisibilité en combat joué à éprouver.
 - **9 novembre, accueil et pause** : build et contrôles ciblés orage, salon, audio, HUD, progression, debug et finale. Chrome : captures 1280 × 720 et 390 × 700, mouvement échantillonné, éclair observé, préférence réduite, panneaux au clavier, volumes, refus simulé et entrée/reprise au Pointer Lock natif. Captures dans `tmp/title-review/`. Aucune partie complète ni écoute du mix.
 - **9 novembre, audio V3** : build et onze contrôles ciblés réussis. Quatorze rendus mécaniques identiques aux sources à 44,1 et 48 kHz. Chrome headless avec Pointer Lock émulé : ramassages, ordre des sons de rechargement et de pompe, fin naturelle du thème de victoire à 13,5 s et bilan contrôlés sur scènes préparées. Écoute du mix et partie complète à faire.
 - **8 novembre, audio V2** : huit pistes et 44 WAV décodés dans Chrome. Déclenchements ennemis, projectiles et battement, coupures en pause et réglage Effets contrôlés. Deux raccords du Portrait mesurés après rendu Web Audio.

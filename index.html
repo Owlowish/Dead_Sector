@@ -68,19 +68,22 @@
         </div>
       </div>
     </div>
-    <div id="objective" class="objective" data-phase="combat" role="group" aria-label="Progression de la tentative">
-      <div class="objective-line hud-panel">
-        <span class="objective-phase" data-hud-phase><span data-hud-phase-label>PALIER</span> <strong data-hud-tier>1</strong><span class="objective-total" data-hud-tier-total> / <span data-hud-total>8</span></span></span>
-        <span class="objective-progress" data-hud-progress><span data-hud-progress-label>MENACES</span> <strong data-hud-remaining>4</strong></span>
+    <div class="top-hud">
+      <div id="objective" class="objective" data-phase="combat" role="group" aria-label="Progression de la tentative">
+        <div class="objective-line hud-panel">
+          <span class="objective-phase" data-hud-phase><span data-hud-phase-label>PALIER</span> <strong data-hud-tier>1</strong><span class="objective-total" data-hud-tier-total> / <span data-hud-total>8</span></span></span>
+          <span class="objective-progress" data-hud-progress><span data-hud-progress-label>MENACES</span> <strong data-hud-remaining>4</strong></span>
+        </div>
+        <div class="objective-sector" data-hud-sector>VESTIBULE</div>
+        <div class="respite-track" data-hud-respite-bar style="--fill: 100%" aria-hidden="true" hidden></div>
+        <div class="objective-announcement" data-hud-announcement hidden></div>
       </div>
-      <div class="objective-sector" data-hud-sector>VESTIBULE</div>
-      <div class="respite-track" data-hud-respite-bar style="--fill: 100%" aria-hidden="true" hidden></div>
-      <div class="guardian-status" data-hud-boss hidden role="group" aria-label="Le Maître du Portrait">
-        <div class="guardian-heading"><strong>LE MAÎTRE DU PORTRAIT</strong><span data-hud-boss-phase>I · LA TOILE</span></div>
+      <div class="guardian-status" data-hud-boss hidden role="group" aria-labelledby="guardian-name">
+        <strong id="guardian-name" class="guardian-heading">LE MAÎTRE DU PORTRAIT</strong>
         <div class="guardian-track" data-hud-boss-bar role="progressbar" aria-label="Vitalité du Maître du Portrait" aria-valuemin="0" aria-valuemax="2400" aria-valuenow="2400" style="--fill: 100%"></div>
+        <div class="guardian-phase" data-hud-boss-phase>I · DANS LE CADRE</div>
         <div class="guardian-attack" data-hud-boss-attack>GARDEZ UNE ISSUE</div>
       </div>
-      <div class="objective-announcement" data-hud-announcement hidden></div>
     </div>
     <div id="health" class="health hud-panel" role="group" aria-label="Santé">
       <div class="health-emblem" aria-hidden="true"></div>
