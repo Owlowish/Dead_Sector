@@ -1,0 +1,96 @@
+{
+  "documentType": "asset-pack",
+  "templateVersion": 1,
+  "updatedAt": "2026-11-09",
+  "id": "AUDIO_V3_2026-11-09",
+  "scope": "Thème de victoire, ramassages munitions et soins, synthèse mécanique des armes.",
+  "provenance": {
+    "source": "Downloads/dead_sector_audio_v3",
+    "author": "Collègue de l'utilisateur",
+    "sourceNotes": "LISEZMOI.txt",
+    "promptExact": null,
+    "tool": "Synthèse procédurale Python/NumPy pour les fichiers et TypeScript pour les sons mécaniques.",
+    "recipesInSourcePack": [
+      {
+        "file": "src/WeaponMechanicalAudio.ts",
+        "sha256": "3100c98083d4ef3cd17975e58b16e3624951ab44f4af849284aa761b3aba64be"
+      },
+      {
+        "file": "scripts/regen_audio_v3.py",
+        "sha256": "e214ca77df77459ceb4037cabbf3cb6273a1bc593d8e71dc6e8f72c74a971bdc"
+      },
+      {
+        "file": "musique/dead_sector_musique.py",
+        "sha256": "65e4ccf9ac8b7c15f073a38430f7a0f8f23231fd5a23d806214484e85d009ff5"
+      }
+    ],
+    "recipeDependency": "regen_audio_v3.py importe generate_sfx_v2.py, fourni dans le lot V2."
+  },
+  "assets": [
+    {
+      "purpose": "Thème de victoire, lecture unique avec fondu final",
+      "sourceFile": "musique/ogg/08_victoire.ogg",
+      "exportFile": "public/assets/music/08_victoire.ogg",
+      "channels": 1,
+      "sampleRate": 44100,
+      "durationSeconds": 13.5,
+      "bytes": 149861,
+      "sha256": "7dde8d20de76c9ffdc6b21e3bdb4efb060c1730ce9aef1d4581f660a62bb4871",
+      "measurementsAt48000Hz": {
+        "decodedPeakDbFS": -4.7,
+        "decodedRmsDbFS": -19
+      }
+    },
+    {
+      "purpose": "Clac du chargeur et résonances de douilles au ramassage effectif",
+      "sourceFile": "public/assets/sounds/pickup-ammo.wav",
+      "exportFile": "public/assets/sounds/pickup-ammo.wav",
+      "channels": 1,
+      "sampleRate": 44100,
+      "durationSeconds": 0.75,
+      "bytes": 66194,
+      "sha256": "2ba97a8fab3bda1f374985e428b0bbc30ba9a4bfd1ced236cc81049e51a0e016",
+      "measurementsAt48000Hz": {
+        "decodedPeak": 0.86614,
+        "decodedRms": 0.17051
+      }
+    },
+    {
+      "purpose": "Soupir au ramassage effectif d'un soin",
+      "sourceFile": "public/assets/sounds/pickup-medkit.wav",
+      "exportFile": "public/assets/sounds/pickup-medkit.wav",
+      "channels": 1,
+      "sampleRate": 44100,
+      "durationSeconds": 1.9,
+      "bytes": 167624,
+      "sha256": "0412d0a028e3dd4db743dfce03380247538ab0b61646b68e1d099b62c62f8c14",
+      "measurementsAt48000Hz": {
+        "decodedPeak": 0.42217,
+        "decodedRms": 0.08117
+      }
+    }
+  ],
+  "synthesis": {
+    "file": "src/WeaponMechanicalAudio.ts",
+    "sounds": [
+      "mag-out",
+      "mag-in",
+      "seat",
+      "shell-insert",
+      "pump-back",
+      "pump-forward",
+      "axe-swing"
+    ],
+    "transformations": "Noms d'événements explicites et réutilisation du buffer pendant le recalage. Échantillons identiques au code fourni à 44,1 et 48 kHz.",
+    "timing": "Les seuils des animations et le transfert réel de cartouche déclenchent les sons.",
+    "runtimeGain": 0.04,
+    "measurements": "Crêtes de 0,3295 à 0,62 et RMS de 0,0915 à 0,115 à 44,1 et 48 kHz, extrémités nulles."
+  },
+  "delivery": "Les trois fichiers audio actifs sont copiés à l'identique. Le WAV de victoire et les aperçus mécaniques (gain ×1,4) restent dans le lot source.",
+  "validation": {
+    "files": "SHA-256 vérifiés entre lot source, dépôt et build.",
+    "logic": "Build et 11 contrôles ciblés réussis. Quatorze rendus mécaniques comparés échantillon par échantillon à la synthèse fournie.",
+    "browser": "Chrome headless, vrai Game avec Pointer Lock émulé. Ramassages, séquences pistolet et pompe, transition victoire, lecture jusqu'à 13,5 s et bilan après la fin contrôlés.",
+    "remainingWork": "Écouter l'équilibre des niveaux et la lisibilité des gestes en partie."
+  }
+}

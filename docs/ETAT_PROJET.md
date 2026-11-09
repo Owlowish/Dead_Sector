@@ -1,10 +1,10 @@
 # DEAD SECTOR — État courant
 
-Mis à jour le 8 novembre 2026. Le lot audio V2 est intégré sur la branche `main`. Consulter Git pour l'historique.
+Mis à jour le 9 novembre 2026. Le lot audio V3 est intégré sur la branche `main`. Consulter Git pour l'historique.
 
 ## Demande courante
 
-Trois nouveaux thèmes du Portrait et 44 fichiers d'effets fournis par un collègue. Les boucles de phase durent 60 s chacune et la transformation dure 1,3 s. Les cinq autres thèmes restent en jeu, avec reprise de la piste principale après la pause. Sons distincts par famille d'ennemi, variantes de tirs et d'impacts, projectiles, dégâts, relèves, ramassages, portes et lampe. Battement en dessous ou à 25 % de vie sous contrôle. Les quatre curseurs persistants couvrent aussi le lot V2. Provenance et mesures dans [le manifeste audio](asset-packs/AUDIO_V2_2026-11-08.json).
+Le lot V3 apporte un thème de victoire de 13,5 s avec fondu, deux sons de ramassage pour les munitions et les soins, et sept nouvelles synthèses de manipulations et de hache. Les chronologies d'arme pilotent leurs déclenchements. En jeu, la bande-son reprend sa position après la pause et le battement se déclenche à 25 % de vie ou moins sous contrôle. Provenance et mesures dans les manifestes [V3](asset-packs/AUDIO_V3_2026-11-09.json) et [V2](asset-packs/AUDIO_V2_2026-11-08.json).
 
 ## Fonctionnalités présentes
 
@@ -85,7 +85,8 @@ Limites de l'instrumentation : fenêtre de 300 images glissante, donc pics d'app
 
 ## Vérifications réellement effectuées
 
-- **8 novembre, audio V2** : build, contrôles du mix, des tirs/impacts et synthèses, des ennemis/projectiles, de la finale et de la pause réussis. Chrome headless avec le vrai Game et Pointer Lock émulé : huit pistes et 44 WAV décodés, transitions du Portrait, déclencheurs d'effets sur scénarios préparés, coupure en pause et par le réglage Effets, battement après dégâts puis arrêt après soin. Les deux raccords V2 ont été mesurés après rendu Web Audio. Écoute du mix et partie complète à faire.
+- **9 novembre, audio V3** : build et onze contrôles ciblés réussis. Quatorze rendus mécaniques identiques aux sources à 44,1 et 48 kHz. Chrome headless avec Pointer Lock émulé : ramassages, ordre des sons de rechargement et de pompe, fin naturelle du thème de victoire à 13,5 s et bilan contrôlés sur scènes préparées. Écoute du mix et partie complète à faire.
+- **8 novembre, audio V2** : huit pistes et 44 WAV décodés dans Chrome. Déclenchements ennemis, projectiles et battement, coupures en pause et réglage Effets contrôlés. Deux raccords du Portrait mesurés après rendu Web Audio.
 
 - **7 novembre, endurance et ravitaillement du Portrait** : build, `check-portrait-endurance`, `check-portrait-supplies`, `check-guardian`, `check-portrait-mask`, F4, finale, économie, HUD, stun de hache et `git diff --check` réussis. Rafales adversariales jusqu'à 119,99 s, phase II, réserve bornée après fuite, pause/focus, vrais impacts mixtes, premier dégât réellement appliqué, cadence des drops, bornes, reliquats, rampes et nettoyage couverts. Vrais Weapon → Game, cadences/recharges et contacts préparés : hache 120,98 s/84 coups, pistolet corps 121,60 s/141 tirs, fusil tête 202,61 s/57 tirs ; ravitaillement injecté régulièrement dans ces simulations. Navigateur 1280×720 : vrai Game/Hall, trois drops accessibles au sol, absorption/HUD et annonce inspectés ; aucune erreur JS ni ressource absente. Scènes préparées et simulations seulement, aucune partie ni écoute validée ; avertissement bundle >500 ko conservé.
 

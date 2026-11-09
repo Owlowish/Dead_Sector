@@ -3,6 +3,7 @@
   "templateVersion": 1,
   "updatedAt": "2026-11-08",
   "id": "AUDIO_V2_2026-11-08",
+  "revision": "Le lot AUDIO_V3_2026-11-09.json remplace les deux sons de ramassage de munitions et de soins, la synthèse des armes et le thème de victoire conservé lors du lot V2.",
   "scope": "Trois thèmes du Portrait, quarante-quatre fichiers d'effets et nouveaux timbres des synthèses de jeu.",
   "provenance": {
     "source": "Downloads/musique/dead_sector_audio_v2",

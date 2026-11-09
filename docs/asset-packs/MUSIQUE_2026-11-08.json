@@ -3,7 +3,7 @@
   "templateVersion": 1,
   "updatedAt": "2026-11-08",
   "id": "MUSIQUE_2026-11-08",
-  "revision": "Mesures de la première intégration. Les trois pistes du Portrait sont remplacées en jeu par celles du manifeste AUDIO_V2_2026-11-08.json.",
+  "revision": "Mesures de la première intégration. Les trois pistes du Portrait sont remplacées en jeu par celles du manifeste AUDIO_V2_2026-11-08.json. La victoire utilise le thème du manifeste AUDIO_V3_2026-11-09.json.",
   "request": "Intégrer les huit morceaux générés par un collègue et transmis dans Downloads/musique.",
   "provenance": {
     "author": "Collègue de l'utilisateur, nom non communiqué",

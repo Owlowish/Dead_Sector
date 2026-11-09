@@ -11,47 +11,124 @@ export const WEAPON_MECHANICAL_DURATIONS = {
   'axe-swing': 0.28,
 } as const;
 
-const timbres: Record<WeaponMechanicalSoundId, { seed: number; scrape: number; clickAt: number; body: number }> = {
-  'mag-out': { seed: 137, scrape: 0.62, clickAt: 0.018, body: 300 },
-  'mag-in': { seed: 293, scrape: 0.53, clickAt: 0.096, body: 350 },
-  seat: { seed: 419, scrape: 0.16, clickAt: 0.012, body: 380 },
-  'shell-insert': { seed: 643, scrape: 0.32, clickAt: 0.046, body: 270 },
-  'pump-back': { seed: 827, scrape: 0.74, clickAt: 0.13, body: 240 },
-  'pump-forward': { seed: 1019, scrape: 0.63, clickAt: 0.132, body: 320 },
-  'axe-swing': { seed: 1237, scrape: 0.8, clickAt: 1, body: 120 },
+type MechanicalEvent =
+  | { kind: 'click' | 'thunk'; at: number; frequency: number; decay: number; gain: number }
+  | { kind: 'scrape'; at: number; end: number; gain: number };
+
+const gestures: Record<WeaponMechanicalSoundId, { seed: number; events: readonly MechanicalEvent[] }> = {
+  // Bouton de retenue, sortie du chargeur et choc à la libération.
+  'mag-out': { seed: 137, events: [
+    { kind: 'click', at: 0.003, frequency: 2600, decay: 0.012, gain: 0.9 },
+    { kind: 'scrape', at: 0.025, end: 0.112, gain: 0.5 },
+    { kind: 'click', at: 0.118, frequency: 1800, decay: 0.01, gain: 0.5 },
+    { kind: 'thunk', at: 0.12, frequency: 150, decay: 0.02, gain: 0.4 },
+  ] },
+  // Glissement du nouveau chargeur, butée et verrou.
+  'mag-in': { seed: 293, events: [
+    { kind: 'scrape', at: 0, end: 0.085, gain: 0.45 },
+    { kind: 'thunk', at: 0.092, frequency: 180, decay: 0.03, gain: 0.8 },
+    { kind: 'click', at: 0.094, frequency: 2200, decay: 0.012, gain: 1 },
+    { kind: 'click', at: 0.112, frequency: 3100, decay: 0.008, gain: 0.4 },
+  ] },
+  seat: { seed: 419, events: [
+    { kind: 'click', at: 0.006, frequency: 1500, decay: 0.02, gain: 1 },
+    { kind: 'thunk', at: 0.008, frequency: 220, decay: 0.025, gain: 0.7 },
+    { kind: 'click', at: 0.045, frequency: 3400, decay: 0.008, gain: 0.5 },
+  ] },
+  'shell-insert': { seed: 643, events: [
+    { kind: 'click', at: 0.004, frequency: 2900, decay: 0.015, gain: 0.7 },
+    { kind: 'scrape', at: 0.01, end: 0.04, gain: 0.25 },
+    { kind: 'click', at: 0.05, frequency: 2000, decay: 0.02, gain: 0.9 },
+    { kind: 'thunk', at: 0.052, frequency: 260, decay: 0.02, gain: 0.5 },
+    { kind: 'click', at: 0.072, frequency: 3600, decay: 0.006, gain: 0.35 },
+  ] },
+  'pump-back': { seed: 827, events: [
+    { kind: 'scrape', at: 0, end: 0.12, gain: 0.6 },
+    { kind: 'click', at: 0.125, frequency: 1700, decay: 0.025, gain: 1 },
+    { kind: 'thunk', at: 0.127, frequency: 200, decay: 0.04, gain: 0.6 },
+  ] },
+  'pump-forward': { seed: 1019, events: [
+    { kind: 'scrape', at: 0, end: 0.115, gain: 0.55 },
+    { kind: 'thunk', at: 0.125, frequency: 170, decay: 0.05, gain: 1 },
+    { kind: 'click', at: 0.126, frequency: 1400, decay: 0.03, gain: 1 },
+    { kind: 'click', at: 0.15, frequency: 3000, decay: 0.01, gain: 0.4 },
+  ] },
+  'axe-swing': { seed: 1237, events: [] },
 };
 
-/** Frottement métallique et contact net : claquement bref et résonances aiguës pour plus de présence. */
+function fitSamples(raw: Float32Array, samples: Float32Array, drive: number): number {
+  let peak = 0;
+  for (let i = 0; i < samples.length; i++) {
+    samples[i] = Math.tanh(raw[i] * drive);
+    peak = Math.max(peak, Math.abs(samples[i]));
+  }
+  const normalization = 0.62 / (peak || 1);
+  let energy = 0;
+  for (let i = 0; i < samples.length; i++) {
+    samples[i] *= normalization;
+    energy += samples[i] * samples[i];
+  }
+  return Math.sqrt(energy / samples.length);
+}
+
+/** Les déclics, frottements et butées se succèdent à l'intérieur de chaque son. */
 export function createWeaponMechanicalSamples(id: WeaponMechanicalSoundId, sampleRate: number): Float32Array {
   const duration = WEAPON_MECHANICAL_DURATIONS[id];
-  const timbre = timbres[id];
-  const samples = new Float32Array(Math.ceil(sampleRate * duration));
-  let seed = timbre.seed;
+  const gesture = gestures[id];
+  const raw = new Float32Array(Math.ceil(sampleRate * duration));
+  let seed = gesture.seed;
   let low = 0;
   let smooth = 0;
-  // Les filtres suivent le temps en secondes, y compris à 44,1 kHz.
-  const lowAlpha = 1 - Math.exp(-2 * Math.PI * 260 / sampleRate);
-  const smoothAlpha = 1 - Math.exp(-2 * Math.PI * 4200 / sampleRate);
-  const bodyFrequency = 2 * Math.PI * timbre.body;
-  for (let i = 0; i < samples.length; i++) {
+  const lowAlpha = 1 - Math.exp(-2 * Math.PI * 500 / sampleRate);
+  const smoothAlpha = 1 - Math.exp(-2 * Math.PI * 3000 / sampleRate);
+  for (let i = 0; i < raw.length; i++) {
     seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
     const noise = seed / 0x80000000 - 1;
     low += (noise - low) * lowAlpha;
     smooth += (noise - smooth) * smoothAlpha;
-    const t = i / sampleRate;
-    const u = i / (samples.length - 1);
-    const edge = Math.min(1, t / 0.005, (duration - t) / 0.012);
-    const envelope = Math.sin(Math.PI * Math.max(0, edge) / 2) ** 2;
-    const scrape = Math.sin(Math.PI * u) ** 1.2 * timbre.scrape;
-    const contactTime = t - timbre.clickAt;
-    const contact = contactTime <= 0 ? 0
-      : (1 - Math.exp(-contactTime / 0.0008)) * Math.exp(-contactTime / 0.016);
-    const friction = (smooth - low) * (scrape + contact * 0.75);
-    const ring = contactTime <= 0 ? 0
-      : (Math.sin(bodyFrequency * 6.5 * contactTime) * 0.5
-        + Math.sin(bodyFrequency * 10.3 * contactTime) * 0.35) * Math.exp(-contactTime / 0.011);
-    const body = (low * 0.7 + Math.sin(bodyFrequency * Math.max(0, contactTime)) * 0.1) * contact;
-    samples[i] = Math.max(-0.65, Math.min(0.65, (friction * 1.5 + body + ring * 0.28) * envelope * 0.47));
+    const bright = noise - smooth;
+    const mid = smooth - low;
+    const time = i / sampleRate;
+    let value = 0;
+    if (id === 'axe-swing') {
+      const progress = time / duration;
+      value = (mid * 0.9 + bright * 0.3 + low * 0.3)
+        * Math.sin(Math.PI * progress) ** 1.5 * (0.5 + 0.6 * progress);
+    }
+    for (const event of gesture.events) {
+      const elapsed = time - event.at;
+      if (elapsed < 0) continue;
+      if (event.kind === 'scrape') {
+        if (time > event.end) continue;
+        const progress = elapsed / (event.end - event.at);
+        value += event.gain * Math.sin(Math.PI * progress) ** 0.8 * (mid + bright * 0.5)
+          * (0.6 + 0.4 * Math.sin(2 * Math.PI * 140 * time));
+      } else if (event.kind === 'click') {
+        const envelope = Math.exp(-elapsed / event.decay) * Math.min(1, elapsed / 0.0003);
+        const ring = Math.sin(2 * Math.PI * event.frequency * elapsed) * 0.6
+          + Math.sin(2 * Math.PI * event.frequency * 2.76 * elapsed) * 0.35
+          + Math.sin(2 * Math.PI * event.frequency * 5.4 * elapsed) * 0.2;
+        value += event.gain * envelope * (bright * 0.8 + ring);
+      } else {
+        const envelope = Math.exp(-elapsed / event.decay) * Math.min(1, elapsed / 0.0004);
+        const body = Math.sin(2 * Math.PI * event.frequency * elapsed * (1 - 4 * elapsed));
+        value += event.gain * envelope * (body + low * 0.6);
+      }
+    }
+    const edge = Math.min(1, time / 0.0004, (duration - time) / 0.01);
+    raw[i] = value * Math.max(0, edge);
+  }
+  const samples = new Float32Array(raw.length);
+  // La saturation douce renforce les gestes courts tout en bornant leur crête.
+  let drive = 1 / (raw.reduce((peak, sample) => Math.max(peak, Math.abs(sample)), 0) || 1);
+  let rms = fitSamples(raw, samples, drive);
+  for (let attempt = 0; attempt < 8 && rms < 0.055; attempt++) {
+    drive *= 1.6;
+    rms = fitSamples(raw, samples, drive);
+  }
+  if (rms > 0.115) {
+    const trim = 0.115 / rms;
+    for (let i = 0; i < samples.length; i++) samples[i] *= trim;
   }
   samples[0] = 0;
   samples[samples.length - 1] = 0;
