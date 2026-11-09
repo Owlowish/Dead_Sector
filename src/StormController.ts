@@ -25,6 +25,7 @@ export class StormController {
   private readonly lights: readonly THREE.PointLight[];
   private readonly random: () => number;
   private readonly audioReady: () => boolean;
+  private titleMode = false;
 
   constructor(lights: readonly THREE.PointLight[], random: () => number = Math.random, audioReady: () => boolean = () => true) {
     this.lights = lights;
@@ -34,7 +35,13 @@ export class StormController {
   }
 
   private nextWait(): number {
-    return 12 + this.random() * 15;
+    return this.titleMode ? 9 + this.random() * 5 : 12 + this.random() * 15;
+  }
+
+  public setTitleMode(enabled: boolean): void {
+    this.titleMode = enabled;
+    this.resetForNewRun();
+    if (enabled) this.wait = 3;
   }
 
   public setRain(source: StormAudioSource): void {
@@ -67,14 +74,15 @@ export class StormController {
     if (this.suspended) {
       this.suspended = false;
     }
-    if (!this.audioReady()) return;
+    const audioReady = this.audioReady();
+    if (!audioReady && !this.titleMode) return;
     if (positions.length > 0 && this.rain) {
       const nearest = positions.reduce((best, point) =>
         point.distanceToSquared(playerPosition) < best.distanceToSquared(playerPosition) ? point : best,
       );
       this.rain.position.copy(nearest);
     }
-    if (this.rain && !this.rain.isPlaying) this.rain.play();
+    if (audioReady && this.rain && !this.rain.isPlaying) this.rain.play();
 
     const elapsed = Math.min(Math.max(delta, 0), 0.05);
     if (this.flashRemaining > 0) {
@@ -90,7 +98,7 @@ export class StormController {
     if (this.thunderDelay >= 0) {
       this.thunderDelay -= elapsed;
       if (this.thunderDelay <= 0) {
-        if (this.thunder && !this.thunder.isPlaying) this.thunder.play();
+        if (audioReady && this.thunder && !this.thunder.isPlaying) this.thunder.play();
         this.thunderDelay = -1;
       }
       return;

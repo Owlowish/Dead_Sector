@@ -84,11 +84,12 @@ export class Player {
 
   private setupControls(): void {
     window.addEventListener('keydown', (event) => {
+      if (!this.canPlay() || document.pointerLockElement !== this.canvas) return;
       this.keys.add(event.code);
-      if (event.code === 'KeyE' && this.canPlay() && document.pointerLockElement === this.canvas) {
+      if (event.code === 'KeyE') {
         this.onInteract?.();
       }
-      if (event.code === 'KeyF' && this.canPlay() && document.pointerLockElement === this.canvas) {
+      if (event.code === 'KeyF') {
         this.toggleFlashlight();
       }
     });
@@ -103,10 +104,6 @@ export class Player {
 
     document.addEventListener('pointerlockchange', () => {
       if (document.pointerLockElement !== this.canvas) this.keys.clear();
-    });
-
-    this.canvas.addEventListener('click', () => {
-      if (this.canPlay()) this.canvas.requestPointerLock();
     });
 
     document.addEventListener('mousemove', (event) => {

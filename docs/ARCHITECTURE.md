@@ -1,12 +1,13 @@
 # DEAD SECTOR — Architecture
 
-Architecture du prototype au 7 novembre 2026. Le code fait foi ; validations et limites dans `ETAT_PROJET.md`, historique dans Git.
+Architecture du prototype au 9 novembre 2026. Le code fait foi ; validations et limites dans `ETAT_PROJET.md`, historique dans Git.
 
 ## Responsabilités
 
 | Modules | Rôle |
 | --- | --- |
 | `main.ts`, `Game.ts` | Démarrage, scène/rendu, instances, orchestration, progression, valeurs du HUD et nettoyage. |
+| `TitleScene.ts`, `GameMenus.ts` | Caméra d’accueil sur le vrai niveau et orage de la baie du piano. Accueil/pause en DOM et un dialogue natif partagé pour Réglages et Commandes. |
 | `GameHud.ts`, `HeartAnimation.ts` | HUD V3, barre de vie, retour de tir, compteurs séparés, cœur partagé avec l'aperçu, secteur temporaire, mouvement réduit, invites et deux notifications bornées. Durées sur temps actif, sans logique de combat. |
 | `Player.ts` | Caméra, entrées, Pointer Lock, déplacement, collision, santé et lampe. |
 | `MansionConfig.ts`, `Level.ts` | Données du manoir ; géométrie, solides de tir, collisions, altitude, navigation et éclairage. |
@@ -37,9 +38,9 @@ Architecture du prototype au 7 novembre 2026. Le code fait foi ; validations et 
 
 ## Boucle et contrôle
 
-`Game.start()` installe `renderer.setAnimationLoop`. Le delta de simulation vaut `min(delta réel, 0,05 s)` ; le menu K le force à zéro. `PerfTracker` mesure le delta réel séparément.
+`Game.start()` installe `renderer.setAnimationLoop`. Le delta de simulation vaut `min(delta réel, 0,05 s)`. Le debug K, le bilan et les panneaux communs le forcent à zéro. `PerfTracker` mesure le delta réel séparément en jeu.
 
-- `isSimulationActive()` accepte `playing`, `respite`, `exploration`, `terminal` et `won`, sauf si K ou le bilan est ouvert.
+- À l’accueil, Game rend uniquement l’ambiance avec la caméra dédiée. Le succès du Pointer Lock rétablit la caméra du joueur et le calendrier d’orage normal. `isSimulationActive()` accepte ensuite `playing`, `respite`, `exploration`, `terminal` et `won` hors dialogues, K et bilan.
 - Joueur, IA et projectiles exigent le Pointer Lock ; les ennemis ne sont simulés qu'en `playing`.
 - `Game.updatePickups` exige le même contrôle effectif et revérifie l'état après les dégâts : pas de collecte pendant pause, perte de focus ou frame de mort. Gains affichés depuis les deltas réellement appliqués ; `AmmoBox.getWeaponType` et `Weapon.getReserveAmmoFor` distinguent l'arme bénéficiaire.
 - Décompte, cadavres et impacts exigent aussi onglet visible, focus et Pointer Lock ; le décor d'ambiance utilise son delta séparé.

@@ -1,10 +1,10 @@
 # DEAD SECTOR — État courant
 
-Mis à jour le 9 novembre 2026. Le lot audio V3 est intégré sur la branche `main`. Consulter Git pour l'historique.
+Mis à jour le 9 novembre 2026. Consulter Git pour l'historique.
 
 ## Demande courante
 
-Le lot V3 apporte un thème de victoire de 13,5 s avec fondu, deux sons de ramassage pour les munitions et les soins, et sept nouvelles synthèses de manipulations et de hache. Les chronologies d'arme pilotent leurs déclenchements. En jeu, la bande-son reprend sa position après la pause et le battement se déclenche à 25 % de vie ou moins sous contrôle. Provenance et mesures dans les manifestes [V3](asset-packs/AUDIO_V3_2026-11-09.json) et [V2](asset-packs/AUDIO_V2_2026-11-08.json).
+Accueil « La Nuit » dans le vrai Salon de Musique : fenêtre au centre, caméra basse en dérive lente, pluie, éclairs localisés et tonnerre après activation audio. Pause distincte et panneaux Réglages/Commandes partagés. Le premier palier attend la capture de la souris. La préférence système de mouvement réduit fixe la caméra et coupe l’animation de l’orage à l’accueil.
 
 ## Fonctionnalités présentes
 
@@ -25,7 +25,7 @@ Le lot V3 apporte un thème de victoire de 13,5 s avec fondu, deux sons de ramas
 - Galerie : autel de 2,8 × 1,8 m, six surfaces de tir distinctes des effets ; cristaux et bougies en volume. Lumière existante réaffectée devant la façade, sans nouvelle lumière/ombre ni texture. Effets suspendus avec le delta d'ambiance ; nettoyage des solides en place.
 - Cheminée : structure 3D fusionnée, ouverture en arche et fond de brique reculé, ornements éclairés et nouveau feu jaune-orange à huit poses/10 Hz. Le collider physique reste plein ; les tirs traversent les ajours jusqu'aux surfaces réelles. Aucun éclairage ni ombre projetée ajouté.
 - Fenêtres gothiques : six baies conservées, pierre/appuis et trois ovales de fer en relief, rideaux déchirés à tringles latérales et trois bougies par baie. Variantes fissurée en Galerie, vitrail et gravure occulte en Bibliothèque. Pluie oblique, coulures et perles avec fondus,116segments réservés par baie au temps actif d’ambiance ; ciel sans étirement, flash/foudre/projection limités à la baie choisie. Aucune lumière/ombre supplémentaire, collisions inchangées, ressources propres entièrement libérées.
-- Éclairage chaud/froid du Salon, orage répercuté sur l'arme DOM et traitement rétro. Mix Ambiance/Effets/Musique/Craquement avec fondus et sauvegarde locale, voix spatialisées et pas discrets bois/tapis/escalier liés à la distance réelle.
+- Éclairage chaud/froid du Salon, orage répercuté sur l'arme DOM et traitement rétro. Quatre volumes persistants, voix et pas spatialisés, sept synthèses de maniement et de hache, sons de ramassage et thème de victoire de 13,5 s. La musique reprend sa position après la pause. Battement sous contrôle à 25 % de vie ou moins. Provenance audio [V3](asset-packs/AUDIO_V3_2026-11-09.json) et [V2](asset-packs/AUDIO_V2_2026-11-08.json).
 - Menu debug K : choix issu des configurations P1–P8, pause, restauration position/vie et nettoyage de la rencontre, y compris le contact de hache différé ; équipement et munitions conservés, armes de progression garanties pour le palier choisi. Reprise au clic.
 - Diagnostics : durée de combat active hors pause/focus, tirs/impacts/gains par arme, stocks entrée/sortie et soins nets ; collectes partielles comptées comme collectes réussies. Rencontre courante incluse dans `__DEAD_SECTOR_DIAGNOSTICS()`. Premier contact = premier dégât donné/reçu. Temps d'image par `PerfTracker` ; outils décrits dans l'architecture.
 - HUD V3 : panneaux anthracite biseautés à accents bordeaux. Vie en barre rouge sans chiffre visible, valeur exacte conservée pour l’accessibilité ; chargeur / réserve et pictogrammes balle/cartouche en bas à droite. Retour de tir de 0,30 s actives branché sur la détonation réelle, gelé hors contrôle et annulé à la mort/recharge/changement d’arme/reset ; mouvement réduit = flash seul. Palier/menaces en haut à gauche, accalmie en grand en haut au centre, lampe F au bas-centre. Secteur temporaire, alertes, finale, notifications et cœur V2 conservés.
@@ -63,7 +63,7 @@ Rampeuse V3 : six PNG RGBA 512² sous `public/assets/zombies/crawler/` (1,55 Mo,
 - Visuel et audio réunis restent à éprouver en combat : six pièces, poussières, orage, pas, manipulations, raccords musicaux et équilibre face aux indices d'attaque. L'audit mesure les images et la soumission du rendu dans des scénarios préparés, sans temps GPU isolé.
 - Salon de Musique observé hors combat : arrivée, piano de près, deux arches, console et vue initiale du jeu avec HUD. Aucun combat joué ni écoute après réaménagement ; temps GPU isolé et confort du contournement sous pression non mesurés.
 - Autel inspecté hors combat avec/sans lampe, depuis l'entrée, de face et côté escalier ; cristaux/volutes observés en mouvement. Aucune partie jouée ni mesure comparative GPU ; lisibilité des ennemis derrière les effets et confort du contournement sous pression non établis.
-- UI4–UI6 restent à faire : accueil/pause distincts, aide complète, réglages visuels/contrôle persistants et présentation du bilan. Les quatre volumes audio sont déjà persistants. HUD inspecté sur captures de scénarios préparés ; lecture sous pression, ADS en combat et coût propre au HUD non établis.
+- UI5–UI6 restent à faire : réglages visuels/contrôle persistants et présentation du bilan. HUD inspecté sur captures de scénarios préparés ; lecture sous pression, ADS en combat et coût propre au HUD non établis.
 - Cinq scripts historiques ont des attentes périmées : `check-encounters-f1`, `check-shotgun-agile-assets`, `check-tasks-0-1-2`, `check-tasks-5-6` et `check-upgrades-f2`. Retrait de la collision orpheline du salon confirmé par F4 après fusion. Ne pas annoncer toute la suite verte sur les seuls tests ciblés.
 - Avertissement Vite pour le bundle de plus de 500 ko ; avertissements Three.js « Texture marked for update but no image data found » observés au démarrage navigateur, sans erreur JS ni échec de chargement visible dans la vue initiale.
 
@@ -85,6 +85,7 @@ Limites de l'instrumentation : fenêtre de 300 images glissante, donc pics d'app
 
 ## Vérifications réellement effectuées
 
+- **9 novembre, accueil et pause** : build et contrôles ciblés orage, salon, audio, HUD, progression, debug et finale. Chrome : captures 1280 × 720 et 390 × 700, mouvement échantillonné, éclair observé, préférence réduite, panneaux au clavier, volumes, refus simulé et entrée/reprise au Pointer Lock natif. Captures dans `tmp/title-review/`. Aucune partie complète ni écoute du mix.
 - **9 novembre, audio V3** : build et onze contrôles ciblés réussis. Quatorze rendus mécaniques identiques aux sources à 44,1 et 48 kHz. Chrome headless avec Pointer Lock émulé : ramassages, ordre des sons de rechargement et de pompe, fin naturelle du thème de victoire à 13,5 s et bilan contrôlés sur scènes préparées. Écoute du mix et partie complète à faire.
 - **8 novembre, audio V2** : huit pistes et 44 WAV décodés dans Chrome. Déclenchements ennemis, projectiles et battement, coupures en pause et réglage Effets contrôlés. Deux raccords du Portrait mesurés après rendu Web Audio.
 
@@ -113,6 +114,6 @@ Limites de l'instrumentation : fenêtre de 300 images glissante, donc pics d'app
 
 ## Prochaine priorité
 
-G4 : jouer le duel renforcé, mesurer confort de l'absorption, tirs espacés contre tirs soutenus, collecte des drops et économie à partir de zéro munition ; éprouver fusil, soins, seconde forme et reprise après K. Relever durée ressentie, stocks/dégâts et coût sous pression, écouter le mix. Puis P1/hache et acquisitions P2/P4 ; Rampeuse V3 et UI4–UI6 restent à éprouver. Performance selon la roadmap.
+G4 : jouer le duel renforcé, mesurer confort de l'absorption, tirs espacés contre tirs soutenus, collecte des drops et économie à partir de zéro munition ; éprouver fusil, soins, seconde forme et reprise après K. Relever durée ressentie, stocks/dégâts et coût sous pression, écouter le mix. Puis P1/hache et acquisitions P2/P4. Rampeuse V3, UI5–UI6 et performance selon la roadmap.
 
 Autres travaux dans `ROADMAP.md`, direction dans `ORIENTATION_JEU.md`, responsabilités dans `ARCHITECTURE.md` et règles d'assets dans `PIPELINE_ASSETS.md`.

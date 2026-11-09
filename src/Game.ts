@@ -41,6 +41,8 @@ import { SoundEffects } from './SoundEffects.ts';
 import type { Door } from './Door.ts';
 import { FootstepAudio } from './FootstepAudio.ts';
 import { WeaponMotion } from './WeaponMotion.ts';
+import { GameMenus } from './GameMenus.ts';
+import { TitleScene } from './TitleScene.ts';
 
 type GameState = 'playing' | 'respite' | 'exploration' | 'terminal' | 'won' | 'lost';
 
@@ -101,6 +103,7 @@ export class Game {
   private readonly debugDisplay = document.querySelector<HTMLElement>('#debug-menu');
   private debugPreviousFocus: HTMLElement | null = null;
   private readonly onDebugKeyDown = (event: KeyboardEvent): void => {
+    if (this.titleScene || this.menus?.panelOpen) return;
     const target = event.target;
     if (event.code === 'KeyB' && !event.repeat && !event.ctrlKey && !event.altKey && !event.metaKey
       && !(target instanceof HTMLElement && (target.isContentEditable || target.matches('input, textarea, select')))) {
@@ -163,6 +166,42 @@ export class Game {
   private readonly summaryDisplay = document.querySelector<HTMLElement>('#run-summary');
   private readonly summaryOpenButton = document.querySelector<HTMLButtonElement>('#run-summary-open');
   private readonly pauseDisplay = document.querySelector<HTMLElement>('#pause-message');
+  private readonly menus: GameMenus;
+  private titleScene: TitleScene | null;
+  private readonly onPointerLockChange = (): void => {
+    const locked = document.pointerLockElement === this.renderer.domElement;
+    if (locked) {
+      this.menus.closePanel();
+      this.menus.setCaptureError(false);
+      if (this.titleScene) {
+        this.titleScene.dispose();
+        this.titleScene = null;
+        this.player.camera.visible = true;
+        this.menus.setTitle(false);
+      }
+    }
+    if (this.pauseDisplay) {
+      this.pauseDisplay.hidden = locked || !this.isSimulationActive();
+      if (!this.pauseDisplay.hidden && (document.hasFocus?.() ?? true)) this.menus.focusResume();
+    }
+    this.syncAmbientAudio();
+  };
+  private readonly onPointerLockError = (): void => this.menus.setCaptureError(true);
+  private readonly requestControl = (): void => {
+    const canvas = this.renderer.domElement;
+    if (this.disposed || this.menus.panelOpen || document.pointerLockElement === canvas
+      || (!this.titleScene && !this.isSimulationActive())) return;
+    this.menus.setCaptureError(false);
+    this.resumeAudio();
+    try {
+      void canvas.requestPointerLock()?.catch(this.onPointerLockError);
+    } catch {
+      this.onPointerLockError();
+    }
+  };
+  private readonly onCanvasClick = (): void => {
+    if (!this.titleScene) this.requestControl();
+  };
   private readonly damageOverlay = document.querySelector<HTMLElement>('#damage-overlay');
   private readonly damageEffectDuration = 0.4;
   private damageEffectRemaining = 0;
@@ -189,7 +228,7 @@ export class Game {
   private lastFrameTime = typeof performance !== 'undefined' ? performance.now() : 0;
   private tabBecameVisible = false;
 
-  constructor() {
+  constructor(showTitle = false) {
     this.scene = new THREE.Scene();
     this.hitEffects = new HitEffects(this.scene);
     this.portraitParticles = new PortraitParticles(this.scene);
@@ -237,6 +276,7 @@ export class Game {
 
     // Intégrer la caméra du joueur à la scène pour que ses enfants (lumières 3D, audio) soient rendus.
     this.scene.add(this.player.camera);
+    this.menus = new GameMenus(this.requestControl, this.onAudioGesture);
     this.portraitAudio = new PortraitAudio(this.player.audioListener);
     const listener = this.player.audioListener;
     const audioLoader = new THREE.AudioLoader();
@@ -245,13 +285,15 @@ export class Game {
     this.music.preload('menu', 'pause', 'main', 'defeat', 'victory');
     if (this.musicEnableButton) this.musicEnableButton.hidden = listener.context.state === 'running';
     this.musicEnableButton?.addEventListener('click', this.onAudioGesture);
-    this.renderer.domElement.addEventListener('click', this.onAudioGesture);
+    this.renderer.domElement.addEventListener('click', this.onCanvasClick);
     this.footsteps = new FootstepAudio(this.player.audioListener.context, this.player.audioListener.getInput());
     this.stormController = new StormController(
       this.level.getStormLights(),
       Math.random,
       () => this.player.audioListener.context.state === 'running',
     );
+    this.titleScene = showTitle ? new TitleScene(this.level, this.stormController) : null;
+    this.player.camera.visible = !this.titleScene;
 
     this.updateHealthDisplay();
     this.player.setOnFlashlightToggle((enabled) => {
@@ -353,13 +395,8 @@ export class Game {
     window.addEventListener('blur', () => this.syncAmbientAudio());
     window.addEventListener('focus', () => this.syncAmbientAudio());
 
-    document.addEventListener('pointerlockchange', () => {
-      const isLocked = document.pointerLockElement === this.renderer.domElement;
-      if (this.pauseDisplay) {
-        this.pauseDisplay.hidden = isLocked || !this.isSimulationActive();
-      }
-      this.syncAmbientAudio();
-    });
+    document.addEventListener('pointerlockchange', this.onPointerLockChange);
+    document.addEventListener('pointerlockerror', this.onPointerLockError);
 
     this.setupAudioControls();
 
@@ -513,6 +550,7 @@ export class Game {
           window.innerWidth,
           window.innerHeight
         );
+        this.titleScene?.resize(window.innerWidth, window.innerHeight);
 
         this.updateResolution();
       }
@@ -521,15 +559,18 @@ export class Game {
     // Préchauffage des shaders WebGL pour éviter le micro-gel de la première frame de rendu
     if (typeof this.renderer.compile === 'function') {
       try {
-        this.renderer.compile(this.scene, this.player.camera);
+        this.renderer.compile(this.scene, this.titleScene?.camera ?? this.player.camera);
       } catch {
         // Ignorer en environnement de test sans contexte WebGL complet
       }
     }
+    this.menus.setTitle(showTitle);
+    if (this.pauseDisplay) this.pauseDisplay.hidden = showTitle;
   }
 
   private isSimulationActive(): boolean {
-    return !this.debugMenuOpen && !this.runSummaryOpen && (this.state === 'playing' || this.state === 'respite' || this.state === 'exploration' || this.state === 'terminal' || this.state === 'won');
+    return !this.titleScene && !this.menus?.panelOpen && !this.debugMenuOpen && !this.runSummaryOpen
+      && (this.state === 'playing' || this.state === 'respite' || this.state === 'exploration' || this.state === 'terminal' || this.state === 'won');
   }
 
   private setupDebugMenu(): void {
@@ -666,7 +707,14 @@ export class Game {
       this.tabBecameVisible = false;
 
       // Conserver le plafonnement de simulation existant pour le gameplay (déplacements, physique)
-      const delta = this.debugMenuOpen || this.runSummaryOpen ? 0 : Math.min(rawDeltaSec, 0.05);
+      const frameDelta = Math.min(rawDeltaSec, 0.05);
+      if (this.titleScene) {
+        this.updateAudioMix(frameDelta);
+        this.titleScene.update(frameDelta, !document.hidden && (document.hasFocus?.() ?? true));
+        this.renderer.render(this.scene, this.titleScene.camera);
+        return;
+      }
+      const delta = this.debugMenuOpen || this.runSummaryOpen || this.menus?.panelOpen ? 0 : frameDelta;
       const controlActive = this.isSimulationActive()
         && document.pointerLockElement === this.renderer.domElement
         && !document.hidden && (document.hasFocus?.() ?? true);
@@ -680,7 +728,7 @@ export class Game {
 
       this.updateDamageEffect(delta);
       // Les réglages continuent de fondre dans le panneau de pause, sans avancer le combat.
-      this.updateAudioMix(Math.min(rawDeltaSec, 0.05));
+      this.updateAudioMix(frameDelta);
 
       const stormActive = controlActive;
       this.stormController.update(delta, stormActive, this.player.camera.position, this.level.getStormWindowPositions());
@@ -1839,10 +1887,8 @@ export class Game {
 
   private syncAmbientAudio(): void {
     if (this.disposed) return;
-    const active = this.isSimulationActive()
-      && document.pointerLockElement === this.renderer.domElement
-      && !document.hidden
-      && (document.hasFocus?.() ?? true);
+    const focused = !document.hidden && (document.hasFocus?.() ?? true);
+    const active = focused && this.isSimulationActive() && document.pointerLockElement === this.renderer.domElement;
     this.syncMusic();
     this.soundEffects?.setActive(active);
     if (active) {
@@ -1852,7 +1898,7 @@ export class Game {
       this.wasControlActive = false;
       if (this.ambianceAudio?.isPlaying) this.ambianceAudio.pause();
       this.horrorDirector?.suspend();
-      this.stormController?.suspend();
+      if (!this.titleScene || !focused) this.stormController?.suspend();
       this.footsteps?.reset();
       this.weaponMotion?.reset();
       this.weapon?.suspendSoundEffects?.();
@@ -1906,6 +1952,10 @@ export class Game {
 
   public dispose(): void {
     this.disposed = true;
+    this.titleScene?.dispose();
+    this.menus?.dispose();
+    document.removeEventListener('pointerlockchange', this.onPointerLockChange);
+    document.removeEventListener('pointerlockerror', this.onPointerLockError);
     this.clearGuardianSupplies();
     this.hud?.dispose();
     window.removeEventListener('keydown', this.onDebugKeyDown);
@@ -1916,7 +1966,7 @@ export class Game {
     this.soundEffects?.dispose();
     this.player?.suspendFlashlightAudio?.();
     this.musicEnableButton?.removeEventListener('click', this.onAudioGesture);
-    this.renderer.domElement.removeEventListener?.('click', this.onAudioGesture);
+    this.renderer.domElement.removeEventListener?.('click', this.onCanvasClick);
     for (const drop of (this.ammoDrops ?? [])) drop.dispose();
     this.ammoDrops = [];
     for (const projectile of (this.spitProjectiles ?? [])) projectile.dispose(this.scene);

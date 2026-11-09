@@ -8,6 +8,17 @@
   </head>
   <body>
     <div id="app"></div>
+    <section id="title-screen" class="title-screen" aria-labelledby="title-name" hidden>
+      <h1 id="title-name">Dead Sector</h1>
+      <div class="title-actions">
+        <button type="button" id="title-play" class="menu-primary">Entrer dans le manoir</button>
+        <div class="menu-secondary">
+          <button type="button" data-menu-open="settings" aria-haspopup="dialog">Réglages</button>
+          <button type="button" data-menu-open="controls" aria-haspopup="dialog">Commandes</button>
+        </div>
+        <p class="menu-lock-error" role="status"></p>
+      </div>
+    </section>
     <!-- Interface fixe : elle ne bloque pas les clics destinés au jeu. -->
     <div class="hud" aria-hidden="true">
       <div id="damage-overlay"></div>
@@ -100,18 +111,47 @@
       <span class="prompt-copy"><strong data-hud-prompt-action>OUVRIR</strong><span data-hud-prompt-object>LA PORTE</span></span>
     </div>
     <div id="hud-notifications" class="hud-notifications" role="status" aria-live="polite" aria-atomic="false"></div>
-    <div id="pause-message" class="message">Cliquez pour jouer · Clic gauche : frapper / tirer · Clic droit : viser · [1] Hache · [2] Pistolet · [3] Pompe · [R] Recharger · [F] Lampe · [E] Interagir · Échap : pause · [K] Debug
-      <br><button id="music-enable" class="restart-button" type="button" hidden>Activer la musique</button>
-      <fieldset class="audio-settings">
-        <legend>Réglages sonores</legend>
-        <label class="audio-volume"><span>Ambiance <small>Vent, pluie et tonnerre</small></span><input id="ambience-volume" type="range" min="0" max="1" step="0.01" value="1" aria-label="Volume de l’ambiance"><output id="ambience-volume-value" for="ambience-volume">100 %</output></label>
-        <label class="audio-volume"><span>Effets <small>Armes, impacts et ennemis</small></span><input id="effects-volume" type="range" min="0" max="1" step="0.01" value="1" aria-label="Volume des effets"><output id="effects-volume-value" for="effects-volume">100 %</output></label>
-        <label class="audio-volume"><span>Musique</span><input id="music-volume" type="range" min="0" max="1" step="0.01" value="0.4" aria-label="Volume de la musique"><output id="music-volume-value" for="music-volume">40 %</output></label>
-        <label class="audio-volume"><span>Craquement lointain <small>Suit aussi le volume Ambiance</small></span><input id="horror-volume" type="range" min="0" max="1" step="0.01" value="0.18" aria-label="Volume des craquements lointains"><output id="horror-volume-value" for="horror-volume">18 %</output></label>
-      </fieldset>
-      <label class="motion-setting"><input id="reduce-heart-motion" type="checkbox">Réduire les animations du HUD</label>
-      <button id="run-summary-open" class="restart-button" type="button" hidden>Consulter le bilan · B</button>
+    <div id="pause-message" class="pause-screen" hidden>
+      <section class="menu-panel" aria-labelledby="pause-title">
+        <h2 id="pause-title">Pause</h2>
+        <button type="button" id="pause-resume" class="menu-primary">Reprendre</button>
+        <div class="menu-secondary">
+          <button type="button" data-menu-open="settings" aria-haspopup="dialog">Réglages</button>
+          <button type="button" data-menu-open="controls" aria-haspopup="dialog">Commandes</button>
+        </div>
+        <button id="run-summary-open" class="restart-button" type="button" hidden>Consulter le bilan · B</button>
+        <p class="menu-lock-error" role="status"></p>
+      </section>
     </div>
+    <dialog id="menu-dialog" class="menu-panel">
+      <section id="menu-settings" hidden>
+        <h2 id="menu-settings-title">Réglages</h2>
+        <fieldset class="audio-settings">
+          <legend>Réglages sonores</legend>
+          <label class="audio-volume"><span>Ambiance <small>Vent, pluie et tonnerre</small></span><input id="ambience-volume" type="range" min="0" max="1" step="0.01" value="1" aria-label="Volume de l’ambiance"><output id="ambience-volume-value" for="ambience-volume">100 %</output></label>
+          <label class="audio-volume"><span>Effets <small>Armes, impacts et ennemis</small></span><input id="effects-volume" type="range" min="0" max="1" step="0.01" value="1" aria-label="Volume des effets"><output id="effects-volume-value" for="effects-volume">100 %</output></label>
+          <label class="audio-volume"><span>Musique</span><input id="music-volume" type="range" min="0" max="1" step="0.01" value="0.4" aria-label="Volume de la musique"><output id="music-volume-value" for="music-volume">40 %</output></label>
+          <label class="audio-volume"><span>Craquement lointain <small>Suit aussi le volume Ambiance</small></span><input id="horror-volume" type="range" min="0" max="1" step="0.01" value="0.18" aria-label="Volume des craquements lointains"><output id="horror-volume-value" for="horror-volume">18 %</output></label>
+        </fieldset>
+        <label class="motion-setting"><input id="reduce-heart-motion" type="checkbox">Réduire les animations du HUD</label>
+        <button id="music-enable" class="restart-button" type="button" hidden>Activer le son</button>
+      </section>
+      <section id="menu-controls" hidden>
+        <h2 id="menu-controls-title">Commandes</h2>
+        <dl class="menu-controls">
+          <div><dt>Se déplacer</dt><dd><kbd>ZQSD</kbd> / <kbd>WASD</kbd></dd></div>
+          <div><dt>Courir</dt><dd><kbd>Maj</kbd></dd></div>
+          <div><dt>Frapper ou tirer</dt><dd>Clic gauche</dd></div>
+          <div><dt>Viser avec une arme à feu</dt><dd>Clic droit</dd></div>
+          <div><dt>Recharger</dt><dd><kbd>R</kbd></dd></div>
+          <div><dt>Interagir</dt><dd><kbd>E</kbd></dd></div>
+          <div><dt>Lampe</dt><dd><kbd>F</kbd></dd></div>
+          <div><dt>Changer d’arme</dt><dd><kbd>1</kbd> / <kbd>2</kbd> / <kbd>3</kbd> ou molette</dd></div>
+          <div><dt>Pause</dt><dd><kbd>Échap</kbd></dd></div>
+        </dl>
+      </section>
+      <form method="dialog"><button type="submit" class="menu-primary" autofocus>Retour</button></form>
+    </dialog>
     <section id="debug-menu" class="debug-menu" role="dialog" aria-modal="true" aria-labelledby="debug-title" aria-describedby="debug-description" hidden>
       <div class="debug-panel">
         <h2 id="debug-title">DEBUG · CHOIX DU PALIER</h2>

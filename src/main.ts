@@ -3,5 +3,5 @@ import { Game } from './Game';
 import { installWeaponArt } from './WeaponPresentation.ts';
 
 void installWeaponArt();
-const game = new Game();
+const game = new Game(true);
 game.start();
