@@ -1,4 +1,6 @@
-import { axeAsset, axeAssets, axeFrameGeometry, axeGripPivots, sampleAxePose, type AxeFrame } from './AxeAnimation.ts';
+import { axeAsset, axeAssets, axeFrameGeometry, axeGripPivots, axeRigAnchor, sampleAxePose, type AxeFrame } from './AxeAnimation.ts';
+
+const spriteWidth = 'min(90vh,120vw)';
 
 /** Présentation seule : Weapon possède le temps actif et l'unique événement d'impact. */
 export class AxeView {
@@ -19,13 +21,14 @@ export class AxeView {
     rig.hidden = true;
     const sprite = document.createElement('div');
     sprite.className = 'axe-sprite';
-    sprite.style.cssText = `position:absolute;left:calc(50% + 15vh);bottom:-18vh;width:min(90vh,120vw);aspect-ratio:1;`
+    sprite.style.cssText = `position:absolute;left:calc(50% + 15vh);bottom:-18vh;width:${spriteWidth};aspect-ratio:1;`
       + `background:url("${axeAsset}") center/contain no-repeat;image-rendering:pixelated;`
-      + 'transform:translate(-50%,0);transform-origin:55% 66%;pointer-events:none;';
+      + `transform-origin:${axeGripPivots.idle[0]}% ${axeGripPivots.idle[1]}%;pointer-events:none;`;
     rig.appendChild(sprite);
     container.appendChild(rig);
     this.rig = rig;
     this.sprite = sprite;
+    this.update(Infinity);
     if (typeof Image !== 'undefined') for (const asset of Object.values(axeAssets)) new Image().src = asset;
   }
 
@@ -38,7 +41,6 @@ export class AxeView {
     if (this.disposed || !this.sprite) return;
     const pose = sampleAxePose(elapsed);
     const geometry = axeFrameGeometry[pose.frame];
-    const idle = axeFrameGeometry.idle;
     if (pose.frame !== this.lastFrame) {
       this.sprite.style.backgroundImage = `url("${axeAssets[pose.frame]}")`;
       const pivot = axeGripPivots[pose.frame];
@@ -47,10 +49,15 @@ export class AxeView {
       this.lastFrame = pose.frame;
     }
     // Référentiel commun des mains, y compris pour le canevas armé plus haut.
-    const dx = (idle.grip[0] - geometry.grip[0]) / 384;
-    const dy = (geometry.height - 384 + idle.grip[1] - geometry.grip[1]) / 384;
-    const scale = pose.scale * idle.span / geometry.span;
-    const transform = `translate(calc(-50% + ${pose.x.toFixed(3)}vh + min(90vh,120vw) * ${dx}),calc(${pose.y.toFixed(3)}vh + min(90vh,120vw) * ${dy})) scale(${scale.toFixed(4)})`;
+    const dx = (axeRigAnchor.grip[0] - geometry.grip[0]) / 384;
+    const dy = (geometry.height - 384 + axeRigAnchor.grip[1] - geometry.grip[1]) / 384;
+    const scale = pose.scale * axeRigAnchor.span / geometry.span;
+    const rotation = pose.roll - geometry.bakedRoll;
+    // La garde oblique occupe moins de place latérale sur un écran étroit.
+    const diagonal = Math.sin(pose.roll * Math.PI / 180);
+    const x = `calc(-50% + ${pose.x.toFixed(3)}vh + ${spriteWidth} * ${dx} + min(0px, 45vw - 45vh) * ${diagonal.toFixed(4)})`;
+    const y = `calc(${pose.y.toFixed(3)}vh + ${spriteWidth} * ${dy})`;
+    const transform = `translate(${x},${y}) scale(${scale.toFixed(4)}) rotate(${rotation.toFixed(3)}deg)`;
     if (transform !== this.lastTransform) {
       this.sprite.style.transform = transform;
       this.lastTransform = transform;

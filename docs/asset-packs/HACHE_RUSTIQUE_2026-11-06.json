@@ -1,9 +1,9 @@
 {
   "documentType": "asset-pack",
   "templateVersion": 1,
-  "updatedAt": "2026-11-07",
+  "updatedAt": "2026-11-10",
   "id": "HACHE_RUSTIQUE_2026-11-06",
-  "request": "Hache de départ lente, frappe étourdissante. Correction utilisateur : manche strictement droit, frappe verticale du haut vers le bas, prises et poses cohérentes. Le concept est une inspiration de design. Correctif 7 novembre : la tête en position de repos aussi doit être redressée.",
+  "request": "Garde basse diagonale selon le croquis utilisateur, manche droit, levée puis frappe verticale. Prise gauche basse redessinée selon la référence à l’épée : dos du gant visible, pouce devant le manche vers la droite et doigts refermés derrière. Ferrure continue aux raccords.",
   "scope": {
     "prepare": true,
     "generate": true,
@@ -11,7 +11,7 @@
     "authorizedDecisions": [
       "Hache rustique fer/bois/bandage clair",
       "Aucune nouvelle mécanique pour des variantes décoratives",
-      "Repos conservé, quatre poses dédiées au geste overhead avec perspective et pivots aux prises"
+      "Garde diagonale, levée intermédiaire, armée puis frappe verticale. Prises et ferrure mesurées."
     ],
     "assumptions": [
       "Gants noirs fermés et manches gris bleuté selon les armes existantes",
@@ -49,83 +49,101 @@
         "inspected": true,
         "attachedToGenerator": false,
         "observations": "Perspective FPS examinée, sans reprise d'une pose d'arme à feu."
+      },
+      {
+        "path": "docs/asset-packs/references/hache-garde-diagonale.png",
+        "role": "composition de la garde diagonale",
+        "inspected": true,
+        "attachedToGenerator": true
+      },
+      {
+        "path": "docs/asset-packs/references/hache-prise-main-gauche.png",
+        "role": "Anatomie de la prise gauche basse uniquement",
+        "inspected": true,
+        "attachedToGenerator": true,
+        "observations": "Dos du gant vers le joueur, pouce devant vers la droite, doigts derrière le manche. Ni épée, ni armure reprises."
       }
     ],
     "lockedIdentity": [
       "Un seul fer à deux boulons, tranchant gris clair usé et rouille sobre",
       "Manche en bois strictement droit et rigide",
-      "Main gauche haute au-dessus du bandage, main droite basse au-dessous",
+      "Main gauche basse sous le bandage, main droite haute. Au repos et à la première levée, dos du gant gauche visible, pouce devant vers la droite et doigts refermés derrière le manche.",
       "Gants noirs fermés, aucune peau exposée, manches gris bleuté",
-      "Frappe verticale ; aucune coupe ou rotation latérale"
+      "Redressement pendant la levée puis descente verticale."
     ],
-    "acceptedBaseFile": "docs/asset-packs/sources/axe/vertical-idle-source.png",
+    "acceptedBaseFile": "docs/asset-packs/sources/axe/diagonal-guard-reference-grip-source.png",
     "humanApproval": "not_requested"
   },
   "technicalContract": {
     "usage": "Un sprite DOM préchargé, mêmes données jeu/aperçu ; Weapon reste propriétaire de l’impact.",
-    "displaySize": "Repos conservé : largeur min(90vh,120vw), bottom -18vh, left calc(50% +15vh). Chaque sprite est recalé sur le même centre de prise ; son échelle est normalisée par la distance entre mains mesurée dans le canevas. Le sprite armé plus haut garde le manche hors champ.",
+    "displaySize": "Largeur min(90vh,120vw), pivot des prises et repère de cadrage commun. La ferrure est alignée sur le vecteur prise–fer de chaque PNG. La garde oblique est recentrée sur les écrans étroits.",
     "exportDimensions": "384×384 sauf overhead384×576",
     "format": "PNG RGBA8, alpha binaire",
     "gripPivotsPercent": {
       "idle": [
-        54.817708333333336,
-        66.40625
+        38.80208333333333,
+        73.4375
       ],
       "lift": [
-        54.947916666666664,
-        66.66666666666666
+        48.69791666666667,
+        60.9375
       ],
       "overhead": [
         53.125,
         60.763888888888886
       ],
       "chop": [
-        54.036458333333336,
+        53.255208333333336,
         69.921875
       ],
       "impact": [
-        53.385416666666664,
+        51.822916666666664,
         82.94270833333334
       ]
     },
     "motionKeys": [
       {
-        "time": 0,
         "x": 0,
-        "y": 0,
-        "scale": 1,
+        "y": -1.5,
+        "scale": 0.93,
+        "roll": 65.91882496107834,
+        "phase": "préparation",
+        "frame": "idle",
+        "time": 0
+      },
+      {
+        "time": 0.12,
+        "x": -7,
+        "y": 2,
+        "scale": 1.2,
+        "roll": 54,
         "frame": "idle",
         "phase": "préparation"
       },
       {
         "time": 0.12,
-        "x": -3,
-        "y": -2,
-        "scale": 1,
-        "frame": "idle",
-        "phase": "préparation"
-      },
-      {
-        "time": 0.12,
-        "x": -3,
-        "y": -2,
-        "scale": 1,
+        "x": -7,
+        "y": 2,
+        "scale": 1.2,
+        "roll": 54,
         "frame": "lift",
         "phase": "levée"
       },
       {
         "time": 0.28,
         "x": -12,
-        "y": -25,
+        "y": -17,
         "scale": 1.5,
+        "roll": 30,
         "frame": "lift",
         "phase": "levée"
       },
       {
         "time": 0.28,
         "x": -12,
-        "y": -25,
+        "y": -17,
         "scale": 1.5,
+        "roll": 30,
         "frame": "overhead",
         "phase": "levée"
       },
@@ -140,7 +158,7 @@
       {
         "time": 0.525,
         "x": -19,
-        "y": -20.5,
+        "y": -13,
         "scale": 1.2,
         "frame": "overhead",
         "phase": "frappe"
@@ -148,7 +166,7 @@
       {
         "time": 0.525,
         "x": -19,
-        "y": -20.5,
+        "y": -13,
         "scale": 1.2,
         "frame": "chop",
         "phase": "frappe"
@@ -156,7 +174,7 @@
       {
         "time": 0.58,
         "x": -19,
-        "y": -4,
+        "y": 3.5,
         "scale": 0.75,
         "frame": "chop",
         "phase": "frappe"
@@ -164,7 +182,7 @@
       {
         "time": 0.58,
         "x": -19,
-        "y": -4,
+        "y": 3.5,
         "scale": 0.75,
         "frame": "impact",
         "phase": "frappe"
@@ -172,7 +190,7 @@
       {
         "time": 0.62,
         "x": -19,
-        "y": -1,
+        "y": 4,
         "scale": 0.65,
         "frame": "impact",
         "phase": "impact"
@@ -180,7 +198,7 @@
       {
         "time": 0.66,
         "x": -19,
-        "y": -1,
+        "y": 4,
         "scale": 0.65,
         "frame": "impact",
         "phase": "retour du choc"
@@ -188,7 +206,7 @@
       {
         "time": 0.72,
         "x": -19,
-        "y": -3,
+        "y": 0,
         "scale": 0.67,
         "frame": "impact",
         "phase": "récupération"
@@ -196,7 +214,7 @@
       {
         "time": 0.92,
         "x": -15,
-        "y": -4,
+        "y": 3.5,
         "scale": 0.75,
         "frame": "impact",
         "phase": "récupération"
@@ -204,7 +222,7 @@
       {
         "time": 0.92,
         "x": -15,
-        "y": -4,
+        "y": 3.5,
         "scale": 0.75,
         "frame": "chop",
         "phase": "récupération"
@@ -222,32 +240,53 @@
         "x": -7,
         "y": -4,
         "scale": 1,
-        "frame": "lift",
+        "frame": "overhead",
         "phase": "récupération"
       },
       {
-        "time": 1.3,
-        "x": -2,
-        "y": -1,
-        "scale": 1,
-        "frame": "lift",
-        "phase": "récupération"
-      },
-      {
-        "time": 1.3,
-        "x": -2,
-        "y": -1,
-        "scale": 1,
-        "frame": "idle",
-        "phase": "récupération"
-      },
-      {
-        "time": 1.45,
-        "x": 0,
+        "time": 1.19,
+        "x": -9,
         "y": 0,
-        "scale": 1,
+        "scale": 1.2,
+        "roll": 30,
+        "frame": "overhead",
+        "phase": "récupération"
+      },
+      {
+        "time": 1.19,
+        "x": -9,
+        "y": 0,
+        "scale": 1.2,
+        "roll": 30,
+        "frame": "lift",
+        "phase": "récupération"
+      },
+      {
+        "time": 1.3,
+        "x": -7,
+        "y": 2,
+        "scale": 1.2,
+        "roll": 54,
+        "frame": "lift",
+        "phase": "récupération"
+      },
+      {
+        "time": 1.3,
+        "x": -7,
+        "y": 2,
+        "scale": 1.2,
+        "roll": 54,
         "frame": "idle",
-        "phase": "repos"
+        "phase": "récupération"
+      },
+      {
+        "x": 0,
+        "y": -1.5,
+        "scale": 0.93,
+        "roll": 65.91882496107834,
+        "phase": "repos",
+        "frame": "idle",
+        "time": 1.45
       }
     ],
     "damageEventSeconds": 0.62,
@@ -257,32 +296,42 @@
     ],
     "durationSeconds": 1.45,
     "budget": {
-      "pngBytes": 446213,
+      "pngBytes": 405964,
       "rgba8Bytes": 3244032
     },
     "invariants": [
-      "Manche droit",
-      "Main gauche au-dessus de la droite",
-      "Repos exact préservé",
+      "Manche droit et fer calé aux raccords",
+      "Main gauche basse et droite haute dans les cinq poses",
+      "Garde basse diagonale retrouvée à la fin",
       "Gants fermés et manches gris bleuté",
-      "Bras reliés au bas du viewport paysage pendant toute la frappe"
+      "Axe de descente vertical"
     ],
     "frameGeometry": {
       "idle": {
         "height": 384,
         "grip": [
-          210.5,
-          255
+          149,
+          282
         ],
-        "span": 90.67
+        "ferrule": [
+          328,
+          202
+        ],
+        "span": 122.178337358052,
+        "bakedRoll": 65.91882496107834
       },
       "lift": {
         "height": 384,
         "grip": [
-          211,
-          256
+          187,
+          234
         ],
-        "span": 104
+        "ferrule": [
+          305.5,
+          100.5
+        ],
+        "span": 111.23729681020332,
+        "bakedRoll": 41.59355624500528
       },
       "overhead": {
         "height": 576,
@@ -290,118 +339,206 @@
           204,
           350
         ],
-        "span": 91
+        "ferrule": [
+          207,
+          204
+        ],
+        "span": 91,
+        "bakedRoll": 1.177144885982063
       },
       "chop": {
         "height": 384,
         "grip": [
-          207.5,
+          204.5,
           268.5
         ],
-        "span": 86.98
+        "ferrule": [
+          198,
+          114
+        ],
+        "span": 96.36278961077728,
+        "bakedRoll": -2.4090813744722506
       },
       "impact": {
         "height": 384,
         "grip": [
-          205,
+          199,
           318.5
         ],
-        "span": 59.54
+        "ferrule": [
+          184.5,
+          221.5
+        ],
+        "span": 61.11776699102743,
+        "bakedRoll": -8.50187941148145
       }
+    },
+    "rigAnchor": {
+      "grip": [
+        210.5,
+        255
+      ],
+      "span": 90.67
     }
   },
   "assets": [
     {
       "id": "idle",
-      "purpose": "Repos et prise de départ",
+      "purpose": "Garde basse diagonale et retour au repos",
       "required": true,
       "productionStatus": "generated",
-      "sourceFile": "docs/asset-packs/sources/axe/vertical-idle-upright-source.png",
+      "sourceFile": "docs/asset-packs/sources/axe/diagonal-guard-left-hand-source.png",
+      "generationChain": [
+        {
+          "sourceFile": "docs/asset-packs/sources/axe/diagonal-guard-source.png",
+          "referencesActuallyAttached": [
+            "docs/asset-packs/references/hache-garde-diagonale.png",
+            "docs/asset-packs/sources/axe/guard-three-quarter-source.png"
+          ],
+          "promptExact": "Use case: identity-preserve. Create a single new transparent first-person REST sprite for the exact rustic axe from image 2, with the much more diagonal, low, sideways carry pose of the user's drawing in image 1. Image 1 is the binding pose/composition reference, drawn from the player camera, and image 2 is only the artwork/material identity reference, not the pose. Match the diagonal in the sketch very clearly: the straight rigid wooden shaft runs from low left to upper right at only 25–29 degrees ABOVE HORIZONTAL, the iron head is on the right and the cutting edge is on the upper-left side of the haft. It is held across the lower foreground, not pointed straight up. Two visible grips on the same straight line, lower grip left and near the butt, upper grip just to its right near the linen wrap. Both black-gloved hands must grip naturally with closed fingers. Both muted blue-grey sleeves extend continuously down to and beyond the bottom edge and stay separate until off canvas, not crossed. Give them enough painted continuation past the wrists, no floating hand or arm. Framing on a transparent SQUARE 1254x1254 sprite canvas: generous empty space in the top third, head centered around (880, 475) with margin from the right edge, upper grip around (620, 660), lower grip around (405, 775), straight shaft centerline through those three locations and the haft disappearing naturally down-left. Arms continue off the bottom; no sharp artificial cropping except at the bottom border. Keep the weapon's two dark rivets, old gray iron blade, smooth dark brown grain, pale linen wrap between both hands, black gloves, muted blue-gray jacket and coarse PS1-era nearest-neighbor pixel-art style from image 2. Slight three-quarter visibility of the blade face as in image 2. Same axe, same proportions and socket, no new detail, no effects, no realism. Exactly one weapon, two hands, no environment, no text, no watermark. Real alpha transparency.",
+          "tool": "image_gen intégré, modèle non exposé",
+          "date": "2026-11-09"
+        },
+        {
+          "sourceFile": "docs/asset-packs/sources/axe/diagonal-guard-left-hand-source.png",
+          "referencesActuallyAttached": [
+            "docs/asset-packs/sources/axe/diagonal-guard-source.png"
+          ],
+          "promptExact": "Use case: precise-object-edit. Edit the attached DEAD SECTOR first-person axe diagonal low rest sprite. Preserve the exact 1254×1254 transparent RGBA canvas, the axe outline, ferrule, perfectly straight wood, right upper hand, all grip positions and the same sleeve lengths. Correct ONLY the anatomy of the LOWER LEFT black-gloved hand beside the butt at the lower-left of the axe. It must read unmistakably as the player's LEFT hand coming from the lower-left sleeve. Use a natural supportive grip from underneath the shaft with the left palm rising behind it and the left thumb emerging from its own distinct fleshy base on the near, inside side. Draw exactly four fingers curved naturally around the far/top side of the wood, with index nearest the blade and little finger nearest the butt; one clearly distinguishable shorter thumb opposing those fingers, no second thumb or duplicated knuckles. Keep natural finger lengths and joints, no dislocated wrist, no fingers fused with the wood, shaft held securely inside the closed grip. The wrist must connect smoothly to the left glove cuff and existing blue-gray sleeve without changing the arm's direction, hand footprint or grip midpoint. Keep the worn black glove materials and coarse dark retro pixel-art shading matching the right hand. Everything outside that left fist and cuff must stay pixel-aligned to the input, especially blade, shaft and upper right hand. Exactly two hands total. No text, background, glow, extra tools or visual effects.",
+          "tool": "image_gen intégré, modèle non exposé",
+          "date": "2026-11-09"
+        },
+        {
+          "sourceFile": "docs/asset-packs/sources/axe/diagonal-guard-reference-grip-source.png",
+          "referencesActuallyAttached": [
+            "docs/asset-packs/sources/axe/diagonal-guard-left-hand-source.png",
+            "docs/asset-packs/references/hache-prise-main-gauche.png"
+          ],
+          "promptExact": "Use case: precise-object-edit.\nImage 1 is the axe sprite to edit. Image 2 is the user's exact LEFT HAND grip reference (the LOWER hand near the pommel of the sword).\nCorrect ONLY the lower LEFT hand of image 1 by copying the anatomy of the LOWER hand of image 2. It is a CLOSED OVERHAND GRASP, with the BACK OF THE LEFT HAND facing the camera, NOT its palm. The broad back of the glove lies on the upper-left/camera side of the wood. The thumb emerges from the RIGHT edge of that back-of-hand mass and crosses over the wood towards the lower-right, roughly perpendicular to the wood. The four fingers curl out of view BEHIND the wood, with only small curled tips visible along the lower-right edge. DO NOT draw a row of four large finger pads on the upper-left/front of the shaft. DO NOT have the thumb pointing upper-left. DO NOT make an underhand palm-up grip. Study the LOWER reference glove, not the upper one.\nRotate the anatomical arrangement of the reference with the axe's diagonal shaft (about 45 degrees clockwise relative to the reference). Left wrist connects naturally to the sleeve entering from bottom-left without a sharp twist. Matte black fabric closed glove; existing blue-grey sleeve.\nPreserve all axe head, straight shaft, bands, UPPER RIGHT hand, upper right arm, grip station, scale and framing. Keep the lower-left cuff and original sleeve unless a small cuff adjustment is necessary. Maintain the existing muted retro sprite art, stepped edges, no metallic armor, no sword. Full same square transparent RGBA canvas, same axe position. No added text or objects.",
+          "tool": "image_gen intégré, modèle non exposé",
+          "date": "2026-11-10"
+        }
+      ],
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
       "exportFile": "public/assets/weapons/axe/idle.png",
       "runtimeUrl": "/assets/weapons/axe/idle.png",
-      "measuredDimensions": {
-        "source": [
+      "exportDimensions": [
+        384,
+        384
+      ],
+      "alphaBounds": {
+        "x": 13,
+        "y": 140,
+        "width": 356,
+        "height": 244
+      },
+      "bytes": 69719,
+      "sha256": "2abe7fd0984fb18c513c6cd179d1c90faa2e865c2cd931730bb0e177093d0a70",
+      "gripPivotPercent": [
+        38.80208333333333,
+        73.4375
+      ],
+      "transformations": [
+        "Base conservée hors région de la prise gauche ; remplacement SourceCopy de la main, manchette et manche gauche depuis gripCorrection.sourceFile dans exportRectangle, sans déplacement ni recadrage de la silhouette.",
+        "Réduction uniforme nearest-neighbor à 384², alpha binaire seuil 128 ; fer, main droite et ancrages inchangés pixel pour pixel hors région."
+      ],
+      "gripCorrection": {
+        "sourceFile": "docs/asset-packs/sources/axe/diagonal-guard-reference-grip-source.png",
+        "sourceDimensions": [
           1254,
           1254
         ],
-        "export": [
-          384,
-          384
+        "exportRectangle": [
+          0,
+          274,
+          122,
+          110
         ],
-        "alphaBounds": {
-          "x": 44,
-          "y": 23,
-          "width": 282,
-          "height": 361
-        }
-      },
-      "bytes": 73127,
-      "sha256": "d6022456ca231e31eb5f54481877c37b483f154da050031497110fa771b3b23e",
-      "anchors": [
-        {
-          "id": "shaft-axis",
-          "x": 209.5,
-          "space": "export 384"
-        }
-      ],
-      "referencesActuallyAttached": [
-        "public/assets/weapons/axe/idle.png (ancien repos : cible à corriger)",
-        "public/assets/weapons/axe/lift.png (orientation du métal)"
-      ],
-      "promptExact": "Use case: precise-object-edit.\nImage 1 is the exact current first-person IDLE axe sprite to correct. Image 2 is the corrected LIFT sprite, for the desired upright axe-head orientation and material identity only.\nProduce ONE isolated square RGBA sprite with transparent background, same canvas, same pixel-art rendering and scale as image 1. Keep the idle position and EVERY element below the metal head unchanged: the two gloved hands, straight vertical wooden shaft, off-white wrapping, both blue-grey sleeves, hand spacing and bottom-edge continuation. Do not move, bend or tilt the shaft or hands.\nChange the AXE HEAD ONLY: instead of a broad fan projecting horizontally far left, show the same iron blade turned in depth so it appears slender, upright and nearly vertical, or slightly oblique, like image 2. Its cutting edge points downward and forward for a later overhead chop; the socket remains attached at the exact existing top of the shaft and retains its rivets, rusty iron and worn silver edge. Keep the upright head visible at rest, but visually consistent with image 2 when the arms lift. The outside silhouette must no longer resemble a horizontal crescent. No lateral swing, no extra objects, no effects, no text, no background. Preserve actual transparency and coarse crisp pixel clusters.",
-      "toolAndModelActuallyUsed": "Outil intégré image_gen.imagegen, modèle non exposé par l'outil.",
-      "transformations": [
-        "Réduction nearest-neighbor uniforme1254→384, sans recadrage",
-        "Alpha<128→0, sinon255 ; RGB conservés"
-      ],
-      "validation": {
-        "file": "pass",
-        "art": "pass",
-        "continuity": "pass",
-        "integration": "pass",
-        "gameplay": "not_checked"
-      },
-      "evidence": [
-        "7 novembre : lame de repos redressée et largeur de silhouette réduite à 52 px sur la zone supérieure du PNG384.",
-        "Vrai Game/P1 : capture tmp/axe-game-review/repos-lame-redressee.png ; raccords0,119→0,12 et1,299→1,3 inspectés, prises visuellement calées."
-      ],
-      "knownDefects": [],
-      "humanApproval": "not_requested",
-      "gripPivotPercent": [
-        54.817708333333336,
-        66.40625
-      ]
+        "coordinateSpace": "Canevas export 384×384, x/y/largeur/hauteur ; même échelle uniforme pour la source",
+        "unchangedOutsideRectangle": true
+      }
     },
     {
       "id": "lift",
+      "purpose": "Redressement intermédiaire avec prise gauche basse",
+      "required": true,
       "productionStatus": "generated",
-      "sourceFile": "docs/asset-packs/sources/axe/overhead-lift-upright-source.png",
+      "sourceFile": "docs/asset-packs/sources/axe/diagonal-lift-left-hand-source.png",
+      "generationChain": [
+        {
+          "sourceFile": "docs/asset-packs/sources/axe/diagonal-lift-source.png",
+          "referencesActuallyAttached": [
+            "docs/asset-packs/sources/axe/diagonal-guard-source.png",
+            "public/assets/weapons/axe/overhead.png (état avant réflexion des mains)"
+          ],
+          "promptExact": "Use case: identity-preserve. New transparent FPS axe sprite for one intermediate lift pose. Image 1 is the approved low diagonal rest pose: exact character sleeves, black gloves, wrap and axe identity. Image 2 is the subsequent raised pose, reference for the direction of motion and long forearms only. Show the SAME axe with a rigid straight wooden shaft halfway through lifting from low diagonal to upright. This pose MUST be visibly diagonal: the shaft points up-right at approximately 53–57 degrees above horizontal (33–37 degrees to the right of straight vertical). The axe head stays on the high/right end with its silver edge at the upper left of the shaft, same two rivets and worn iron cheek. Do not turn it into a sword or change the physical distance between grip positions on the handle. Two closed natural black-gloved grips, lower hand below the wrap and upper hand above it. Both muted blue-grey forearms sweep down naturally and continue all the way through the bottom border; give generous sleeve length for animation and no transparent gap that detaches either wrist. Keep a recognizable wooden butt. Canvas 1254x1254, square genuine RGBA alpha. Aim for head ferrule center near (825,410), upper grip near (665,660), lower grip near (525,880); maintain the single straight axis through those three points. Head entirely visible with margin, lower half includes the forearms. Style and chunky clusters match image 1 exactly. One axe, two hands, no effects, no scenery, no text, no border, no fake checkerboard.",
+          "tool": "image_gen intégré, modèle non exposé",
+          "date": "2026-11-09"
+        },
+        {
+          "sourceFile": "docs/asset-packs/sources/axe/diagonal-lift-left-hand-source.png",
+          "referencesActuallyAttached": [
+            "docs/asset-packs/sources/axe/diagonal-lift-source.png"
+          ],
+          "promptExact": "Use case: precise-object-edit. Edit the attached DEAD SECTOR first-person axe intermediate lifting sprite. Preserve the exact 1254×1254 transparent RGBA canvas, the axe outline, ferrule, perfectly straight wood, right upper hand, all grip positions and the same sleeve lengths. Correct ONLY the anatomy of the LOWER LEFT black-gloved hand beside the butt at the lower-left of the axe. It must read unmistakably as the player's LEFT hand coming from the lower-left sleeve. Use a natural supportive grip from underneath the shaft with the left palm rising behind it and the left thumb emerging from its own distinct fleshy base on the near, inside side. Draw exactly four fingers curved naturally around the far/top side of the wood, with index nearest the blade and little finger nearest the butt; one clearly distinguishable shorter thumb opposing those fingers, no second thumb or duplicated knuckles. Keep natural finger lengths and joints, no dislocated wrist, no fingers fused with the wood, shaft held securely inside the closed grip. The wrist must connect smoothly to the left glove cuff and existing blue-gray sleeve without changing the arm's direction, hand footprint or grip midpoint. Keep the worn black glove materials and coarse dark retro pixel-art shading matching the right hand. Everything outside that left fist and cuff must stay pixel-aligned to the input, especially blade, shaft and upper right hand. Exactly two hands total. No text, background, glow, extra tools or visual effects.",
+          "tool": "image_gen intégré, modèle non exposé",
+          "date": "2026-11-09"
+        },
+        {
+          "sourceFile": "docs/asset-packs/sources/axe/diagonal-lift-reference-grip-source.png",
+          "referencesActuallyAttached": [
+            "docs/asset-packs/sources/axe/diagonal-lift-left-hand-source.png",
+            "docs/asset-packs/sources/axe/diagonal-guard-reference-grip-source.png",
+            "docs/asset-packs/references/hache-prise-main-gauche.png"
+          ],
+          "promptExact": "Use case: precise-object-edit.\nImage 1 is the edit target: the diagonal LIFT frame of the DEAD SECTOR axe sprite. Image 2 is the anatomically corrected REST frame, the strict identity/left-hand anatomy reference. Image 3 is the user's sword reference for the LOWER LEFT hand only.\nRedraw ONLY the LOWER LEFT glove and its cuff on Image 1 to use exactly the same CLOSED OVERHAND grasp as Image 2 and the lower glove of Image 3. We see the broad BACK of the left hand facing camera on the LEFT of the shaft, NOT the palm. The thumb emerges from the RIGHT edge of that back-of-hand mass and crosses the wooden shaft toward the right, perpendicular to the shaft. Four fingers wrap BEHIND the shaft, with only small curled tips visible along the RIGHT edge, below the thumb. No row of four large finger pads on the left/front edge, no palm-up grip, no thumb pointing upper-left. The left wrist enters from the bottom-left and connects naturally to the existing sleeve. The thumb/finger occlusion and glove design must match Image 2 across animation, adjusted to Image 1's shaft angle.\nPreserve axe head, the straight shaft, bands, UPPER RIGHT glove and right arm, grip locations, scale and image framing. Preserve original lower-left sleeve except cuff if necessary. Matte black fabric glove, blue-grey sleeve, existing muted retro sprite rendering. No metal armor, sword, skin, extra fingers, text or background. Same full square transparent RGBA canvas as Image 1.",
+          "tool": "image_gen intégré, modèle non exposé",
+          "date": "2026-11-10"
+        }
+      ],
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
       "exportFile": "public/assets/weapons/axe/lift.png",
       "runtimeUrl": "/assets/weapons/axe/lift.png",
       "exportDimensions": [
         384,
         384
       ],
-      "bytes": 108725,
-      "sha256": "5944912d1c452af197095adf2cc19e93b5cb288b6c02809e6843e43d05a5743b",
+      "alphaBounds": {
+        "x": 77,
+        "y": 42,
+        "width": 307,
+        "height": 342
+      },
+      "bytes": 78266,
+      "sha256": "194d1171f07f3169aff29f1073e64f658355ddacf7ebdc71fb91e4bd3f5f1f86",
       "gripPivotPercent": [
-        54.947916666666664,
-        66.66666666666666
+        48.69791666666667,
+        60.9375
       ],
-      "sourceDimensions": [
-        1254,
-        1254
+      "transformations": [
+        "Base conservée hors région de la prise gauche ; remplacement SourceCopy de la main, manchette et manche gauche depuis gripCorrection.sourceFile dans exportRectangle, sans déplacement ni recadrage de la silhouette.",
+        "Réduction uniforme nearest-neighbor à 384², alpha binaire seuil 128 ; fer, main droite et ancrages inchangés pixel pour pixel hors région."
       ],
-      "generation": {
-        "tool": "image_gen built-in",
-        "date": "2026-11-07",
-        "prompt": "Edit target: image 1, the FIRST LIFT/PREPARATION sprite of a retro FPS axe attack. Image 2 is a reference ONLY for the edge-on blade orientation in the following chop.\nChange ONLY the iron axe HEAD at the top of image 1. Preserve EXACTLY the entire existing hands, gloves, sleeves, shaft, straight handle position and tilt, wrapping, canvas framing, pixel art style, palette and scale. Do not move the hands or change the pose. Keep the shaft rigid and straight.\nCurrent problem: the head presents a broad horizontal fan projecting left, which reads as a lateral swing/rest pose. Replace that horizontal broadside silhouette with an upright, narrow, slightly oblique head seen in depth for an OVERHEAD DOWNWARD CHOP. Turn the blade's plane into the vertical forward/back swing plane. The blade should visually extend mostly up/down, not stick far out to the left: emphasize the long vertical sharpened edge, narrow top/oblique side surfaces, coherent perspective around the same iron socket at the end of the handle. The sharpened edge points forward and down, poised to descend toward the target, mechanically credible two-handed axe. Preserve rusty iron, worn silver cutting edge, socket attachment and rivets. This is a perspective correction, not a different weapon or a bent head. No broad horizontal crescent silhouette, no scythe, no extra blade, no effects.\nReturn ONE isolated square sprite on real transparent background, exact same composition as image 1, arms continue through bottom edge. Not a sheet, no text or labels. Preserve all pixels outside the axe-head region as faithfully as possible.",
-        "references": [
-          "public/assets/weapons/axe/lift.png (ancienne pose, cellule haut-gauche de overhead-action-source.png)",
-          "public/assets/weapons/axe/chop.png"
+      "gripCorrection": {
+        "sourceFile": "docs/asset-packs/sources/axe/diagonal-lift-reference-grip-source.png",
+        "sourceDimensions": [
+          1254,
+          1254
         ],
-        "transformations": "Canevas 1254² entier réduit uniformément à384², nearest neighbor et alpha seuil128. Aucun recadrage.",
-        "observations": "Lame plus verticale et étroite, orientation oblique en profondeur ; manche droit et prises conservées visuellement. Export 384 inspecté ; continuité animée de cette retouche non revue."
+        "exportRectangle": [
+          72,
+          244,
+          114,
+          140
+        ],
+        "coordinateSpace": "Canevas export 384×384, x/y/largeur/hauteur ; même échelle uniforme pour la source",
+        "unchangedOutsideRectangle": true
       }
     },
     {
@@ -414,8 +551,8 @@
         384,
         576
       ],
-      "bytes": 125509,
-      "sha256": "1b6a82713f4888d4c9410b973c7d6ee396c7786c69edef32d797cc9cee0b00f9",
+      "bytes": 120965,
+      "sha256": "62b76cb0138bdaac54edb78bafd34a03addf18f63fcd6847118b87e2cbf0fe89",
       "gripPivotPercent": [
         53.125,
         60.763888888888886
@@ -430,6 +567,26 @@
         "prompt": "Edit target: first-person axe sprite attached. EXTEND CANVAS UPWARDS ONLY by 50% of original square height, resulting in a 2:3 portrait canvas. Keep original artwork exactly in the LOWER TWO THIRDS at its original scale and coordinates relative to the bottom: identical hands, fingers, straight handle, bluegrey sleeves, black gloves, texture and pixel art. In the new TOP THIRD, continue ONLY the straight wooden shaft up to and through the top edge. The shaft is one uninterrupted straight rigid line, width follows the existing top shaft; do not add axe blade, head, hands or other objects in this extension. This is an overscan patch for an overhead pose: the head remains above the field of view. Transparent background everywhere else. Do not crop or zoom original figure, do not reposition hands, do not alter original lower two thirds. No text.",
         "reference": "Ancien overhead.png : cellule haut-droite de overhead-action-source.png",
         "transformations": "Canevas entier 1024×1536 réduit uniformément en384×576, nearest neighbor et alpha seuil128. Extension supérieure dédiée, sans masque cachant une coupe au milieu de l’écran."
+      },
+      "alphaBounds": {
+        "x": 26,
+        "y": 165,
+        "width": 358,
+        "height": 411
+      },
+      "transformations": [
+        "Montage du fer trois-quarts au-dessus des prises sur canevas 384×576",
+        "Réflexion des avant-bras autour de l’axe du manche à partir de y260, fer préservé"
+      ],
+      "headGeneration": {
+        "sourceFile": "docs/asset-packs/sources/axe/guard-three-quarter-source.png",
+        "referencesActuallyAttached": [
+          "docs/asset-packs/sources/axe/vertical-idle-upright-source.png",
+          "docs/asset-packs/sources/axe/vertical-idle-source.png"
+        ],
+        "promptExact": "Use case: precise-object-edit. Edit image 1, the transparent first-person axe sprite for DEAD SECTOR. Image 2 is the older sprite, a reference ONLY for how a bit more of the iron axe blade's face can be visible. Deliver a single square sprite with real RGBA transparency and unchanged scale/canvas coordinates. Preserve the exact positions, size, appearance and shapes of both black gloves, the blue-grey sleeves, linen grip wrapping, and the dead straight wooden handle. Preserve the exposed rounded wood cap and the position of the iron socket with its two vertical rivets. Edit ONLY the iron axe head. Redraw it as the same rustic axe seen at a shallow three-quarter angle: modestly widen the flat iron cheek projecting to the LEFT of the shaft, by about 60–80 source pixels on the 1254×1254 source. Keep the head's existing height, blade endpoints, and silver sharpened edge approximately the same in Y. The wider iron cheek must taper naturally from the riveted socket to the single edge, with subtle worn gray iron and subdued rust. The result should be clearly recognizable as a small sturdy axe head at 384px while still upright and forward-facing enough for an overhead swing. Aim for intermediate width between the narrow head of image 1 and the broad side view of image 2, closer to image 1. Match image 1's chunky retro pixel-art clusters and dark outlines, modest worn metal texture, no glossy shine. No extra bevels, extra tools, additional hands, overlays, text, floor, border, background, or fake checkerboard. Keep all non-metal pixels identical and the shaft perfectly straight and vertical in the image: the game will rotate the whole guard pose at runtime.",
+        "tool": "image_gen intégré, modèle non exposé",
+        "date": "2026-11-09"
       }
     },
     {
@@ -448,11 +605,21 @@
         384,
         384
       ],
-      "bytes": 84421,
-      "sha256": "6315ff77f621c16f00ce0bcd69b4bff1595a66691a5288ca62bd4183898f7399",
+      "bytes": 82812,
+      "sha256": "37561f61f228ef429383304c0477db37d9e94a0a498a1d217f1f958c85c0582a",
       "gripPivotPercent": [
-        54.036458333333336,
+        53.255208333333336,
         69.921875
+      ],
+      "alphaBounds": {
+        "x": 41,
+        "y": 94,
+        "width": 343,
+        "height": 290
+      },
+      "transformations": [
+        "Cellule 627² réduite à 384², alpha binaire seuil 128",
+        "Réflexion des prises autour de l’axe du manche, fer et pointe préservés"
       ]
     },
     {
@@ -471,11 +638,21 @@
         384,
         384
       ],
-      "bytes": 54431,
-      "sha256": "a647c9dae41023e3daa1feaae889e38e8c49d2f320085c6b50f54b0894ce0897",
+      "bytes": 54202,
+      "sha256": "a59c6d864a68f7bc1cc006c13d8b464a77e80f44a6b185258af7eea3b1dcd949",
       "gripPivotPercent": [
-        53.385416666666664,
+        51.822916666666664,
         82.94270833333334
+      ],
+      "alphaBounds": {
+        "x": 43,
+        "y": 205,
+        "width": 341,
+        "height": 179
+      },
+      "transformations": [
+        "Cellule 627² réduite à 384², alpha binaire seuil 128",
+        "Réflexion des prises autour de l’axe du manche, fer et pointe préservés"
       ]
     }
   ],
@@ -486,14 +663,18 @@
     "previewCommand": "node scripts/make-axe-preview.mjs",
     "checksActuallyRun": [
       "npm.cmd run build",
-      "node scripts/check-axe.mjs",
       "node scripts/check-axe-art.mjs",
+      "node scripts/check-axe.mjs",
+      "node scripts/check-axe-stun.mjs",
+      "node tmp/axe-grip-reference-review/review.mjs",
+      "Comparaison RGBA des deux exports avant/après : aucune différence hors rectangles de la prise gauche",
       "git diff --check"
     ],
-    "observations": "7 novembre : vrai Game/Hall,1280×720, contrôle virtuel. Raccord lift→overhead inspecté avant/après ; cycle suivi en RAF à1× et0,25× jusqu’au repos ; captures des phases inspectées, trois raccords de récupération comparés avant/après. Stun observé après impact uniquement, aucune erreur JS ni ressource absente. Captures et temps : tmp/axe-game-review/cycle-observations.json, slow-*.png, recovery-*.png, raccords-verifies.png. 7 novembre : repos du vrai Game/P1 inspecté, lame verticale, capture repos-lame-redressee.png ; raccords repos/levée et retour comparés des deux côtés, sans erreur JS.",
+    "observations": "10 novembre : sources, exports 384², repos, première levée et raccord avec la pose armée inspectés. Dos du gant gauche, pouce devant et doigts derrière selon la référence. Chrome sur le vrai P1 au Pointer Lock natif : cycle déclenché au clic et échantillonné ; ferrure contrôlée aux huit raccords sur 1280×720, 1024×768, 2560×1080 et 390×700, écart inférieur à 0,3 pixel. Captures et mesures dans tmp/axe-grip-reference-review/. Aucune exception JS ni ressource manquante ; avertissement de textures Three.js existant.",
     "limits": [
-      "Observation par captures du cycle et poses arrêtées, pas de film continu visionné",
-      "Pas de partie complète jouée ni validation du confort sous pression"
+      "Les poses armée/frappe conservent leurs variations de silhouette et de perspective ; main gauche davantage tournée à ces phases.",
+      "Sur format portrait, une partie de la garde est derrière le HUD.",
+      "Captures et cycle échantillonné, aucun film continu visionné, aucune partie complète jouée ni écoute du mix."
     ]
   },
   "historicalAssets": [
@@ -726,6 +907,99 @@
         54.817708333333336,
         66.40625
       ]
+    },
+    {
+      "id": "idle-ancien",
+      "purpose": "Repos et prise de départ",
+      "required": true,
+      "productionStatus": "superseded",
+      "sourceFile": "docs/asset-packs/sources/axe/vertical-idle-upright-source.png",
+      "measuredDimensions": {
+        "source": [
+          1254,
+          1254
+        ],
+        "export": [
+          384,
+          384
+        ],
+        "alphaBounds": {
+          "x": 44,
+          "y": 23,
+          "width": 282,
+          "height": 361
+        }
+      },
+      "bytes": 73127,
+      "sha256": "d6022456ca231e31eb5f54481877c37b483f154da050031497110fa771b3b23e",
+      "anchors": [
+        {
+          "id": "shaft-axis",
+          "x": 209.5,
+          "space": "export 384"
+        }
+      ],
+      "referencesActuallyAttached": [
+        "public/assets/weapons/axe/idle.png (ancien repos : cible à corriger)",
+        "public/assets/weapons/axe/lift.png (orientation du métal)"
+      ],
+      "promptExact": "Use case: precise-object-edit.\nImage 1 is the exact current first-person IDLE axe sprite to correct. Image 2 is the corrected LIFT sprite, for the desired upright axe-head orientation and material identity only.\nProduce ONE isolated square RGBA sprite with transparent background, same canvas, same pixel-art rendering and scale as image 1. Keep the idle position and EVERY element below the metal head unchanged: the two gloved hands, straight vertical wooden shaft, off-white wrapping, both blue-grey sleeves, hand spacing and bottom-edge continuation. Do not move, bend or tilt the shaft or hands.\nChange the AXE HEAD ONLY: instead of a broad fan projecting horizontally far left, show the same iron blade turned in depth so it appears slender, upright and nearly vertical, or slightly oblique, like image 2. Its cutting edge points downward and forward for a later overhead chop; the socket remains attached at the exact existing top of the shaft and retains its rivets, rusty iron and worn silver edge. Keep the upright head visible at rest, but visually consistent with image 2 when the arms lift. The outside silhouette must no longer resemble a horizontal crescent. No lateral swing, no extra objects, no effects, no text, no background. Preserve actual transparency and coarse crisp pixel clusters.",
+      "toolAndModelActuallyUsed": "Outil intégré image_gen.imagegen, modèle non exposé par l'outil.",
+      "transformations": [
+        "Réduction nearest-neighbor uniforme1254→384, sans recadrage",
+        "Alpha<128→0, sinon255 ; RGB conservés"
+      ],
+      "validation": {
+        "file": "pass",
+        "art": "pass",
+        "continuity": "pass",
+        "integration": "pass",
+        "gameplay": "not_checked"
+      },
+      "evidence": [
+        "7 novembre : lame de repos redressée et largeur de silhouette réduite à 52 px sur la zone supérieure du PNG384.",
+        "Vrai Game/P1 : capture tmp/axe-game-review/repos-lame-redressee.png ; raccords0,119→0,12 et1,299→1,3 inspectés, prises visuellement calées."
+      ],
+      "knownDefects": [],
+      "humanApproval": "not_requested",
+      "gripPivotPercent": [
+        54.817708333333336,
+        66.40625
+      ],
+      "formerExportFile": "public/assets/weapons/axe/idle.png",
+      "runtimeUrl": null
+    },
+    {
+      "id": "lift-ancien",
+      "productionStatus": "superseded",
+      "sourceFile": "docs/asset-packs/sources/axe/overhead-lift-upright-source.png",
+      "exportDimensions": [
+        384,
+        384
+      ],
+      "bytes": 108725,
+      "sha256": "5944912d1c452af197095adf2cc19e93b5cb288b6c02809e6843e43d05a5743b",
+      "gripPivotPercent": [
+        54.947916666666664,
+        66.66666666666666
+      ],
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "generation": {
+        "tool": "image_gen built-in",
+        "date": "2026-11-07",
+        "prompt": "Edit target: image 1, the FIRST LIFT/PREPARATION sprite of a retro FPS axe attack. Image 2 is a reference ONLY for the edge-on blade orientation in the following chop.\nChange ONLY the iron axe HEAD at the top of image 1. Preserve EXACTLY the entire existing hands, gloves, sleeves, shaft, straight handle position and tilt, wrapping, canvas framing, pixel art style, palette and scale. Do not move the hands or change the pose. Keep the shaft rigid and straight.\nCurrent problem: the head presents a broad horizontal fan projecting left, which reads as a lateral swing/rest pose. Replace that horizontal broadside silhouette with an upright, narrow, slightly oblique head seen in depth for an OVERHEAD DOWNWARD CHOP. Turn the blade's plane into the vertical forward/back swing plane. The blade should visually extend mostly up/down, not stick far out to the left: emphasize the long vertical sharpened edge, narrow top/oblique side surfaces, coherent perspective around the same iron socket at the end of the handle. The sharpened edge points forward and down, poised to descend toward the target, mechanically credible two-handed axe. Preserve rusty iron, worn silver cutting edge, socket attachment and rivets. This is a perspective correction, not a different weapon or a bent head. No broad horizontal crescent silhouette, no scythe, no extra blade, no effects.\nReturn ONE isolated square sprite on real transparent background, exact same composition as image 1, arms continue through bottom edge. Not a sheet, no text or labels. Preserve all pixels outside the axe-head region as faithfully as possible.",
+        "references": [
+          "public/assets/weapons/axe/lift.png (ancienne pose, cellule haut-gauche de overhead-action-source.png)",
+          "public/assets/weapons/axe/chop.png"
+        ],
+        "transformations": "Canevas 1254² entier réduit uniformément à384², nearest neighbor et alpha seuil128. Aucun recadrage.",
+        "observations": "Lame plus verticale et étroite, orientation oblique en profondeur ; manche droit et prises conservées visuellement. Export 384 inspecté ; continuité animée de cette retouche non revue."
+      },
+      "formerExportFile": "public/assets/weapons/axe/lift.png",
+      "runtimeUrl": null
     }
   ],
   "overheadGeneration": {
