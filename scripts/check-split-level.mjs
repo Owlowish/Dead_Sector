@@ -34,7 +34,6 @@ import { Player } from '../src/Player.ts';
 import { Zombie } from '../src/Zombie.ts';
 import { Medkit } from '../src/Medkit.ts';
 import { AmmoBox } from '../src/AmmoBox.ts';
-import { ShotgunPickup } from '../src/ShotgunPickup.ts';
 import { MANSION_ELEVATION, MANSION_RAMPS, getMansionFloorHeight } from '../src/MansionConfig.ts';
 
 console.log('=== SUITE DE TESTS COMPORTEMENTAUX : MANOIR DEMI-NIVEAU (+2,4 M) ===\n');

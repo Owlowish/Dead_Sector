@@ -46,8 +46,7 @@ assert.equal(p3.spawnUnlocks.agile, 2, 'Les premiers Coureurs attendent les deux
 assert.equal(p3.spawnUnlocks.spitter, 2, 'Le premier Cracheur attend son introduction');
 assert.equal(ENCOUNTER_CONFIGS[3].spawnUnlocks.crawler, 2);
 const p6 = ENCOUNTER_CONFIGS[5];
-assert.deepEqual(p6.spawnGroups.map((group) => Object.entries(group)
-  .filter(([key]) => key !== 'pauseAfterSeconds').reduce((sum, [, value]) => sum + value, 0)), [6, 6]);
+assert.deepEqual(p6.spawnGroups.map(({ standard, agile, spitter, crawler }) => standard + agile + spitter + crawler), [6, 6]);
 assert.equal(p6.spawnGroups[0].pauseAfterSeconds, 3);
 assert.equal(p6.spawnGroups[0].crawler, 0, 'Les Rampeuses appartiennent à la seconde poussée');
 const finale = ENCOUNTER_CONFIGS.at(-1);

@@ -13,10 +13,12 @@ export class PortraitAttackCue {
   private readonly sweepRadii: number[] = [];
   private readonly origin: THREE.Vector3;
   private readonly direction: THREE.Vector3;
+  private readonly sweep: boolean;
 
   constructor(level: Level, origin: THREE.Vector3, direction: THREE.Vector3, length: number, halfWidth: number, sweep = false) {
     this.origin = origin.clone();
     this.direction = direction.clone();
+    this.sweep = sweep;
     this.material = new THREE.MeshBasicMaterial({
       color: visualColors.warning, transparent: true, opacity: 0.65,
       side: THREE.DoubleSide, depthWrite: false,
@@ -35,6 +37,14 @@ export class PortraitAttackCue {
       return p;
     };
     const triangle = (a: THREE.Vector3, b: THREE.Vector3, c: THREE.Vector3) => vertices.push(...a.toArray(), ...b.toArray(), ...c.toArray());
+    const raisedDash = (a: THREE.Vector3, b: THREE.Vector3): void => {
+      a.y += 1.18;
+      b.y += 1.18;
+      const topA = a.clone(); topA.y += 0.07;
+      const topB = b.clone(); topB.y += 0.07;
+      raised.push(...a.toArray(), ...b.toArray(), ...topB.toArray(),
+        ...a.toArray(), ...topB.toArray(), ...topA.toArray());
+    };
     if (sweep) {
       // Chaque secteur est masqué par les obstacles, sans disque traversant un mur.
       for (let i = 0; i < segments; i++) {
@@ -48,12 +58,17 @@ export class PortraitAttackCue {
         this.sweepRadii.push(reach);
         if (reach <= 0.1) continue;
         triangle(point(0, 0, a), point(reach, 0, a), point(reach, 0, b));
-        const lowA = point(reach, 0, a).add(new THREE.Vector3(0, 0.75, 0));
-        const lowB = point(reach, 0, b).add(new THREE.Vector3(0, 0.75, 0));
-        const highA = lowA.clone().add(new THREE.Vector3(0, 0.18, 0));
-        const highB = lowB.clone().add(new THREE.Vector3(0, 0.18, 0));
-        raised.push(...lowA.toArray(), ...lowB.toArray(), ...highB.toArray(),
-          ...lowA.toArray(), ...highB.toArray(), ...highA.toArray());
+        // Le liseré suspendu reprend le rayon de ce secteur, avec un espace entre les traits.
+        const gap = (b - a) * 0.14;
+        raisedDash(point(reach, 0, a + gap), point(reach, 0, b - gap));
+        if (i === 0 || i === segments - 1) {
+          const edge = i === 0 ? a : b;
+          for (let r = 0.4; r + 0.23 <= reach; r += 0.4) {
+            const end = point(r + 0.23, 0, edge);
+            if (!clearGroundSegment(level, origin, end)) break;
+            raisedDash(point(r, 0, edge), end);
+          }
+        }
       }
       reached = length;
     } else {
@@ -102,17 +117,21 @@ export class PortraitAttackCue {
     this.group.add(new THREE.Mesh(stainGeometry, this.stainMaterial));
     const ruptureGeometry = new THREE.BufferGeometry();
     ruptureGeometry.setAttribute('position', new THREE.Float32BufferAttribute(raised, 3));
-    this.ruptureMaterial = new THREE.MeshBasicMaterial({ color: sweep ? visualColors.ivory : 0x7d232a,
-      side: THREE.DoubleSide, transparent: true, opacity: 0.95, depthWrite: false });
+    this.ruptureMaterial = new THREE.MeshBasicMaterial({ color: sweep ? 0xffbe74 : 0x7d232a,
+      side: THREE.DoubleSide, transparent: true, opacity: sweep ? 0.65 : 0.95, depthWrite: false, toneMapped: !sweep });
     this.rupture = new THREE.Mesh(ruptureGeometry, this.ruptureMaterial);
-    this.rupture.visible = false;
+    this.rupture.visible = sweep;
     this.group.add(this.rupture);
   }
 
   update(progress: number, released: boolean): void {
     this.material.color.setHex(released ? visualColors.blood : visualColors.warning);
     this.material.opacity = released ? 0.85 : 0.45 + Math.min(1, progress) * 0.4;
-    this.rupture.visible = released;
+    this.rupture.visible = released || this.sweep;
+    if (this.sweep) {
+      this.ruptureMaterial.color.setHex(released ? visualColors.ivory : 0xffbe74);
+      this.ruptureMaterial.opacity = released ? 0.95 : 0.65 + Math.min(1, progress) * 0.25;
+    }
   }
 
   coversSweepTarget(target: THREE.Vector3): boolean {

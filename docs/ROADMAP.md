@@ -1,6 +1,6 @@
 # DEAD SECTOR — Travaux restants
 
-Plan actualisé le 9 novembre 2026. État et vérifications dans `ETAT_PROJET.md` ; règles et réglages dans `ORIENTATION_JEU.md`. G1–G3, Maître du Portrait, Rampeuse V3 et UI1–UI4 intégrés ; calage en partie et UI5–UI6 restent ouverts.
+Plan actualisé le 10 novembre 2026. État et vérifications dans `ETAT_PROJET.md`. Règles et réglages dans `ORIENTATION_JEU.md`. G1–G3, Maître du Portrait, Rampeuse V3 et UI1–UI4 intégrés. Calage en partie et UI5–UI6 ouverts.
 
 ## Socle présent
 
@@ -8,9 +8,7 @@ Manoir progressif et décor des six pièces, hache de départ puis pistolet et f
 
 ## Priorité gameplay — validation et finition
 
-G1–G3 livrés : équité et ressources, introductions/groupes et jauge finale. Maître du Portrait et Rampeuse V3 intégrés ; hache lente avec stun ordinaire et acquisition progressive des armes en place. Contrats dans la direction, provenance dans les manifestes. Poses de hache inspectées dans le manoir ; lecture en combat, contournement des deux circuits et économie réelle restent à valider.
-
-**G4 — Calage de la tentative.** Éprouver d'abord le duel renforcé demandé : minimum de deux minutes, absorption par le cadre, intérêt des tirs espacés/ouvertures, ramassage des drops et soins, confort du fusil et reprise après K. La borne temporelle est contrôlée logiquement ; sensations et durée réelle restent à jouer. Puis P1 à la hache, stun/relèves, acquisitions et récompenses oubliées. Comparer découverte et joueur connaissant les circuits, ajuster un axe à la fois et documenter les écarts aux 10–15 minutes ; garder le rythme des paliers ordinaires.
+**G4 — Calage de la tentative.** Jouer une découverte et une tentative avec les trajets connus. Observer le premier duel à la hache, l'écoute des relèves et des deux signaux de lampe, l'usage du repère d'accalmie et les changements de trajet au P5–P7. Au Portrait, évaluer le signal avant le tir, les munitions absorbées, la collecte des soins et le rythme des deux phases. Relever les écarts à la cible de 10–15 minutes et ajuster un axe à la fois.
 
 **Épreuve des ennemis.** Jouer les deux formes du Portrait, ses salves de 6/10 lames, la seconde visée, le combo de phase II et le masque exposé uniquement en récupération finale. Animations, traînées, impacts bornés et transformation intégrés : mesurer leur coût et écouter les deux sons dans le mix réel. Vérifier aussi les reprises hors regard de la Rampeuse ; ajuster un axe à la fois sans conclure à un gain de peur ou de difficulté sur les captures.
 
@@ -59,7 +57,7 @@ Mesures antérieures aux nouveaux sprites et limites dans `ETAT_PROJET.md` ; opt
 2. **Haute — Premières apparitions.** Chargement anticipé Rampeuse/Portrait ajouté ; compléter la préparation réelle du décodage, masques alpha, upload et compilation. Mesurer premiers types/poses et images stabilisées, sans déplacer toute la saccade dans le début jouable.
 3. **Moyenne — Ombres et appels de dessin.** Réutiliser les cartes pendant K/bilan avec invalidation à la reprise/reset ; préserver les ombres mobiles en combat. Regrouper marches/bâtis/ferrures par ensemble animable. Le passage unique des sprites est secondaire et exige un contrôle visuel.
 4. **Moyenne — CPU et mesures.** Mutualiser les raycasts de visibilité par ennemi/image et les matrices du décor ; présélectionner les points d'apparition avant les tests coûteux. Mesurer cumuls IA/navigation et GPU, vérifier que chaque benchmark simule réellement le combat, corriger la résolution diagnostique. Pas de refonte de navigation justifiée.
-5. **Basse — Entretien.** Unifier les ressources de mort préparées en double, limiter les styles d'arme inchangés et compléter la destruction globale avant recréation de Game. Filtrer la livraison des assets dormants sans supprimer leur provenance ; découper le bundle seulement avec bénéfice de chargement mesuré.
+5. **Basse — Entretien.** Unifier les ressources de mort préparées en double, limiter les styles d'arme inchangés et compléter la destruction globale avant recréation de Game. Filtrer la livraison des assets dormants sans supprimer leur provenance. Évaluer le chargement différé de JavaScript à partir d'une mesure du démarrage.
 
 ## Autres travaux encore ouverts
 

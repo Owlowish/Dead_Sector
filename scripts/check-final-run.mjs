@@ -26,8 +26,6 @@ const { Level } = await import('../src/Level.ts');
 const { Zombie } = await import('../src/Zombie.ts');
 const { GuardianProjectile } = await import('../src/GuardianProjectile.ts');
 const { PortraitParticles } = await import('../src/PortraitParticles.ts');
-const { ShotgunPickup } = await import('../src/ShotgunPickup.ts');
-const { PistolPickup } = await import('../src/PistolPickup.ts');
 const { TierDiagnosticsTracker } = await import('../src/TierDiagnostics.ts');
 const { ENCOUNTER_CONFIGS } = await import('../src/EncounterConfig.ts');
 const { PLAYER_START_POSITION } = await import('../src/MansionConfig.ts');
@@ -52,21 +50,20 @@ const portraitParticles = new PortraitParticles(scene, () => 0.5);
 const portraitAudio = { stops: 0, plays: [], stop() { this.stops++; }, play(...args) { this.plays.push(args); } };
 const music = { select(track, audible) { this.track = track; this.audible = audible; }, rewind() {} };
 const weapon = new Weapon(player.camera, canvas, [], level.getSolidMeshes(), () => {}, () => game.isSimulationActive(), (amount) => player.setAimAmount(amount));
-const pickup = new ShotgunPickup(scene);
-const pistolPickup = new PistolPickup(scene);
 const diagnostics = new TierDiagnosticsTracker();
 diagnostics.startTier(7); diagnostics.recordShot(); diagnostics.recordHit(1, 2); diagnostics.endTier();
 diagnostics.startTier(8); diagnostics.recordShot(); diagnostics.recordDamageTaken(12);
-const fields = ['duration', 'tiers', 'shots', 'hits', 'damage', 'mode'].map((name) => Object.assign(element(), { dataset: { runStat: name } }));
+const fields = ['duration', 'tiers', 'shots', 'hits', 'damage', 'mode', 'fatalHit'].map((name) => Object.assign(element(), { dataset: { runStat: name } }));
 const title = element();
+const fatalRow = element();
 const summaryDisplay = Object.assign(element(), {
-  querySelector: (selector) => selector === '#run-summary-title' ? title : element(),
+  querySelector: (selector) => selector === '#run-summary-title' ? title : selector === '[data-run-fatal]' ? fatalRow : element(),
   querySelectorAll: () => fields,
 });
 let clearedEffects = 0, resetStorm = 0, disposed = 0;
 const disposable = () => ({ dispose() { disposed++; }, stopAudio() {} });
 Object.assign(game, {
-  scene, level, player, weapon, shotgunPickup: pickup, pistolPickup, tierDiagnostics: diagnostics, portraitParticles, portraitAudio,
+  scene, level, player, weapon, tierDiagnostics: diagnostics, portraitParticles, portraitAudio,
   encounterConfigs: ENCOUNTER_CONFIGS, renderer: { domElement: canvas },
   state: 'playing', currentTier: 8, pendingTierStart: 0, spawnQueue: 1, respiteTimer: 0,
   runElapsedSeconds: 125, completedTiers: new Set([1, 2, 3, 4, 5, 6, 7]),
@@ -119,7 +116,7 @@ assert.equal(document.pointerLockElement, canvas);
 assert.equal(document.exitCount, 0, 'La dernière élimination ne libère pas la souris');
 assert.deepEqual(game.getRunSummary(), {
   result: 'won', elapsedSeconds: 125, completedTiers: 8, totalTiers: 8,
-  shotsFired: 2, headHits: 1, bodyHits: 2, damageTaken: 12, debugUsed: false,
+  shotsFired: 2, headHits: 1, bodyHits: 2, damageTaken: 12, fatalHit: null, debugUsed: false,
 });
 game.checkTierCompletion();
 game.endGame('lost');
@@ -134,6 +131,7 @@ assert.equal(document.exitCount, 1, 'Seule l’ouverture volontaire libère la s
 assert.equal(fields[0].textContent, '2:05');
 assert.equal(fields[1].textContent, '8 / 8');
 assert.equal(fields[2].textContent, '2');
+assert.equal(fatalRow.hidden, true, 'Aucun coup fatal dans le bilan de victoire');
 game.openRunSummary();
 assert.equal(document.exitCount, 1, 'Ouvrir deux fois ne répète pas la transition');
 game.closeRunSummary();
@@ -143,7 +141,8 @@ assert.equal(game.isSimulationActive(), true);
 assert.equal(document.pointerLockElement, null, 'La fermeture attend un clic pour reprendre la souris');
 
 // Une nouvelle tentative réutilise les systèmes, mais remet leurs données de partie à zéro.
-pickup.collect(weapon);
+game.ensureProgressionWeapons(8);
+weapon.switchWeapon('shotgun');
 weapon.upgradeAmmoCapacity(1.5); weapon.upgradeAccuracy(0.65);
 weapon.magazineAmmo = 0; weapon.reserveAmmo = 0;
 player.maxHealth = 140; player.health = 7; player.speedMultiplier = 1.12; player.flashlightOn = false;
@@ -177,8 +176,6 @@ assert.equal(weapon.getActiveWeaponId(), 'axe');
 assert.equal(weapon.isWeaponUnlocked('pistol'), false); assert.equal(weapon.isWeaponUnlocked('shotgun'), false);
 assert.equal(weapon.getAmmo(), 0); assert.equal(weapon.getMaxAmmo(), 0); assert.equal(weapon.getReserveAmmo(), 0);
 assert.deepEqual(weapon.getAmmoStocks().pistol, { magazine: 10, reserve: 30, unlocked: false });
-assert.equal(pickup.isConsumed(), false);
-assert.equal(pickup.isActive(), false); assert.equal(pistolPickup.isActive(), false);
 assert.deepEqual(level.getDoors().map((door) => [door.getId(), door.getState()]), initialDoors);
 assert.equal(diagnostics.getRecords().length, 0);
 assert.equal(diagnostics.getCurrentRecord().tierNumber, 1);
@@ -189,6 +186,9 @@ document.pointerLockElement = canvas;
 // Une touche fatale nettoie aussi les projectiles déjà retenus dans la nouvelle file,
 // sans avancer ceux qui restaient dans la file parcourue.
 player.health = 10;
+weapon.unlockWeapon('pistol');
+weapon.magazineAmmo = 8;
+assert.equal(weapon.reload(), true);
 const projectileOrigin = player.camera.position.clone();
 const projectileSceneSize = scene.children.length;
 const survivor = new GuardianProjectile(scene, projectileOrigin.clone().add(new THREE.Vector3(4, 0, 0)),
@@ -222,8 +222,13 @@ assert.equal(game.state, 'lost'); assert.equal(game.isSimulationActive(), false)
 assert.equal(game.gameOverDisplay.hidden, false); assert.equal(summaryDisplay.hidden, true);
 assert.equal(portraitParticles.getStats().active, 0, 'La défaite conserve aussi un pool vide');
 assert.equal(document.pointerLockElement, null, 'La défaite conserve sa pause existante');
+assert.deepEqual(game.getRunSummary().fatalHit, { cause: 'portrait-blade', tier: 1, reloading: true });
+game.openRunSummary();
+assert.equal(fatalRow.hidden, false);
+assert.equal(fields.at(-1).textContent, 'Lame du Maître du Portrait pendant le rechargement · Palier 1');
 game.restartRun();
 assert.equal(player.isAlive(), true); assert.equal(game.currentTier, 1);
 assert.equal(game.getRunSummary().completedTiers, 0);
+assert.equal(game.getRunSummary().fatalHit, null);
 portraitParticles.dispose();
 console.log('Finale : file/relèves, victoire unique et libre, bilan volontaire et nouvelle tentative complète : OK. Audio/DOM simulés ; gameplay non validé.');

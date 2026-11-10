@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import type { Level } from './Level.ts';
 import { EnemyImpact, type EnemyShotImpact } from './EnemyImpact.ts';
-import { crawlerConfig, crawlerAnimation, crawlerGroundOffsetY, type CrawlerPose } from './CrawlerAnimation.ts';
+import { crawlerConfig, crawlerAnimation, crawlerGroundOffsetY, crawlerLightCue, type CrawlerLightReaction, type CrawlerPose } from './CrawlerAnimation.ts';
+import { createCrawlerLightCueMaterial } from './CrawlerLightCue.ts';
 import { prepareSpriteHitMask } from './SpriteHitMask.ts';
 
 const WIDTH = crawlerConfig.width;
@@ -10,6 +11,7 @@ const HEIGHT = crawlerConfig.height;
 interface CrawlerSharedResources {
   geometry: THREE.PlaneGeometry;
   materials: Record<CrawlerPose, THREE.MeshStandardMaterial>;
+  lightMaterials: Record<CrawlerLightReaction, THREE.MeshStandardMaterial>;
 }
 
 let shared: CrawlerSharedResources | null = null;
@@ -41,6 +43,10 @@ function getShared(): CrawlerSharedResources {
   shared = {
     geometry: new THREE.PlaneGeometry(WIDTH, HEIGHT),
     materials,
+    lightMaterials: {
+      charge: createCrawlerLightCueMaterial(materials.attack, 'charge'),
+      flee: createCrawlerLightCueMaterial(materials.hurt, 'flee'),
+    },
   };
   return shared;
 }
@@ -75,7 +81,6 @@ export class CrawlerZombie {
   private isFleeing = false;
   private fleeTimer = 0;
   private fleeBlockedTimer = 0;
-  private isFlinching = false;
   private flinchTimer = 0;
   private lightCooldown = 0;
   private readonly sightRay = new THREE.Raycaster();
@@ -130,6 +135,7 @@ export class CrawlerZombie {
   public static disposeSharedResources(): void {
     if (!shared) return;
     shared.geometry.dispose();
+    for (const material of Object.values(shared.lightMaterials)) material.dispose();
     for (const material of Object.values(shared.materials)) {
       material.map?.dispose();
       material.dispose();
@@ -219,6 +225,17 @@ export class CrawlerZombie {
     }
   }
 
+  private playHiss(playbackRate = 1, duration?: number): void {
+    const audio = this.hissAudio;
+    if (!audio || (audio.isPlaying && duration === undefined)) return;
+    this.stopAudio();
+    try {
+      audio.setPlaybackRate(playbackRate);
+      audio.duration = duration === undefined ? undefined : duration * playbackRate;
+      audio.play();
+    } catch { /* Audio facultatif. */ }
+  }
+
   public stun(seconds: number): void {
     if (!this.alive || this.disposed || this.isDying || !Number.isFinite(seconds) || seconds <= 0) return;
     this.stunRemaining = Math.max(this.stunRemaining, seconds);
@@ -296,10 +313,11 @@ export class CrawlerZombie {
     this.shotReaction.apply(this.mesh, -crawlerGroundOffsetY);
   }
 
-  private setPose(newPose: CrawlerPose): void {
-    if (this.pose === newPose) return;
+  private setPose(newPose: CrawlerPose, reaction?: CrawlerLightReaction): void {
+    const resources = getShared();
+    const material = reaction ? resources.lightMaterials[reaction] : resources.materials[newPose];
     this.pose = newPose;
-    this.mesh.material = getShared().materials[newPose];
+    if (this.mesh.material !== material) this.mesh.material = material;
   }
 
   public update(
@@ -395,9 +413,7 @@ export class CrawlerZombie {
         this.isCeilingAmbush = false;
         this.isDropping = true;
         this.dropVelocityY = -2.5;
-        if (this.hissAudio && !this.hissAudio.isPlaying) {
-          try { this.hissAudio.play(); } catch { /* ignore */ }
-        }
+        this.playHiss();
         return;
       }
       // Si elle n'a pas encore décroché, elle continue ci-dessous pour ramper au plafond vers le joueur !
@@ -428,14 +444,14 @@ export class CrawlerZombie {
       if (this.fleeTimer <= 0) this.isFleeing = false;
     }
 
-    if (this.isFlinching) {
-      this.flinchTimer -= delta;
-      if (this.flinchTimer <= 0) {
-        this.isFlinching = false;
-      } else {
-        this.setPose('hurt');
-        return; // Stoppée brièvement par l'éblouissement
+    if (this.flinchTimer > 0) {
+      this.flinchTimer = Math.max(0, this.flinchTimer - delta);
+      if (this.flinchTimer > 0) {
+        const reaction = this.isFrenzy ? 'charge' : 'flee';
+        this.setPose(crawlerLightCue[reaction].pose, reaction);
+        return;
       }
+      this.setPose(this.pose);
     }
 
     if (playerContext?.isFlashlightOn && !this.isFrenzy && !this.isFleeing && this.lightCooldown <= 0 && distToPlayer < 14) {
@@ -452,13 +468,10 @@ export class CrawlerZombie {
         for (const b of blockers) b.updateWorldMatrix(true, false);
         if (this.sightRay.intersectObjects(blockers, false).length === 0) {
           // Déclenchement du spasme d'effroi / éblouissement
-          this.isFlinching = true;
-          this.flinchTimer = 0.20;
+          this.flinchTimer = crawlerLightCue.duration;
           this.lightCooldown = 5.0;
-          this.setPose('hurt');
-          if (this.hissAudio && !this.hissAudio.isPlaying) {
-            try { this.hissAudio.play(); } catch { /* ignore */ }
-          }
+          this.isAttacking = false;
+          this.attackTimer = 0;
           // Comportement aléatoire : 50% Furie (charge directe) / 50% Fuite (repli vers l'ombre)
           if (Math.random() < 0.5) {
             this.isFrenzy = true;
@@ -470,6 +483,10 @@ export class CrawlerZombie {
             this.isFrenzy = false;
             this.fleeBlockedTimer = 0;
           }
+          const reaction = this.isFrenzy ? 'charge' : 'flee';
+          const cue = crawlerLightCue[reaction];
+          this.setPose(cue.pose, reaction);
+          this.playHiss(cue.playbackRate, crawlerLightCue.duration);
           return;
         }
       }
@@ -483,16 +500,14 @@ export class CrawlerZombie {
     }
 
     if (this.isAttacking) {
-      // Une blessure ou la lampe peut suspendre le geste, jamais masquer sa reprise.
+      // Une blessure peut suspendre le geste, jamais masquer sa reprise.
       this.setPose('attack');
       this.attackTimer += delta;
       if (this.attackTimer >= crawlerConfig.attackWindup && this.attackTimer - delta < crawlerConfig.attackWindup) {
         if (this.canReachPlayer(playerPosition, crawlerConfig.attackRange + 0.35)) {
           // Attaque avec agrippement (isAnkleGrab = true)
           onAttackPlayer?.(crawlerConfig.attackDamage, true);
-          if (this.hissAudio && !this.hissAudio.isPlaying) {
-            try { this.hissAudio.play(); } catch { /* ignore */ }
-          }
+          this.playHiss();
         }
       }
       if (this.attackTimer >= crawlerConfig.attackWindup + crawlerConfig.attackRecovery) {
@@ -508,9 +523,7 @@ export class CrawlerZombie {
       this.attackTimer = 0;
       this.setPose('attack');
       // L'indice sonore commence avec la préparation, avant la saisie.
-      if (this.hissAudio && !this.hissAudio.isPlaying) {
-        try { this.hissAudio.play(); } catch { /* Audio facultatif. */ }
-      }
+      this.playHiss();
       return;
     }
 
@@ -686,9 +699,7 @@ export class CrawlerZombie {
             this.isFrenzy = true;
             this.frenzyTimer = 2.8;
             this.fleeBlockedTimer = 0;
-            if (this.hissAudio && !this.hissAudio.isPlaying) {
-              try { this.hissAudio.play(); } catch { /* ignore */ }
-            }
+            this.playHiss(crawlerLightCue.charge.playbackRate, crawlerLightCue.duration);
           }
         } else {
           this.fleeBlockedTimer = 0;

@@ -103,6 +103,21 @@ const beforeSecondBurst = waiting.boss.getHealth();
 waiting.boss.takeDamage(1e9);
 close(beforeSecondBurst - waiting.boss.getHealth(), guardianConfig.damageReserve, 'La réserve reste bornée au fil du duel');
 
+const opening = fixture();
+opening.run(8, far);
+assert.equal(opening.boss.isOpeningReady(), false, 'La réserve seule ne constitue pas une ouverture');
+for (let i = 0; i < 400 && !opening.boss.isMaskExposed(); i++) opening.step(0.01);
+assert.equal(opening.boss.isOpeningReady(), true, 'Une vraie ouverture avec de la réserve se signale avant tout impact');
+opening.boss.takeDamage(81);
+assert.equal(opening.boss.isMaskExposed(), true);
+assert.equal(opening.boss.isOpeningReady(), false, 'Un masque encore exposé ne promet pas un tir que la réserve ne peut absorber');
+opening.step(0.1);
+assert.equal(opening.boss.isOpeningReady(), true, 'La réserve revient au seuil pendant la récupération');
+const beforeOpeningShot = opening.boss.getHealth();
+opening.boss.takeDamage(80);
+close(beforeOpeningShot - opening.boss.getHealth(), 80, 'Le signal correspond à un tir précis complet');
+assert.equal(opening.boss.isOpeningReady(), false);
+
 const mixed = fixture();
 mixed.run(6, far);
 const game = Object.create(Game.prototype);

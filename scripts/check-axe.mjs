@@ -9,7 +9,11 @@ registerHooks({ resolve(specifier, context, next) {
 class Element extends EventTarget {
   properties = new Map();
   style = { setProperty: (key, value) => this.properties.set(key, value) };
-  classList = { toggle() {}, add() {}, remove() {} };
+  classes = new Set();
+  classList = {
+    toggle: (name, enabled) => enabled ? this.classes.add(name) : this.classes.delete(name),
+    add: (name) => this.classes.add(name), remove: (name) => this.classes.delete(name),
+  };
 }
 const canvas = new Element();
 const hud = new Element();
@@ -69,8 +73,13 @@ mouse(2); weapon.update(0.2);
 assert.equal(weapon.aimAmount, 0, 'La hache ne zoome pas');
 key('Digit2'); assert.equal(weapon.getActiveWeaponId(), 'axe', 'Pistolet verrouillé');
 const victim = target();
+const inRange = () => hud.classes.has('axe-in-range');
 reset([victim]);
+weapon.update(0.016);
+assert.equal(inRange(), true, 'Une cible exposée à portée modifie le réticule');
+assert.equal(hits.length + impacts.length + shots.length + sounds.length, 0, 'Le repère ne déclenche aucun coup');
 mouse();
+assert.equal(inRange(), false, 'Le repère disparaît pendant le geste');
 assert.equal(hits.length, 0, 'Pas de dégâts au clic');
 assert.deepEqual(shots, ['axe']);
 weapon.update(axeAttack.impactTime - 0.01);
@@ -95,7 +104,9 @@ weapon.unlockWeapon('pistol');
 assert.equal(weapon.getActiveWeaponId(), 'axe', 'Changer d’arme ne coupe pas la récupération');
 weapon.update(axeAttack.duration);
 assert.equal(hits.length, 1, 'Un seul événement de contact à grand delta');
+assert.equal(inRange(), true, 'Le repère revient après récupération');
 key('Digit2'); assert.equal(weapon.getActiveWeaponId(), 'pistol');
+assert.equal(inRange(), false, 'Le changement d’arme enlève le repère');
 weapon.unlockWeapon('shotgun'); key('Digit1'); assert.equal(weapon.getActiveWeaponId(), 'axe');
 key('Numpad3'); assert.equal(weapon.getActiveWeaponId(), 'shotgun');
 weapon.nextWeapon(); assert.equal(weapon.getActiveWeaponId(), 'axe');
@@ -114,11 +125,15 @@ weapon.update(0.33); assert.equal(hits.length, 1, 'Reprise : contact unique');
 reset([victim]); mouse(); weapon.update(0.3);
 camera.position.z = 3; weapon.update(0.4);
 assert.equal(hits.length, 0, 'Portée évaluée au contact, pas au départ');
-reset([target(0, -3)]); mouse(); weapon.update(1);
+reset([target(0, -3)]); weapon.update(0.016);
+assert.equal(inRange(), false, 'Une cible visible hors de portée ne modifie pas le réticule');
+mouse(); weapon.update(1);
 assert.equal(hits.length, 0, 'Cible hors portée');
 const wall = new THREE.Mesh(new THREE.PlaneGeometry(4, 4), material);
 wall.position.set(0, 1.7, -0.7);
-reset([victim], [wall]); mouse(); weapon.update(1);
+reset([victim], [wall]); weapon.update(0.016);
+assert.equal(inRange(), false, 'Un mur masque aussi la cible pour le réticule');
+mouse(); weapon.update(1);
 assert.equal(hits.length, 0, 'Le mur arrête la hache');
 assert.equal(impacts.length, 1);
 assert.equal(impacts[0].kind, 'surface');
@@ -140,6 +155,10 @@ weapon.setTargets([victim]); weapon.update(2);
 assert.equal(hits.length, 0, 'Nouvelle tentative : aucun contact tardif');
 reset([victim]); mouse(); weapon.update(0.3); weapon.cancelMeleeAttack(); weapon.update(2);
 assert.equal(hits.length, 0, 'Transition/debug : aucun contact hérité');
+assert.equal(inRange(), true);
+document.pointerLockElement = null;
+document.dispatchEvent(new Event('pointerlockchange'));
+assert.equal(inRange(), false, 'Le repère se nettoie dès la perte de capture');
 // Le vrai trajet Weapon → Game → Zombie applique dégâts et interruption ensemble.
 THREE.TextureLoader.prototype.load = () => new THREE.Texture();
 const { Game } = await import('../src/Game.ts');

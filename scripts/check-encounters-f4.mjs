@@ -380,6 +380,21 @@ assert.equal(game['level'].isColliding(secondSpawn.x, secondSpawn.z, 0.45), fals
 assert.ok(Math.hypot(secondSpawn.x + 19, secondSpawn.z - 14) >= 6, 'La position représentative respecte la distance de sécurité');
 Math.random = originalRandom;
 
+// Le dernier duo P3 reste atteignable depuis le fond de l’Atelier, immobile.
+game.startTier(3);
+game.player.camera.position.set(12, 4.1, -18);
+Object.assign(game, { spawnQueue: 2, killsThisTier: 4, tierStandardSpawned: 3, tierAgileSpawned: 1 });
+assert.ok(game.trySpawnZombie(), 'Le repli P3 trouve une arrivée depuis le fond de l’Atelier');
+game.spawnQueue--;
+if (game.spawnQueue > 0) {
+  assert.equal(game.spawnCooldownTimer, 2);
+  assert.ok(game.trySpawnZombie(), 'L’escorte séparée conserve un autre point sûr');
+  game.spawnQueue--;
+}
+assert.deepEqual(game.zombies.map((zombie) => zombie.getKind()), ['spitter', 'agile']);
+assert.ok(game.zombies.every((zombie) => zombie.getPosition().y > 2.4), 'Le duo conserve son entrée à l’étage');
+game.player.camera.position.set(-19, 1.7, 14);
+
 // Finale réelle : le vrai Gardien arrive seul et doit mourir pour terminer.
 game.startTier(8);
 const finalSpawned = [];

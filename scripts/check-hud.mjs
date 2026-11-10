@@ -90,7 +90,6 @@ const { Weapon } = await import('../src/Weapon.ts');
 const { Zombie } = await import('../src/Zombie.ts');
 const { Medkit } = await import('../src/Medkit.ts');
 const { AmmoBox } = await import('../src/AmmoBox.ts');
-const { ShotgunPickup } = await import('../src/ShotgunPickup.ts');
 const { TierDiagnosticsTracker } = await import('../src/TierDiagnostics.ts');
 const { ENCOUNTER_CONFIGS } = await import('../src/EncounterConfig.ts');
 
@@ -136,16 +135,32 @@ hud.setBoss({ health: 360, maxHealth: 800, phase: 2, attack: null, maskExposed: 
 assert.match(field('boss-attack').textContent, /MASQUE PROTÉGÉ/);
 hud.setBoss({ health: 700, maxHealth: 800, phase: 1, attack: 'tear' });
 assert.match(field('boss-attack').textContent, /QUITTEZ LA TRACE/);
-hud.setBoss({ health: 400, maxHealth: 800, phase: 2, attack: null, recovering: true, transforming: true });
+hud.setBoss({ health: 400, maxHealth: 800, phase: 2, attack: null, transforming: true });
 assert.match(field('boss-attack').textContent, /LA TOILE SE DÉCHIRE/);
-hud.setBoss({ health: 390, maxHealth: 800, phase: 2, attack: null, comboTransition: true, recovering: true });
+hud.setBoss({ health: 390, maxHealth: 800, phase: 2, attack: null, comboTransition: true });
 assert.match(field('boss-attack').textContent, /ENCHAÎNEMENT/);
-assert.doesNotMatch(field('boss-attack').textContent, /RÉCUPÉRATION/, 'Une transition de combo ne promet pas une ouverture finale');
-hud.setBoss({ health: 360, maxHealth: 800, phase: 2, attack: null, recovering: true });
+assert.doesNotMatch(field('boss-attack').textContent, /MASQUE EXPOSÉ/, 'Une transition de combo ne promet pas une ouverture finale');
+const openMask = { health: 360, maxHealth: 800, phase: 2, attack: null, maskExposed: true };
+hud.setBoss(openMask);
 assert.equal(field('boss-bar').style.getPropertyValue('--fill'), '45%');
 assert.match(field('boss-phase').textContent, /II/);
-assert.match(field('boss-attack').textContent, /RÉCUPÉRATION/);
-assert.match(field('boss-attack').textContent, /MASQUE EXPOSÉ/);
+assert.match(field('boss-attack').textContent, /MASQUE EXPOSÉ · CADRE RÉSISTANT/);
+assert.equal(field('boss-attack').classList.contains('guardian-opening'), false);
+hud.setBoss({ ...openMask, openingReady: true });
+assert.match(field('boss-attack').textContent, /MASQUE EXPOSÉ · TIREZ/);
+assert.equal(field('boss-attack').classList.contains('guardian-opening'), true);
+hud.setBoss({ ...openMask, openingReady: true, openingCovered: true });
+assert.equal(field('boss-attack').textContent, 'MASQUE EXPOSÉ', 'Une ouverture derrière un mur ne demande pas de tirer');
+hud.setBoss({ ...openMask, attack: 'sweep', maskExposed: false, sweepThreat: true });
+hud.update(0.05, true);
+assert.equal(field('sweep-warning').hidden, false, 'Le secteur dangereux annonce le balayage près du viseur');
+hud.update(0, false);
+assert.equal(field('sweep-warning').hidden, true, 'L’alerte disparaît hors contrôle');
+hud.setBoss({ ...openMask, attack: 'sweep', maskExposed: false, sweepThreat: false });
+hud.update(0.05, true);
+assert.equal(field('sweep-warning').hidden, true, 'Le joueur hors secteur garde uniquement l’annonce de la jauge');
+hud.setBoss(openMask);
+assert.equal(field('boss-attack').classList.contains('guardian-opening'), false, 'Le signal disparaît dès que la réserve a été consommée');
 hud.clear();
 assert.equal(field('boss').hidden, true, 'aucune jauge après victoire ou redémarrage');
 hud.setAmmo(ammo, false);
@@ -306,6 +321,7 @@ console.log('HUD : santé critique, états de munitions, invites, gains fusionn�
 const scene = new THREE.Scene();
 const level = {
   getFloorHeightAt: () => 0, getDoors: () => [], isColliding: () => false,
+  hasLineOfSight: (_from, target) => target.x !== 2, findNextWaypoint: (_from, target) => target,
   getLightingAt: () => ({ brightness: 0.5, warmth: 0 }), getStormWindowPositions: () => [], update() {},
 };
 const player = Object.create(Player.prototype);
@@ -340,7 +356,8 @@ Object.assign(game, {
   runElapsedSeconds: 0, completedTiers: new Set(), runResult: null, debugRun: false,
   debugMenuOpen: false, runSummaryOpen: false, disposed: false, damageEffectRemaining: 0,
   zombies: [], spitProjectiles: [], ammoBoxes: [], ammoDrops: [], medkits: [], shellCasings: [],
-  shotgunPickup: new ShotgunPickup(scene, 40, 40), upgradePedestals: [], appliedUpgrades: [],
+  respiteGuide: new THREE.Mesh(new THREE.OctahedronGeometry(0.21), new THREE.MeshBasicMaterial()),
+  respiteDoors: [], respiteGuideDelay: 0, upgradePedestals: [], appliedUpgrades: [],
   encounterBell: { setActive() {}, canInteract: () => false, update() {} },
   tierDiagnostics: new TierDiagnosticsTracker(),
   horrorDirector: { resetRespite() {}, suspend() {} },
@@ -395,14 +412,15 @@ assert.equal(weapon.getReserveAmmoFor('pistol'), pistolBefore);
 assert.equal(weapon.getReserveAmmoFor('shotgun'), 19);
 assert.equal(notifications()[0].textContent, '+4 CARTOUCHES · CAL. 12');
 otherAmmo.dispose(); hud.clear();
-game.shotgunPickup.x = 0; game.shotgunPickup.z = 0;
-game.updatePickups(0.05, true);
+game.currentTier = 3;
+game.enterRespite();
 assert.equal(weapon.isWeaponUnlocked('shotgun'), true);
-assert.equal(weapon.getActiveWeaponId(), 'shotgun');
+assert.equal(weapon.getActiveWeaponId(), 'pistol');
 assert.equal(document.querySelector('[data-hud-slot="shotgun"]').hidden, false);
 assert.equal(notifications().filter((node) => /ACQUIS/.test(node.textContent)).length, 1);
-game.updatePickups(0.05, true);
+game.enterRespite();
 assert.equal(notifications().filter((node) => /ACQUIS/.test(node.textContent)).length, 1, 'une acquisition unique');
+weapon.switchWeapon('shotgun');
 
 // Le HUD suit le transfert de cartouche effectif, y compris une interruption.
 document.pointerLockElement = canvas;
@@ -437,7 +455,20 @@ assert.equal(field('capacity').textContent, '15');
 assert.equal(field('magazine').textContent, String(weapon.getAmmo()));
 
 // La boucle réelle, pas une recopie du garde, décide de suspendre l'accalmie.
-game.state = 'exploration'; game.pendingTierStart = 2; game.respiteTimer = 9.4;
+game.currentTier = 1; game.state = 'exploration'; game.pendingTierStart = 2; game.respiteTimer = 9.4;
+game.respiteDoors = [{ getPosition: () => ({ x: -4, z: 1 }) }];
+game.updateRespiteGuide(0.05, true);
+assert.equal(game.respiteGuide.position.x, -4, 'Un accès ouvert est repéré pendant l’accalmie');
+const previousMedkits = game.medkits;
+game.medkits = [new Medkit(scene, 2, 0), new Medkit(scene, 4, 0)];
+player.health = 45;
+game.updateRespiteGuide(0.21, true);
+assert.equal(game.respiteGuide.position.x, 4, 'Le soin visible prime sur l’accès et sur le soin masqué');
+game.updateRespiteGuide(0, false);
+assert.equal(game.respiteGuide.visible, false, 'Le repère disparaît hors contrôle');
+for (const kit of game.medkits) kit.dispose();
+game.medkits = previousMedkits;
+player.health = 100;
 game.updateObjectiveDisplay();
 assert.equal(document.querySelector('#objective').dataset.phase, 'respite');
 assert.equal(field('remaining').textContent, '10 S');
@@ -471,11 +502,11 @@ assert.equal(game.currentTier, 2);
 assert.equal(game.pendingTierStart, 0);
 assert.equal(game.spawnQueue, ENCOUNTER_CONFIGS[1].totalZombies);
 assert.equal(field('respite-bar').hidden, true);
+assert.equal(game.respiteGuide.visible, false);
 
 // Un dégât fatal au début d'une frame interdit aussi les collectes de cette frame.
 game.spawnQueue = 0; player.health = 5;
 weapon.switchWeapon('pistol'); weapon.reserveAmmo = 58;
-game.shotgunPickup = new ShotgunPickup(scene, 0, 0);
 const deathDrop = new AmmoBox(scene, 0, 0, 10, 'pistol');
 game.ammoDrops = [deathDrop]; hud.clear();
 weapon.magazineAmmo = 1; weapon.lastShot = -Infinity; weapon.shoot();
@@ -488,7 +519,7 @@ tick();
 assert.equal(game.state, 'lost');
 assert.equal(weapon.getReserveAmmo(), 58, 'la frame de mort ne ramasse pas de munitions');
 assert.equal(deathDrop.isConsumed(), false);
-assert.equal(game.shotgunPickup.isConsumed(), false);
+assert.equal(game.getRunSummary().fatalHit.cause, 'spit');
 assert.equal(notifications().length, 0);
 assert.deepEqual(shotFeedback(), [0, 0], 'la vraie fin de partie nettoie aussi le retour de tir');
 

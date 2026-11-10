@@ -26,10 +26,12 @@ export interface HudBoss {
   maxHealth: number;
   phase: 1 | 2;
   attack: 'sweep' | 'blades' | 'tear' | null;
-  recovering?: boolean;
   transforming?: boolean;
   comboTransition?: boolean;
   maskExposed?: boolean;
+  openingReady?: boolean;
+  openingCovered?: boolean;
+  sweepThreat?: boolean;
   volleyIndex?: 1 | 2;
   frameResisting?: boolean;
 }
@@ -77,6 +79,8 @@ export class GameHud {
   private readonly bossBar = document.querySelector<HTMLElement>('[data-hud-boss-bar]');
   private readonly bossPhase = document.querySelector<HTMLElement>('[data-hud-boss-phase]');
   private readonly bossAttack = document.querySelector<HTMLElement>('[data-hud-boss-attack]');
+  private readonly sweepWarning = document.querySelector<HTMLElement>('[data-hud-sweep-warning]');
+  private sweepThreat = false;
   private announcementRemaining = 0;
   private sectorRemaining = 0;
   private progressionKey = '';
@@ -246,16 +250,23 @@ export class GameHud {
 
   public setBoss(state: HudBoss | null): void {
     if (this.boss) this.boss.hidden = !state;
+    const openingReady = state?.openingReady === true;
+    const clearOpening = openingReady && !state?.openingCovered;
+    this.sweepThreat = state?.sweepThreat === true;
+    if (!this.sweepThreat && this.sweepWarning) this.sweepWarning.hidden = true;
+    this.bossAttack?.classList.toggle('guardian-opening', clearOpening);
     if (!state) return;
     const ratio = Math.max(0, Math.min(1, state.health / Math.max(1, state.maxHealth)));
     this.bossBar?.style.setProperty('--fill', `${ratio * 100}%`);
     this.bossBar?.setAttribute('aria-valuenow', String(state.health));
     this.bossBar?.setAttribute('aria-valuemax', String(state.maxHealth));
     const phaseLabel = state.phase === 2 ? 'II · HORS DU CADRE' : 'I · DANS LE CADRE';
-    write(this.bossPhase, state.frameResisting ? `${phaseLabel} · LE CADRE ABSORBE LES COUPS` : phaseLabel);
+    write(this.bossPhase, state.frameResisting && !openingReady ? `${phaseLabel} · LE CADRE ABSORBE LES COUPS` : phaseLabel);
     write(this.bossAttack, state.transforming ? 'LA TOILE SE DÉCHIRE'
       : state.comboTransition ? 'ENCHAÎNEMENT · RESTEZ MOBILE'
-      : state.recovering ? 'RÉCUPÉRATION · MASQUE EXPOSÉ'
+      : clearOpening ? 'MASQUE EXPOSÉ · TIREZ'
+      : openingReady ? 'MASQUE EXPOSÉ'
+      : state.maskExposed ? 'MASQUE EXPOSÉ · CADRE RÉSISTANT'
       : state.attack === 'sweep' ? 'BALAYAGE · ÉCARTEZ-VOUS'
       : state.attack === 'blades' ? `LAMES DE PEINTURE · SALVE ${state.volleyIndex ?? 1}/2 · DÉCALEZ-VOUS`
       : state.attack === 'tear' ? 'DÉCHIRURE · QUITTEZ LA TRACE'
@@ -329,6 +340,7 @@ export class GameHud {
     if (this.sector) this.sector.hidden = this.combatSector && this.sectorRemaining <= 0;
     if (this.notifications) this.notifications.hidden = !controlActive || this.notices.length === 0;
     if (this.announcement) this.announcement.hidden = !controlActive || this.announcementRemaining <= 0;
+    if (this.sweepWarning) this.sweepWarning.hidden = !controlActive || !this.sweepThreat;
   }
 
   public clear(): void {

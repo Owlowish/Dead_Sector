@@ -6,6 +6,9 @@
 
 import type { Point2D } from './MansionConfig.ts';
 import { MANSION_SPAWNS } from './MansionConfig.ts';
+import type { ZombieKind } from './ZombieRemains.ts';
+
+type SpawnPreferences = Partial<Record<ZombieKind, (point: Point2D, floor: number) => boolean>>;
 
 export interface EncounterSpawnGroup {
   standard: number;
@@ -15,6 +18,7 @@ export interface EncounterSpawnGroup {
   crawler: number;
   /** Délai actif après élimination définitive du groupe, avant le suivant. */
   pauseAfterSeconds?: number;
+  spawnPreferences?: SpawnPreferences;
 }
 
 export interface EncounterSpec {
@@ -40,6 +44,9 @@ export interface EncounterSpec {
   maxSimultaneousCrawler?: number;
   /** Nombre d'ennemis envoyés lors de la salve d'ouverture initiale */
   openingSpawns?: number;
+  openingLead?: ZombieKind;
+  /** Maintient la première menace seule jusqu'à son élimination définitive. */
+  soloOpening?: boolean;
   /** Éliminations définitives requises avant d'introduire un type. */
   spawnUnlocks?: { agile?: number; spitter?: number; crawler?: number };
   /** Groupes successifs ; leur somme respecte les quotas totaux du palier. */
@@ -61,6 +68,8 @@ export interface EncounterSpec {
   };
   /** Pool de points d'apparition candidats */
   spawnPool: Point2D[];
+  fallbackSpawnPool?: readonly Point2D[];
+  spawnPreferences?: SpawnPreferences;
 }
 
 /**
@@ -116,6 +125,11 @@ export const MANSION_OPEN_SPAWN_POOL: Point2D[] = [
 /** Alias pour rétrocompatibilité F1 */
 export const ENCOUNTER_4_SPAWN_POOL: Point2D[] = MANSION_OPEN_SPAWN_POOL;
 
+const nearRamps = ({ x, z }: Point2D) => (Math.abs(x) === 12.25 && z === -9.5) || (x === 17 && z === -4);
+const inHall = ({ x, z }: Point2D, floor: number) => floor < 1 && x >= 0 && z <= 4;
+const inLowerWings = ({ x, z }: Point2D, floor: number) => floor < 1 && (x <= -8 || z >= 8);
+const atUpperBack = ({ z }: Point2D, floor: number) => floor >= 2 && z <= -13;
+
 export const ENCOUNTER_CONFIGS: EncounterSpec[] = [
   // RENCONTRE 1 : Apprendre la portée et l'engagement lent de la hache, puis obtenir le pistolet.
   {
@@ -129,6 +143,7 @@ export const ENCOUNTER_CONFIGS: EncounterSpec[] = [
     maxSpitter: 0,
     maxSimultaneousSpitter: 0,
     openingSpawns: 1,
+    soloOpening: true,
     unlockSectorTier: 1, // Déverrouille la porte du Grand Hall Nord
     activationType: 'auto_start',
     explorationPrompt: 'PALIER 1 PURGÉ · OUVREZ LA PORTE DU GRAND HALL',
@@ -171,6 +186,13 @@ export const ENCOUNTER_CONFIGS: EncounterSpec[] = [
     explorationPrompt: 'MANOIR OUVERT · PROCHAIN COMBAT APRÈS L’ACCALMIE',
     sectorBounds: MANSION_SPAWNS[2].sectorBounds,
     spawnPool: MANSION_SPAWNS[2].pool,
+    fallbackSpawnPool: [
+      { x: -12.25, z: -9.5 }, { x: 12.25, z: -9.5 },
+      { x: -3, z: -14 }, { x: 3, z: -14 },
+      { x: -18, z: -11 }, { x: 18, z: -11 },
+      { x: -21, z: -18 }, { x: 21, z: -18 },
+      { x: -21, z: -9.5 }, { x: 21, z: -9.5 },
+    ],
   },
   // RENCONTRE 4 : Réutilisation du manoir ouvert et attaques multi-ailes (Apparition du Rampeur)
   {
@@ -207,11 +229,13 @@ export const ENCOUNTER_CONFIGS: EncounterSpec[] = [
     maxCrawler: 1,
     maxSimultaneousCrawler: 1,
     openingSpawns: 3,
+    openingLead: 'agile',
     unlockSectorTier: null,
     activationType: 'arena_signal',
     explorationPrompt: 'PALIER 5 PURGÉ · PROCHAIN COMBAT APRÈS L’ACCALMIE',
     sectorBounds: { minX: -23.5, maxX: 23.5, minZ: -19.5, maxZ: 19.5 },
     spawnPool: MANSION_OPEN_SPAWN_POOL,
+    spawnPreferences: { spitter: nearRamps, agile: inLowerWings },
   },
   // RENCONTRE 6 : Anticiper les renforts échelonnés et préserver ses munitions
   {
@@ -228,8 +252,8 @@ export const ENCOUNTER_CONFIGS: EncounterSpec[] = [
     maxSimultaneousCrawler: 2,
     openingSpawns: 3,
     spawnGroups: [
-      { standard: 3, agile: 2, spitter: 1, crawler: 0, pauseAfterSeconds: 3 },
-      { standard: 1, agile: 2, spitter: 1, crawler: 2 },
+      { standard: 3, agile: 2, spitter: 1, crawler: 0, pauseAfterSeconds: 3, spawnPreferences: { standard: inHall, spitter: inHall } },
+      { standard: 1, agile: 2, spitter: 1, crawler: 2, spawnPreferences: { crawler: atUpperBack } },
     ],
     unlockSectorTier: null,
     activationType: 'arena_signal',
@@ -256,6 +280,7 @@ export const ENCOUNTER_CONFIGS: EncounterSpec[] = [
     explorationPrompt: 'PALIER 7 PURGÉ · PRÉPAREZ-VOUS À LA RENCONTRE FINALE',
     sectorBounds: { minX: -23.5, maxX: 23.5, minZ: -19.5, maxZ: 19.5 },
     spawnPool: MANSION_OPEN_SPAWN_POOL,
+    spawnPreferences: { spitter: atUpperBack, agile: inLowerWings, crawler: inHall },
   },
   {
     tierNumber: 8,

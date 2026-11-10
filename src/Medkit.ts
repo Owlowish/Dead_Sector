@@ -70,6 +70,10 @@ export class Medkit {
     return this.consumed;
   }
 
+  public getPosition(): THREE.Vector3 {
+    return this.group.position;
+  }
+
   public respawn(): void {
     if (this.disposed) return;
     if (this.consumed) {

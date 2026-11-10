@@ -3,10 +3,13 @@ import type { Level } from './Level.ts';
 import { Zombie } from './Zombie.ts';
 import { guardianConfig } from './FinaleConfig.ts';
 import { visualColors } from './VisualStyle.ts';
-import { portraitAnimation, portraitGroundOffsetY, type PortraitPose } from './PortraitAnimation.ts';
+import { portraitAnimation, portraitConfig, portraitGroundOffsetY, portraitSprite, type PortraitPose } from './PortraitAnimation.ts';
 import { getPortraitResources, disposePortraitResources } from './PortraitResources.ts';
 import { PortraitAttackCue, clearGroundSegment } from './PortraitAttackCue.ts';
 import { EnemyImpact, type EnemyShotImpact } from './EnemyImpact.ts';
+
+// Réserve nécessaire à un tir de pistolet en pleine tête.
+const openingDamageThreshold = 80;
 
 export type GuardianAttack = 'sweep' | 'blades' | 'tear';
 export interface PortraitCue {
@@ -28,6 +31,7 @@ export class GuardianZombie extends Zombie {
   private readonly presentation?: { cue(event: PortraitCue): void };
   private readonly art = getPortraitResources();
   private readonly paintMaterial: THREE.MeshStandardMaterial;
+  private portraitPose: PortraitPose = 'idle';
   private guardianHealth: number = guardianConfig.health;
   private guardianPhase: 1 | 2 = 1;
   private guardianState: GuardianState = 'IDLE';
@@ -86,6 +90,23 @@ export class GuardianZombie extends Zombie {
   isMaskExposed(): boolean {
     return this.isAlive() && this.guardianState === 'RECOVER'
       && !this.isTransforming() && !this.isComboTransition() && this.volleyRemaining === 0;
+  }
+  isOpeningReady(): boolean {
+    return this.isMaskExposed() && this.damageAllowance >= Math.min(openingDamageThreshold, this.guardianHealth);
+  }
+
+  isMaskVisibleFrom(viewer: THREE.Vector3): boolean {
+    const [bounds] = portraitSprite.heads[`${this.portraitPose}.png`] ?? [];
+    if (!bounds) return false;
+    const [left, top, right, bottom] = bounds;
+    const mask = new THREE.Vector3(
+      ((left + right) / (2 * portraitSprite.width) - 0.5) * portraitConfig.width,
+      (0.5 - (top + bottom) / (2 * portraitSprite.height)) * portraitConfig.height, 0);
+    return this.guardianLevel.hasLineOfSight(viewer, this.getMesh().localToWorld(mask));
+  }
+
+  isSweepThreat(player: THREE.Vector3): boolean {
+    return this.guardianState === 'ATTACK' && this.guardianAttack === 'sweep' && this.sweepHits(player);
   }
   override isAlive(): boolean { return this.guardianHealth > 0 && !this.guardianDisposed; }
   override isThreat(): boolean { return this.isAlive(); }
@@ -240,7 +261,8 @@ export class GuardianZombie extends Zombie {
     this.paintMaterial.color.setHex(this.frameResistanceTime > 0 ? 0xbda579
       : this.impactFlash > 0 ? 0xf5c8bb : 0xffffff);
     // Émission texturée faible : le masque et les matières survivent à la pénombre.
-    this.paintMaterial.emissiveIntensity = this.isTransforming() ? 0.22 : this.guardianState === 'ATTACK' ? 0.14 : 0.06;
+    const highlighted = this.isTransforming() || this.isOpeningReady();
+    this.paintMaterial.emissiveIntensity = highlighted ? 0.22 : this.guardianState === 'ATTACK' ? 0.14 : 0.06;
   }
 
   private windupDuration(): number {
@@ -271,14 +293,18 @@ export class GuardianZombie extends Zombie {
         && this.guardianLevel.hasLineOfSight(this.attackOrigin(), player)) onAttack(guardianConfig.tearDamage);
       this.showPose('tear-release');
     } else {
-      const toward = player.clone().sub(this.attackStart).setY(0);
-      if (toward.length() <= guardianConfig.attackRange && this.sameFloor(player)
-        && this.cue?.coversSweepTarget(player)
-        && (toward.lengthSq() < 0.01 || toward.normalize().dot(this.attackDirection) >= Math.cos(1.35))
-        && clearGroundSegment(this.guardianLevel, this.attackStart, player)
-        && this.guardianLevel.hasLineOfSight(this.attackOrigin(), player)) onAttack(guardianConfig.attackDamage);
+      if (this.sweepHits(player)) onAttack(guardianConfig.attackDamage);
       this.showPose('sweep-release');
     }
+  }
+
+  private sweepHits(player: THREE.Vector3): boolean {
+    const toward = player.clone().sub(this.attackStart).setY(0);
+    return toward.length() <= guardianConfig.attackRange && this.sameFloor(player)
+      && this.cue?.coversSweepTarget(player) === true
+      && (toward.lengthSq() < 0.01 || toward.normalize().dot(this.attackDirection) >= Math.cos(1.35))
+      && clearGroundSegment(this.guardianLevel, this.attackStart, player)
+      && this.guardianLevel.hasLineOfSight(this.attackOrigin(), player);
   }
 
   private enterRecovery(allowCombo: boolean): void {
@@ -446,6 +472,7 @@ export class GuardianZombie extends Zombie {
   private showPose(pose: PortraitPose, phaseVariant = true): void {
     const variant = `phase2-${pose}` as PortraitPose;
     const selected = phaseVariant && this.guardianPhase === 2 && this.art.textures[variant] ? variant : pose;
+    this.portraitPose = selected;
     this.paintMaterial.map = this.art.textures[selected];
     this.paintMaterial.emissiveMap = this.art.textures[selected];
     this.getMesh().customDepthMaterial = this.art.depth[selected];

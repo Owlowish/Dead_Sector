@@ -132,7 +132,7 @@ export class SpitterZombie {
     }
   }
 
-  update(delta: number, playerPosition: THREE.Vector3, _others: Array<{ getPosition(): THREE.Vector3; isAlive(): boolean }>, spit: (origin: THREE.Vector3, target: THREE.Vector3) => void): void {
+  update(delta: number, playerPosition: THREE.Vector3, others: Array<{ getPosition(): THREE.Vector3; isAlive(): boolean }>, spit: (origin: THREE.Vector3, target: THREE.Vector3) => void): void {
     if (!this.alive) return;
     this.shotReaction.update(delta, this.mesh.position, this.level, this.radius, HEIGHT / 2);
     this.cooldown = Math.max(0, this.cooldown - delta);
@@ -206,11 +206,7 @@ export class SpitterZombie {
           moveZ = wz / waypointDistance * waypointStep;
         }
       }
-      const nx = this.mesh.position.x + moveX;
-      const nz = this.mesh.position.z + moveZ;
-      if (!this.level.isColliding(nx, this.mesh.position.z, this.radius)) this.mesh.position.x = nx;
-      if (!this.level.isColliding(this.mesh.position.x, nz, this.radius)) this.mesh.position.z = nz;
-      this.mesh.position.y = this.level.getFloorHeightAt(this.mesh.position.x, this.mesh.position.z) + HEIGHT / 2;
+      this.move(moveX, moveZ, playerPosition, others, delta);
       if (this.pose !== 'walk-a' && this.pose !== 'walk-b') {
         this.setPose('walk-a');
       } else if (this.poseTime >= spitterAnimation.walkPoseDuration) {
@@ -218,9 +214,55 @@ export class SpitterZombie {
       }
     } else {
       this.setPose('idle');
+      this.move(0, 0, playerPosition, others, delta);
     }
     this.mesh.rotation.y = Math.atan2(playerPosition.x - this.mesh.position.x, playerPosition.z - this.mesh.position.z);
     this.shotReaction.apply(this.mesh, -HEIGHT / 2);
+  }
+
+  private move(dx: number, dz: number, player: THREE.Vector3,
+    others: Array<{ getPosition(): THREE.Vector3; isAlive(): boolean }>, delta: number): void {
+    const position = this.mesh.position;
+    const clearance = this.radius * 2 + 0.1;
+    const nearbyDistance = clearance + Math.hypot(dx, dz);
+    const neighbor = others.find((other) => {
+      if (!(other instanceof SpitterZombie) || other === this || !other.isAlive()) return false;
+      const at = other.getPosition();
+      return Math.abs(at.y - position.y) <= 0.65 && Math.hypot(position.x - at.x, position.z - at.z) < nearbyDistance;
+    });
+    if (!neighbor && dx === 0 && dz === 0) return;
+
+    const floor = this.level.getFloorHeightAt(position.x, position.z);
+    const canStep = (x: number, z: number) => !this.level.isColliding(x, z, this.radius)
+      && (!neighbor || Math.abs(this.level.getFloorHeightAt(x, z) - floor) <= 0.12);
+    if (neighbor) {
+      const at = neighbor.getPosition();
+      let awayX = position.x - at.x;
+      let awayZ = position.z - at.z;
+      const distance = Math.hypot(awayX, awayZ);
+      if (distance > 0.0001) {
+        awayX /= distance;
+        awayZ /= distance;
+      } else {
+        // Même point d'approche : sortir sur le côté plutôt que repartir le long de la rampe.
+        const sightLength = Math.hypot(player.x - position.x, player.z - position.z);
+        awayX = sightLength > 0.0001 ? (player.z - position.z) / sightLength : 1;
+        awayZ = sightLength > 0.0001 ? (position.x - player.x) / sightLength : 0;
+        if (!canStep(position.x + awayX * 0.08, position.z + awayZ * 0.08)) {
+          awayX = -awayX;
+          awayZ = -awayZ;
+        }
+      }
+      const inward = -(dx * awayX + dz * awayZ);
+      const brake = Math.max(0, inward - Math.max(0, distance - clearance));
+      const nudge = Math.min(Math.max(0, clearance - distance), Math.min(delta, 0.05) * 0.9);
+      dx += awayX * (brake + nudge);
+      dz += awayZ * (brake + nudge);
+    }
+
+    if (canStep(position.x + dx, position.z)) position.x += dx;
+    if (canStep(position.x, position.z + dz)) position.z += dz;
+    position.y = this.level.getFloorHeightAt(position.x, position.z) + HEIGHT / 2;
   }
 
   updateDeath(delta: number, viewer: THREE.Vector3): void {
