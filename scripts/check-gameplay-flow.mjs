@@ -63,6 +63,24 @@ const counters = (game) => [game.spawnQueue, game.tierStandardSpawned, game.tier
   game.tierSpitterSpawned, game.tierCrawlerSpawned, game.zombies.length];
 
 try {
+  const axeOpening = makeGame(1);
+  axeOpening.encounterConfigs[0].spawnPool = ENCOUNTER_CONFIGS[0].spawnPool;
+  Math.random = () => 0;
+  const [firstStandard] = spawn(axeOpening);
+  Math.random = () => 0.9;
+  assert.equal(firstStandard.getKind(), 'standard');
+  assert.deepEqual(spawn(axeOpening), [], 'Le premier Standard de P1 est isolé');
+  defeat(axeOpening, firstStandard, false);
+  assert.equal(firstStandard.isThreat(), true);
+  assert.deepEqual(spawn(axeOpening), [], 'Sa mort provisoire conserve le duel de P1');
+  for (let i = 0; i < 80 && !firstStandard.isAlive(); i++) axeOpening.updateZombieRemains(0.1);
+  assert.equal(firstStandard.isAlive(), true);
+  assert.deepEqual(spawn(axeOpening), [], 'Le Standard relevé reste la seule menace');
+  defeat(axeOpening, firstStandard, false);
+  assert.equal(axeOpening.killsThisTier, 1);
+  assert.equal(spawn(axeOpening).length, 1, 'La première élimination définitive libère la file');
+  assert.equal(spawn(axeOpening).length, 1, 'Le plafond ordinaire de P1 revient ensuite');
+
   const intro = makeGame(3);
   const [first] = spawn(intro);
   assert.equal(first.getKind(), 'standard', 'P3 commence par un standard');
@@ -132,15 +150,24 @@ try {
   assert.deepEqual(counters(grouped), beforeRecovery);
   grouped.checkTierCompletion();
   assert.equal(grouped.state, 'playing', 'Les six renforts empêchent une fausse fin de palier');
+  let respiteNotice;
+  const activeAmmo = { magazine: 8, capacity: 15, reserve: 0, isReloading: false };
+  grouped.hud = { announce: (text) => { respiteNotice = text; } };
+  grouped.weapon.getAmmoState = () => activeAmmo;
   grouped.advanceSpawnGroup(0.05);
   assert.equal(grouped.groupRespiteRemaining, 3);
+  assert.match(respiteNotice, /REPOSITIONNEZ-VOUS/, 'Une réserve vide ne demande pas de recharger');
   for (let i = 0; i < 10; i++) grouped.advanceSpawnGroup(0);
   assert.equal(grouped.groupRespiteRemaining, 3, 'Le temps suspendu ne consomme pas la récupération');
+  activeAmmo.reserve = 10;
   grouped.advanceSpawnGroup(2.99);
+  assert.match(respiteNotice, /RECHARGEZ/, 'La consigne suit une recharge redevenue possible');
   assert.equal(grouped.spawnGroupIndex, 0);
   assert.deepEqual(spawn(grouped), [], 'Le second groupe attend les trois secondes complètes');
   grouped.advanceSpawnGroup(0.01);
   assert.equal(grouped.spawnGroupIndex, 1);
+  assert.match(respiteNotice, /RENFORTS/);
+  grouped.hud = undefined;
   while (grouped.spawnQueue > 0) {
     const created = spawn(grouped);
     assert.ok(created.length > 0, 'La deuxième poussée reste réalisable');
@@ -156,6 +183,7 @@ try {
   // Une paire sans deux positions sûres doit laisser avancer un type isolé.
   const fallback = makeGame(3);
   fallback.encounterConfigs[2].spawnPool = [{ x: 0, z: -10 }];
+  fallback.encounterConfigs[2].fallbackSpawnPool = [];
   for (let i = 0; i < 2; i++) defeat(fallback, spawn(fallback)[0]);
   const solo = spawn(fallback);
   assert.equal(solo[0].getKind(), 'agile', 'Le Coureur libre peut apparaître à la place de la paire impossible');
@@ -166,11 +194,27 @@ try {
   assert.equal(lastStandard[0].getKind(), 'standard', 'Le dernier Coureur reste réservé à son escorte');
   defeat(fallback, lastStandard[0]);
   const reserved = counters(fallback);
-  assert.deepEqual(spawn(fallback), [], 'Sans deuxième point, la paire attend sans voler son escorte');
+  fallback.level.isColliding = () => true;
+  assert.equal(spawn(fallback).length, 0, 'Sans point sûr, la paire attend sans voler son escorte');
   assert.deepEqual(counters(fallback), reserved, 'Une tentative impossible ne consomme ni file ni quota');
-  fallback.encounterConfigs[2].spawnPool.push({ x: 3, z: -10 });
-  assert.deepEqual(spawn(fallback).map((zombie) => zombie.getKind()), ['spitter', 'agile']);
-  assert.equal(fallback.spawnQueue, 0, 'L’ajout d’un second point permet d’épuiser exactement la file');
+  fallback.level.isColliding = () => false;
+  fallback.encounterConfigs[2].fallbackSpawnPool = [{ x: 14, z: -10 }];
+  assert.deepEqual(spawn(fallback).map((zombie) => zombie.getKind()), ['spitter'], 'Deux points sûrs trop éloignés autorisent un départ séparé');
+  assert.equal(fallback.spawnCooldownTimer, 2, 'L’escorte attend deux secondes de combat');
+  assert.equal(fallback.spawnQueue, 1);
+  fallback.checkTierCompletion();
+  assert.equal(fallback.state, 'playing');
+  assert.deepEqual(spawn(fallback).map((zombie) => zombie.getKind()), ['agile'], 'Le Coureur réservé arrive au second point');
+  assert.equal(fallback.spawnQueue, 0, 'Le duo séparé consomme exactement ses deux unités');
+
+  const flanking = makeGame(5);
+  flanking.encounterConfigs[4].spawnPool = [{ x: -17, z: 0 }, { x: 17, z: -4 }, { x: 15, z: -5 }];
+  const [flanker] = spawn(flanking);
+  assert.equal(flanker.getKind(), 'agile', 'P5 ouvre par le Coureur indépendant');
+  assert.equal(flanker.getPosition().x, -17, 'Le Coureur privilégie le flanc bas');
+  const rampPair = spawn(flanking);
+  assert.deepEqual(rampPair.map((zombie) => zombie.getKind()), ['spitter', 'agile']);
+  assert.equal(rampPair[0].getPosition().x, 17, 'Le Cracheur privilégie la rampe lorsqu’une paire sûre y existe');
 
   const noRoom = makeGame(5);
   // Réserver tous les Coureurs aux deux escortes isole le manque de places

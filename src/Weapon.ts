@@ -25,6 +25,13 @@ export type FirearmId = 'pistol' | 'shotgun';
 export type WeaponId = 'axe' | FirearmId;
 export interface ShotDamage { headHits: number; bodyHits: number; headDamage?: number; impactForce: number; weaponId: WeaponId; impact?: EnemyShotImpact; stunSeconds?: number }
 
+type AxeContact = {
+  hit: THREE.Intersection<THREE.Object3D>;
+  direction: THREE.Vector3;
+  angle: number;
+  isTarget: boolean;
+};
+
 export type AmmoStocks = Record<WeaponId, { magazine: number; reserve: number; unlocked: boolean }>;
 
 export interface WeaponState {
@@ -140,6 +147,8 @@ export class Weapon {
   private axeAttackTime = Infinity;
   private axeContactResolved = false;
   private axeSwingSoundPlayed = false;
+  private axeRangeCooldown = 0;
+  private readonly axeRangeSphere = new THREE.Sphere();
 
   // Éléments DOM du HUD
   private readonly weaponView = document.querySelector<HTMLElement>('.weapon-view');
@@ -381,12 +390,12 @@ export class Weapon {
     return this.weapons[id].unlocked;
   }
 
-  public unlockWeapon(id: WeaponId): void {
+  public unlockWeapon(id: WeaponId, equip = true): void {
     if (!this.weapons[id].unlocked) {
       this.weapons[id].unlocked = true;
       console.log(`Nouvelle arme débloquée : ${this.weapons[id].name}`);
     }
-    this.switchWeapon(id);
+    if (equip) this.switchWeapon(id);
   }
 
   public switchWeapon(id: WeaponId): boolean {
@@ -507,6 +516,7 @@ export class Weapon {
       this.axeAttackTime = 0;
       this.axeContactResolved = false;
       this.axeSwingSoundPlayed = false;
+      this.clearAxeRange();
       this.onShoot?.(0, 'axe');
       this.renderShotEffects();
       return;
@@ -660,19 +670,28 @@ export class Weapon {
     }
   }
 
-  private resolveAxeContact(): void {
+  private findAxeContact(preview = false): AxeContact | undefined {
     // Éventail vertical du tranchant, sans aimantation ni cible multiple.
     // Chaque rayon rencontre aussi le décor : portes et murs arrêtent le coup.
+    const targets = this.targets.filter(target => target.visible);
+    if (preview && targets.length === 0) return;
     this.camera.updateWorldMatrix(true, false);
     const origin = this.camera.getWorldPosition(new THREE.Vector3());
+    for (const target of targets) target.updateWorldMatrix(true, false);
+    if (preview && !targets.some(target => {
+      if (!target.geometry.boundingSphere) target.geometry.computeBoundingSphere();
+      const sphere = target.geometry.boundingSphere;
+      if (!sphere) return true;
+      this.axeRangeSphere.copy(sphere).applyMatrix4(target.matrixWorld);
+      const reach = axeAttack.range + this.axeRangeSphere.radius;
+      return origin.distanceToSquared(this.axeRangeSphere.center) <= reach * reach;
+    })) return;
     const rotation = this.camera.getWorldQuaternion(new THREE.Quaternion());
-    const targets = this.targets.filter(target => target.visible);
     const objects = [...targets, ...this.blockers];
-    for (const object of objects) object.updateWorldMatrix(true, false);
+    for (const blocker of this.blockers) blocker.updateWorldMatrix(true, false);
     this.raycaster.far = axeAttack.range;
-    type Contact = { hit: THREE.Intersection<THREE.Object3D>; direction: THREE.Vector3; angle: number };
-    let targetContact: Contact | undefined;
-    let surfaceContact: Contact | undefined;
+    let targetContact: AxeContact | undefined;
+    let surfaceContact: AxeContact | undefined;
     for (const yaw of [0, -5, 5]) {
       for (const pitch of [0, -7, 7, -14, 14]) {
         const direction = new THREE.Vector3(
@@ -683,15 +702,37 @@ export class Weapon {
         const hit = this.raycaster.intersectObjects(objects, false).find(candidate =>
           !targets.includes(candidate.object as THREE.Mesh) || isOpaqueSpriteHit(candidate.object as THREE.Mesh, candidate.uv));
         if (!hit) continue;
-        const candidate = { hit, direction, angle: Math.abs(yaw) + Math.abs(pitch) };
-        if (targets.includes(hit.object as THREE.Mesh)) {
+        const candidate = { hit, direction, angle: Math.abs(yaw) + Math.abs(pitch),
+          isTarget: targets.includes(hit.object as THREE.Mesh) };
+        if (candidate.isTarget) {
           // Un bord de porte périphérique ne masque pas une cible exposée au centre.
           if (!targetContact || candidate.angle < targetContact.angle
             || (candidate.angle === targetContact.angle && hit.distance < targetContact.hit.distance)) targetContact = candidate;
         } else if (!surfaceContact || hit.distance < surfaceContact.hit.distance) surfaceContact = candidate;
       }
     }
-    const selected = targetContact ?? surfaceContact;
+    return targetContact ?? surfaceContact;
+  }
+
+  private clearAxeRange(): void {
+    this.axeRangeCooldown = 0;
+    this.crosshair?.classList.toggle('axe-in-range', false);
+  }
+
+  private updateAxeRange(delta: number, controlActive: boolean): void {
+    if (!this.crosshair) return;
+    if (!controlActive || this.activeWeaponId !== 'axe' || this.axeAttackTime < axeAttack.duration) {
+      this.clearAxeRange();
+      return;
+    }
+    this.axeRangeCooldown -= delta;
+    if (this.axeRangeCooldown > 0) return;
+    this.axeRangeCooldown = 0.1;
+    this.crosshair.classList.toggle('axe-in-range', this.findAxeContact(true)?.isTarget === true);
+  }
+
+  private resolveAxeContact(): void {
+    const selected = this.findAxeContact();
     if (!selected) return;
     const { hit: contact, direction: contactDirection } = selected;
     const mesh = contact.object as THREE.Mesh;
@@ -699,7 +740,7 @@ export class Weapon {
       ? contact.face.normal.clone().applyNormalMatrix(new THREE.Matrix3().getNormalMatrix(mesh.matrixWorld))
       : contactDirection.clone().negate();
     if (normal.dot(contactDirection) > 0) normal.negate();
-    if (targets.includes(mesh)) {
+    if (selected.isTarget) {
       this.playSound(mesh.userData.impactMaterial === 'portrait' ? this.sounds.wood : this.sounds.axeFlesh);
       this.onImpact?.({ kind: 'zombie', object: mesh, point: contact.point.clone(), normal,
         direction: contactDirection, weaponId: 'axe' });
@@ -802,12 +843,14 @@ export class Weapon {
 
   public setTargets(targets: THREE.Mesh[]): void {
     this.targets = targets;
+    this.clearAxeRange();
   }
 
   public cancelMeleeAttack(): void {
     this.axeAttackTime = Infinity;
     this.axeContactResolved = false;
     this.axeSwingSoundPlayed = false;
+    this.clearAxeRange();
     this.axeView.update(Infinity);
   }
 
@@ -859,6 +902,7 @@ export class Weapon {
         this.resolveAxeContact();
       }
     }
+    this.updateAxeRange(delta, axeControlActive);
 
     // Gestion du rechargement
     if (this.isReloading) {
@@ -961,6 +1005,7 @@ export class Weapon {
   }
 
   private resetAim(): void {
+    this.clearAxeRange();
     this.aimHeld = false;
     this.aimAmount = 0;
     this.onAimChange(0);
@@ -1071,6 +1116,7 @@ export class Weapon {
     if (this.headMarkerTimer) clearTimeout(this.headMarkerTimer);
     this.headMarkerTimer = null;
     this.crosshair?.classList.remove?.('head-hit');
+    this.clearAxeRange();
     this.muzzleLight.removeFromParent();
     this.muzzleLight.dispose();
     this.axeView.dispose();

@@ -1,13 +1,19 @@
 {
   "documentType": "asset-pack",
   "id": "maitre-portrait",
-  "updatedAt": "2026-11-06",
+  "updatedAt": "2026-11-10",
   "request": "Deux formes et salves animées selon concept utilisateur ; correction de lisibilité : suppression des barres dorées superposées au masque et traînées brèves bordeaux pour distinguer les lames et les passages d’esquive.",
   "scope": {
     "generate": true,
     "integrate": true,
     "gameplayChanges": true,
     "ownership": "Production raster et export via ImageGen natif ; comportement, projectiles, HUD et intégration dans le jeu."
+  },
+  "runtimeSweepCue": {
+    "source": "src/PortraitAttackCue.ts",
+    "geometry": "Liseré discontinu relevé à 1,18 m au-dessus du marquage au sol, hauteur 0,07 m, profondeur active. Arc et bords issus du secteur tronqué aux obstacles.",
+    "windupColor": "#ffbe74",
+    "hud": "Alerte au-dessus du viseur pendant l’anticipation si le joueur peut être touché."
   },
   "references": [
     {

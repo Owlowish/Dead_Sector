@@ -18,6 +18,7 @@ import {
 } from './AgileZombieAnimation.ts';
 
 type ZombieState = 'IDLE' | 'CHASE' | 'SEARCH' | 'ATTACK' | 'RECOVER';
+const revivalWarningLead = 0.45;
 
 export interface StandardSharedResources {
   users: number;
@@ -439,17 +440,20 @@ export class Zombie {
     console.log(`Zombie [${this.kind}] éliminé !`);
   }
 
-  public updateDeath(delta: number, viewerPosition: THREE.Vector3, onRise?: (position: THREE.Vector3) => void): void {
+  public updateDeath(delta: number, viewerPosition: THREE.Vector3, onRiseWarning?: (position: THREE.Vector3) => void): void {
     if (this.alive || this.disposed) return;
     this.remains.update(delta, viewerPosition);
     this.mesh.position.copy(this.remains.getPosition());
     if (!this.revivalPending) return;
     if (!this.reviving) {
+      const previousDelay = this.revivalDelay;
       this.revivalDelay = Math.max(0, this.revivalDelay - delta);
+      if (previousDelay > revivalWarningLead && this.revivalDelay <= revivalWarningLead) {
+        onRiseWarning?.(this.mesh.position);
+      }
       if (this.revivalDelay === 0) {
         this.reviving = true;
         this.remains.beginRevival();
-        onRise?.(this.mesh.position);
       }
     } else if (this.remains.consumeRevivalFinished()) {
       this.reviving = false;

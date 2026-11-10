@@ -17,6 +17,8 @@ small{display:block;margin-top:12px;color:#bbb}
 <label>Vitesse <select id="speed"><option value="1">Normale</option><option value="0.25">Lente (×0,25)</option></select></label>
 <button id="crawl">Jouer la rampe</button>
 <button id="attack">Jouer l'attaque</button>
+<button data-light-cue="charge">Lampe · charge</button>
+<button data-light-cue="flee">Lampe · fuite</button>
 <button id="die">Jouer la mort</button>
 <button id="stop">Revenir au repos</button>
 <button data-pose="idle">Repos</button>
@@ -41,7 +43,8 @@ small{display:block;margin-top:12px;color:#bbb}
 
 <script type="module">
 import * as THREE from 'three';
-import { crawlerAnimation, crawlerConfig, crawlerGroundOffsetY } from '/src/CrawlerAnimation.ts';
+import { crawlerAnimation, crawlerConfig, crawlerGroundOffsetY, crawlerLightCue } from '/src/CrawlerAnimation.ts';
+import { createCrawlerLightCueMaterial } from '/src/CrawlerLightCue.ts';
 
 for (const [id, height] of [['small', 60], ['large', 140]]) {
   document.getElementById(id).style.width = String(height * crawlerConfig.width / crawlerConfig.height) + 'px';
@@ -61,8 +64,13 @@ for (const pose of crawlerAnimation.poses) {
   map.magFilter = THREE.NearestFilter;
   map.minFilter = THREE.NearestFilter;
   map.generateMipmaps = false;
-  poseMaterials[pose] = new THREE.MeshStandardMaterial({ map, alphaTest: 0.4, side: THREE.DoubleSide, roughness: 1 });
+  poseMaterials[pose] = new THREE.MeshStandardMaterial({ map, emissiveMap: map, emissive: 0xd4c6a5,
+    emissiveIntensity: 0.035, alphaTest: 0.4, side: THREE.DoubleSide, roughness: 1 });
 }
+const lightMaterials = {
+  charge: createCrawlerLightCueMaterial(poseMaterials.attack, 'charge'),
+  flee: createCrawlerLightCueMaterial(poseMaterials.hurt, 'flee'),
+};
 // Le cas « avant » est un témoin fixe ; le cas corrigé lit les données du jeu.
 for (const [width, height, offset] of [[1.6, 1, 0.5], [crawlerConfig.width, crawlerConfig.height, crawlerGroundOffsetY]]) {
   const scene = new THREE.Scene();
@@ -115,23 +123,31 @@ const deathCycle = [
 ];
 
 let timer;
-function show(name, file) {
+function show(name, file, reaction) {
   document.querySelector('#phase').textContent = name;
   for (const id of ['small', 'large']) {
     document.getElementById(id).src = ${JSON.stringify(assetBase)} + file + '.png';
   }
-  for (const { sprite } of views) sprite.material = poseMaterials[file];
+  views[0].sprite.material = poseMaterials[file];
+  views[1].sprite.material = reaction ? lightMaterials[reaction] : poseMaterials[file];
   renderComparison();
 }
 function stop() { clearTimeout(timer); show('repos', 'idle'); }
 function step(sequence, i) {
-  const [name, file, duration] = sequence[i];
-  show(name, file);
+  const [name, file, duration, reaction] = sequence[i];
+  show(name, file, reaction);
   if (i + 1 < sequence.length) timer = setTimeout(() => step(sequence, i + 1), duration / Number(document.querySelector('#speed').value));
 }
 
 document.querySelector('#crawl').onclick = () => { clearTimeout(timer); step(crawlCycle, 0); };
 document.querySelector('#attack').onclick = () => { clearTimeout(timer); step(attackCycle, 0); };
+for (const button of document.querySelectorAll('[data-light-cue]')) {
+  button.onclick = () => {
+    clearTimeout(timer);
+    const kind = button.dataset.lightCue;
+    step([[button.textContent, crawlerLightCue[kind].pose, crawlerLightCue.duration * 1000, kind], ['repos', 'idle', 400]], 0);
+  };
+}
 document.querySelector('#die').onclick = () => { clearTimeout(timer); step(deathCycle, 0); };
 document.querySelector('#stop').onclick = stop;
 document.querySelectorAll('[data-pose]').forEach(b => b.onclick = () => { clearTimeout(timer); show(b.textContent.toLowerCase(), b.dataset.pose); });

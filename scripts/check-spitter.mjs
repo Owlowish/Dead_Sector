@@ -16,6 +16,7 @@ const { spitterAnimation } = await import('../src/SpitterAnimation.ts');
 const { SpitterZombie } = await import('../src/SpitterZombie.ts');
 const { SpitProjectile } = await import('../src/SpitProjectile.ts');
 const { ZombieRemains } = await import('../src/ZombieRemains.ts');
+const { Level } = await import('../src/Level.ts');
 const { Game } = await import('../src/Game.ts');
 const { ENCOUNTER_CONFIGS } = await import('../src/EncounterConfig.ts');
 const { disposeAllZombieResources } = await import('../src/Zombie.ts');
@@ -127,6 +128,36 @@ const routed = new SpitterZombie(scene, aroundWall, -1, 0);
 routed.update(0.3, new THREE.Vector3(15, 4.1, 0), [], () => {});
 assert(routed.getPosition().z > 0, 'Le cracheur commence le détour choisi par Level');
 routed.dispose(scene);
+
+// Superposition observée en P7 au pied de la rampe Est. L'écart doit tenir pendant l'approche.
+const rampScene = new THREE.Scene();
+const rampLevel = new Level(rampScene);
+const stairDoor = rampLevel.getDoors().find((door) => door.getId() === 'door_workshop_stair');
+stairDoor.unlock();
+stairDoor.toggle();
+stairDoor.update(1, []);
+const rampPair = [new SpitterZombie(rampScene, rampLevel, 12, -2.4), new SpitterZombie(rampScene, rampLevel, 12, -2.4)];
+const rampPlayer = new THREE.Vector3(8.3, 1.7, 2.4);
+const rampShots = [];
+for (let frame = 0; frame < 100; frame++) {
+  for (const member of rampPair) {
+    const preparing = member.getPose() === 'windup';
+    const before = member.getPosition().clone();
+    member.update(0.05, rampPlayer, rampPair, (_origin, target) => rampShots.push(target));
+    const after = member.getPosition();
+    if (preparing) assert.ok(after.equals(before), 'Le Cracheur garde ses appuis pendant la préparation');
+    assert.equal(rampLevel.isColliding(after.x, after.z, 0.5), false, 'La séparation respecte les garde-corps');
+    assert.ok(Math.abs(after.y - rampLevel.getFloorHeightAt(after.x, after.z) - 1.35) < 1e-6, 'Les appuis suivent le sol de la rampe');
+  }
+  if (frame >= 20) {
+    const [a, b] = rampPair.map((member) => member.getPosition());
+    assert.ok(Math.hypot(a.x - b.x, a.z - b.z) >= 1, 'Les deux silhouettes restent séparées au pied de la rampe');
+  }
+}
+assert.ok(rampShots.length > 0 && rampShots.every((target) => target.equals(rampPlayer)), 'Le crachat conserve sa cible');
+for (const member of rampPair) member.dispose(rampScene);
+rampLevel.disposeDecor();
+
 preparing.dispose(scene);
 spitter.dispose(scene);
 SpitterZombie.disposeSharedResources();

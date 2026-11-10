@@ -1,4 +1,4 @@
-// Vraies transitions/pickups/Weapon : récompenses garanties sans interrompre le contrôle.
+// Vraies transitions et Weapon : récompenses directes sans interrompre le contrôle.
 import assert from 'node:assert/strict';
 import { registerHooks } from 'node:module';
 import * as THREE from 'three';
@@ -16,8 +16,6 @@ THREE.TextureLoader.prototype.load = () => new THREE.Texture();
 
 const { Game } = await import('../src/Game.ts');
 const { Weapon } = await import('../src/Weapon.ts');
-const { PistolPickup } = await import('../src/PistolPickup.ts');
-const { ShotgunPickup } = await import('../src/ShotgunPickup.ts');
 const { TierDiagnosticsTracker } = await import('../src/TierDiagnostics.ts');
 const { ENCOUNTER_CONFIGS } = await import('../src/EncounterConfig.ts');
 const fixtures = [];
@@ -28,13 +26,10 @@ function createGame(onHit = () => {}) {
   camera.position.set(0, 1.7, 0);
   const game = Object.create(Game.prototype);
   const weapon = new Weapon(camera, canvas, [], [], onHit, () => true, () => {});
-  const pistolPickup = new PistolPickup(scene);
-  const shotgunPickup = new ShotgunPickup(scene);
-  pistolPickup.resetForNewRun(); shotgunPickup.resetForNewRun();
   const announcements = [];
   const notifications = [];
   Object.assign(game, {
-    scene, player: { camera }, weapon, pistolPickup, shotgunPickup,
+    scene, player: { camera }, weapon,
     level: { getFloorHeightAt: () => 0, isColliding: (_x, z) => z < -1.9,
       hasLineOfSight: () => true, findNextWaypoint: (_from, to) => to.clone(), getDoors: () => [] },
     renderer: { domElement: canvas }, encounterConfigs: ENCOUNTER_CONFIGS,
@@ -46,36 +41,24 @@ function createGame(onHit = () => {}) {
   });
   document.pointerLockElement = canvas;
   fixtures.push(game);
-  return { game, weapon, pistolPickup, shotgunPickup, announcements, notifications };
+  return { game, weapon, notifications };
 }
 
 try {
   const normal = createGame();
-  const { game, weapon, pistolPickup, shotgunPickup } = normal;
+  const { game, weapon } = normal;
   game.startTier(1);
   assert.equal(weapon.getActiveWeaponId(), 'axe');
   assert.equal(weapon.isWeaponUnlocked('pistol'), false);
   assert.equal(weapon.isWeaponUnlocked('shotgun'), false);
-  assert.equal(pistolPickup.isActive(), false); assert.equal(shotgunPickup.isActive(), false);
   assert.equal(game.dropBudget, 0, 'P1 à la hache ne sème pas de munitions inutilisables');
   const beforePointer = document.pointerLockElement;
   game.enterRespite();
   assert.equal(game.state, 'exploration'); assert.equal(game.respiteTimer, 10);
   assert.equal(game.pendingTierStart, 2); assert.equal(document.pointerLockElement, beforePointer);
-  assert.equal(pistolPickup.isActive(), true); assert.equal(shotgunPickup.isActive(), false);
-  assert.equal(weapon.isWeaponUnlocked('pistol'), false, 'La purge présente d’abord une vraie récompense');
-  assert.ok(pistolPickup.z > -1.9, 'Le dépôt contourne un point en collision');
-  assert.equal(pistolPickup.tryPickup(new THREE.Vector3(pistolPickup.x, 4.1, pistolPickup.z), weapon), false,
-    'Une arme ne traverse pas le plancher');
-  const pickupPosition = new THREE.Vector3(pistolPickup.x, 1.7, pistolPickup.z);
-  const pickupDirection = new THREE.Vector3(pistolPickup.x, 0, pistolPickup.z).normalize();
-  assert.equal(pistolPickup.canInteract(game.player.camera.position, pickupDirection), true);
-  game.player.camera.position.copy(pickupPosition);
-  game.updatePickups(1, false);
-  assert.equal(weapon.isWeaponUnlocked('pistol'), false, 'Pas de collecte sans contrôle');
-  game.updatePickups(0.05, true);
-  assert.equal(weapon.getActiveWeaponId(), 'pistol');
-  assert.equal(pistolPickup.isConsumed(), true);
+  assert.equal(weapon.isWeaponUnlocked('pistol'), true, 'La purge débloque le pistolet immédiatement');
+  assert.equal(weapon.getActiveWeaponId(), 'axe', 'La dotation préserve l’arme tenue');
+  assert.equal(weapon.switchWeapon('pistol'), true);
   assert.deepEqual(weapon.getAmmoStocks().pistol, { magazine: 10, reserve: 30, unlocked: true });
   assert.deepEqual(normal.notifications, ['pistol']);
   game.advanceRespite(9.99);
@@ -86,33 +69,29 @@ try {
   assert.equal(weapon.isWeaponUnlocked('shotgun'), false);
 
   game.startTier(3);
-  assert.equal(shotgunPickup.isActive(), false);
+  assert.equal(weapon.isWeaponUnlocked('shotgun'), false);
   game.enterRespite();
   assert.equal(game.pendingTierStart, 4); assert.equal(game.respiteTimer, 10);
-  assert.equal(shotgunPickup.isActive(), true); assert.equal(weapon.isWeaponUnlocked('shotgun'), false);
-  // Arme oubliée : le prochain combat la fournit avant les premières apparitions.
+  assert.equal(weapon.isWeaponUnlocked('shotgun'), true);
+  assert.equal(weapon.getActiveWeaponId(), 'pistol');
+  assert.deepEqual(weapon.getAmmoStocks().shotgun, { magazine: 5, reserve: 25, unlocked: true });
   game.advanceRespite(10);
   assert.equal(game.currentTier, 4); assert.equal(game.state, 'playing');
-  assert.equal(weapon.getActiveWeaponId(), 'shotgun'); assert.equal(shotgunPickup.isConsumed(), true);
+  assert.equal(weapon.getActiveWeaponId(), 'pistol');
   assert.deepEqual(weapon.getAmmoStocks().shotgun, { magazine: 5, reserve: 25, unlocked: true });
   assert.equal(game.tierDiagnostics.getCurrentRecord().ammoAtStart.shotgun.unlocked, true);
-  assert.ok(normal.announcements.some((text) => text.includes('FUSIL À POMPE ACQUIS')),
-    'Le rattrapage est signalé après le nettoyage du HUD');
+  assert.deepEqual(normal.notifications, ['pistol', 'shotgun'], 'Chaque acquisition est annoncée une fois');
   const shotgunReserve = weapon.getReserveAmmoFor('shotgun');
   game.startTier(4);
   assert.equal(weapon.getReserveAmmoFor('shotgun'), shotgunReserve, 'Le rattrapage est unique');
-
-  const forgotten = createGame();
-  forgotten.game.startTier(1); forgotten.game.enterRespite(); forgotten.game.advanceRespite(10);
-  assert.equal(forgotten.weapon.getActiveWeaponId(), 'pistol');
-  assert.deepEqual(forgotten.weapon.getAmmoStocks().pistol, { magazine: 10, reserve: 30, unlocked: true });
-  assert.equal(forgotten.shotgunPickup.isActive(), false);
 
   let lateHits = 0;
   const direct = createGame(() => lateHits++);
   direct.game.startTier(4);
   assert.equal(direct.weapon.isWeaponUnlocked('pistol'), true);
   assert.equal(direct.weapon.isWeaponUnlocked('shotgun'), true, 'Un saut direct garde les armes des paliers précédents');
+  assert.deepEqual(direct.notifications, ['pistol', 'shotgun']);
+  assert.equal(direct.weapon.getActiveWeaponId(), 'axe');
   assert.equal(direct.game.tierDiagnostics.getCurrentRecord().ammoAtStart.pistol.unlocked, true);
   direct.weapon.switchWeapon('axe');
   direct.weapon.shoot();
@@ -156,15 +135,10 @@ try {
   const defeated = { getPosition: () => new THREE.Vector3(0, 1, 0) };
   empty.game.onZombieKilled(defeated); empty.game.onZombieKilled(defeated);
   assert.equal(empty.game.killsThisTier, 1); assert.equal(empty.game.ammoDrops.length, 0);
-  for (const pickup of [pistolPickup, shotgunPickup]) {
-    pickup.resetForNewRun();
-    assert.equal(pickup.isActive(), false); assert.equal(pickup.isConsumed(), false);
-    assert.equal(pickup.collect(weapon), false, 'Une récompense masquée ne se collecte pas');
-  }
-  console.log('Progression hache → pistolet après P1 → pompe après P3, collecte/pause/étages/rattrapage, stocks et diagnostics : OK');
+  console.log('Dotation directe après P1/P3, contrôle, saut direct, stocks et diagnostics : OK');
 } finally {
   for (const game of fixtures) {
-    game.weapon.dispose(); game.pistolPickup.dispose(); game.shotgunPickup.dispose();
+    game.weapon.dispose();
     for (const drop of game.ammoDrops) drop.dispose();
   }
 }

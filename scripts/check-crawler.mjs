@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { readSpritePng, alphaBounds } from './sprite-png-info.mjs';
-import { crawlerConfig, crawlerAnimation, crawlerSprite, crawlerGroundOffsetY } from '../src/CrawlerAnimation.ts';
+import { crawlerConfig, crawlerAnimation, crawlerSprite, crawlerGroundOffsetY, crawlerLightCue } from '../src/CrawlerAnimation.ts';
 import { CrawlerZombie } from '../src/CrawlerZombie.ts';
 import * as THREE from 'three';
 import { isHeadSpriteHit } from '../src/SpriteHitMask.ts';
@@ -176,6 +176,10 @@ try {
   // Test 2.2 : Réaction à la lampe torche (50% Furie, 50% Fuite)
   const origRandom = Math.random;
   try {
+    const rates = [];
+    const cueAudio = () => ({ isPlaying: false, setPlaybackRate: (rate) => rates.push(rate), play() {}, stop() {},
+      disconnect() {}, gain: { disconnect() {} }, removeFromParent() {} });
+    crawler.hissAudio = cueAudio();
     // Cas A : Furie (random < 0.5)
     Math.random = () => 0.2;
     crawler.update(
@@ -185,16 +189,23 @@ try {
       undefined,
       { isFlashlightOn: true, cameraDirection: new THREE.Vector3(0, 0, -1) }
     );
-    assert.equal(crawler.getPose(), 'hurt', 'La lampe torche provoque un spasme d’éblouissement');
+    assert.equal(crawler.getPose(), 'attack', 'La charge se lit dès l’éblouissement');
     assert.equal(crawler.isFrenzyState(), true, 'Tirage 50% Furie activé');
     assert.equal(crawler.isFleeingState(), false, 'Pas en fuite si furie');
 
     // Cas B : Fuite (random >= 0.5)
     Math.random = () => 0.8;
     const fleeCrawler = new CrawlerZombie(scene, level, 0, 5);
+    const close = new THREE.Vector3(0, 1.7, 5.8);
+    fleeCrawler.update(0.05, close, [fleeCrawler]);
+    const chargeCue = crawler.getMesh().material;
+    const plainAttack = fleeCrawler.getMesh().material;
+    assert.notEqual(chargeCue, plainAttack, 'Une charge éclairée ne modifie pas le matériau de l’attaque normale');
+    assert.equal(chargeCue.map, plainAttack.map, 'Le signal garde la même texture de pose et son masque alpha');
+    fleeCrawler.hissAudio = cueAudio();
     fleeCrawler.update(
       0.05,
-      new THREE.Vector3(0, 1.7, 10),
+      close,
       [fleeCrawler],
       undefined,
       { isFlashlightOn: true, cameraDirection: new THREE.Vector3(0, 0, -1) }
@@ -202,10 +213,21 @@ try {
     assert.equal(fleeCrawler.getPose(), 'hurt', 'Éblouissement initial avant fuite');
     assert.equal(fleeCrawler.isFleeingState(), true, 'Tirage 50% Fuite activé');
     assert.equal(fleeCrawler.isFrenzyState(), false, 'Pas en furie si fuite');
-    // Passer le flinch et tester que le mouvement s'éloigne du joueur
+    assert.ok(rates[0] > 1 && rates[1] < 1, 'Les deux sons annoncent des réactions opposées');
+    const fleeCue = fleeCrawler.getMesh().material;
+    assert.notEqual(fleeCue, chargeCue);
+    fleeCrawler.update(0, close, [fleeCrawler]);
+    assert.equal(fleeCrawler.getMesh().material, fleeCue, 'La pause fige le signal en cours');
+    fleeCrawler.takeDamage(1);
+    assert.notEqual(fleeCrawler.getMesh().material, fleeCue, 'La blessure masque le signal même sur la même pose');
     const startZ = fleeCrawler.getPosition().z;
-    fleeCrawler.update(0.3, new THREE.Vector3(0, 1.7, 10), [fleeCrawler]);
+    fleeCrawler.update(0.2, new THREE.Vector3(0, 1.7, 10), [fleeCrawler]);
+    assert.equal(fleeCrawler.getPosition().z, startZ, 'Le signal précède le premier mouvement');
+    let grabsDuringFlight = 0;
+    for (let i = 0; i < 12; i++) fleeCrawler.update(0.05, close, [fleeCrawler], () => grabsDuringFlight++);
+    assert.equal(grabsDuringFlight, 0, 'L’annonce de fuite annule la saisie engagée');
     assert.ok(fleeCrawler.getPosition().z < startZ, 'La Rampeuse recule en fuyant à l’opposé du joueur');
+    assert.notEqual(fleeCrawler.getMesh().material, fleeCue, 'Le signal de fuite disparaît avec la reprise du mouvement');
     fleeCrawler.dispose(scene);
   } finally {
     Math.random = origRandom;
@@ -234,7 +256,7 @@ try {
   attackCrawler.dispose(scene);
   const hurtAttack = new CrawlerZombie(scene, level, 0, 0);
   let attackCues = 0;
-  hurtAttack.hissAudio = { isPlaying: false, play: () => attackCues++, stop: () => {}, disconnect: () => {}, gain: { disconnect: () => {} }, removeFromParent: () => {} };
+  hurtAttack.hissAudio = { isPlaying: false, setPlaybackRate() {}, play: () => attackCues++, stop: () => {}, disconnect: () => {}, gain: { disconnect: () => {} }, removeFromParent: () => {} };
   hurtAttack.update(0.01, closePlayerPos, [hurtAttack]);
   assert.equal(attackCues, 1, 'Le sifflement annonce la préparation plutôt que les seuls dégâts');
   hurtAttack.takeDamage(1);
@@ -345,12 +367,9 @@ try {
     undefined,
     { isFlashlightOn: true, cameraDirection: new THREE.Vector3(0, 0, -1) }
   );
-  fleeDodgeCrawler.update(
-    0.25,
-    new THREE.Vector3(0, 1.7, 10),
-    [fleeDodgeCrawler],
-    undefined,
-    { isFlashlightOn: false, cameraDirection: new THREE.Vector3(0, 0, -1) }
+  for (let elapsed = 0; elapsed < crawlerLightCue.duration; elapsed += 0.05) fleeDodgeCrawler.update(
+    0.05, new THREE.Vector3(0, 1.7, 10), [fleeDodgeCrawler], undefined,
+    { isFlashlightOn: false, cameraDirection: new THREE.Vector3(0, 0, -1) },
   );
   assert.equal(fleeDodgeCrawler.isFleeingState(), true, 'En mode fuite');
   assert.equal(fleeDodgeCrawler.isEvadingAimState(), true, 'Mode fuite : esquive latérale active en reculant');

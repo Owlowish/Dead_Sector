@@ -150,11 +150,17 @@ for (const kind of ['tear', 'sweep']) {
 const phase2Sweep = fixture();
 startSweep(phase2Sweep);
 assert.equal(poseOf(phase2Sweep.boss), 'sweep-windup.png');
+assert.equal(phase2Sweep.boss.isSweepThreat(near), true, 'Le danger est signalé dès l’anticipation');
+assert.equal(phase2Sweep.boss.isSweepThreat(new THREE.Vector3(0, 1.7, -2)), false, 'Quitter le secteur éteint le danger');
+const rim = phase2Sweep.boss.cue.group.children.at(-1);
+assert.equal(rim.visible, true, 'Le liseré relevé précède l’impact');
+assert.ok(rim.geometry.attributes.position.getY(0) > 1, 'Le liseré dépasse le sol');
 const sweepHeld = phase2Sweep.boss.getPosition().clone();
 phase2Sweep.run(guardianConfig.attackWindup - 0.01);
 assert.deepEqual(phase2Sweep.hits, []);
 phase2Sweep.run(0.02);
 assert.deepEqual(phase2Sweep.hits, [24]);
+assert.equal(phase2Sweep.boss.isSweepThreat(near), false, 'Le danger s’éteint dès le début de la récupération');
 assert.equal(poseOf(phase2Sweep.boss), 'sweep-release.png');
 phase2Sweep.run(0.5);
 assert.deepEqual(phase2Sweep.hits, [24], 'Un balayage ne produit qu’un impact');
@@ -181,8 +187,13 @@ const wallBeforePlayer = fixture();
 wallBeforePlayer.level.collisionRule = (_x, z) => z >= 1.75 && z <= 1.85;
 startSweep(wallBeforePlayer);
 assert.equal(hasGroundMark(wallBeforePlayer, 0, 2), false, 'Un obstacle avant le joueur masque la vraie géométrie dangereuse');
+assert.equal(wallBeforePlayer.boss.isSweepThreat(near), false, 'Un couvert éteint le danger rapproché');
 wallBeforePlayer.run(guardianConfig.attackWindup + 0.02);
 assert.deepEqual(wallBeforePlayer.hits, [], 'La zone non signalée derrière un obstacle ne frappe pas');
+
+assert.equal(phase2Sweep.boss.isMaskVisibleFrom(near), true, 'Le masque dégagé offre une ligne de tir');
+phase2Sweep.level.blockers.push(blocker);
+assert.equal(phase2Sweep.boss.isMaskVisibleFrom(near), false, 'Le couvert masque la ligne de tir vers le masque');
 
 const shot = fixture();
 const locked = new THREE.Vector3(2, 1.7, 8);

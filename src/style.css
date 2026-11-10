@@ -285,6 +285,24 @@ canvas {
 }
 .guardian-phase { color: #eee6d5; font-size: clamp(12px, min(1.45vw, 2.8dvh), 25px); line-height: 1.2; }
 .guardian-attack { color: #e0c5a0; font-size: clamp(10px, min(1vw, 2.6dvh), 16px); line-height: 1.25; letter-spacing: 0.02em; }
+.guardian-opening { color: #fff1c2; font-weight: 800; }
+.sweep-warning {
+  position: fixed;
+  left: 50%;
+  bottom: 58%;
+  translate: -50% 0;
+  z-index: 6;
+  pointer-events: none;
+  padding: 5px 9px;
+  border: 1px solid #ffbe74;
+  background: #2e1316;
+  color: #ffe0ad;
+  font-family: Consolas, 'Lucida Console', 'Courier New', monospace;
+  font-size: clamp(12px, 1.35vw, 16px);
+  font-weight: 800;
+  text-align: center;
+  white-space: nowrap;
+}
 @media (max-width: 1240px) {
   .top-hud:has(.guardian-status:not([hidden])) { grid-template-columns: minmax(0, 1fr); }
   .guardian-status { grid-row: 1; width: min(100%, 680px); justify-self: center; }
@@ -534,6 +552,7 @@ canvas {
 }
 .crosshair.head-hit { opacity: 1; }
 .crosshair.head-hit::after { background: #ffd171; box-shadow: 0 0 7px #ffd171; }
+.crosshair.axe-in-range::after { width: 4px; height: 4px; left: -2px; top: -2px; background: #f1c48c; }
 .crosshair span {
   position: absolute;
   background: var(--ivory);
@@ -812,5 +831,6 @@ canvas {
 .run-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin: 24px 0; text-align: left; }
 .run-stats dt { color: var(--brass); font-size: 0.8rem; }
 .run-stats dd { margin: 5px 0 0; color: var(--ivory); }
+.run-stats [data-run-fatal] { grid-column: 1 / -1; }
 .run-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
 @media (max-width: 420px) { .run-stats { grid-template-columns: 1fr; gap: 10px; } }

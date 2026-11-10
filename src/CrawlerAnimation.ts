@@ -29,6 +29,13 @@ export const crawlerAnimation = {
 };
 
 export type CrawlerPose = (typeof crawlerAnimation.poses)[number];
+export type CrawlerLightReaction = 'charge' | 'flee';
+
+export const crawlerLightCue = {
+  duration: 0.42,
+  charge: { pose: 'attack', playbackRate: 1.35, glow: { center: [0.5, 0.55], radius: [0.35, 0.23], color: 0xffb168 } },
+  flee: { pose: 'hurt', playbackRate: 0.72, glow: { center: [0.53, 0.55], radius: [0.19, 0.23], color: 0xa7d9ff } },
+} as const;
 
 // Coordonnées des nouvelles images exportées, origine en haut à gauche.
 export const crawlerSprite = {

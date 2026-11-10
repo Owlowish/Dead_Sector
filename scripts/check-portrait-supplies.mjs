@@ -46,7 +46,7 @@ const game = Object.assign(Object.create(Game.prototype), {
   state: 'playing', currentTier: 8, debugMenuOpen: false, runSummaryOpen: false,
   guardianSupplyElapsed: 0, guardianHealthSupplyElapsed: 0, guardianSupplyIndex: 0,
   guardianAmmoDrops: [], guardianMedkitDrops: [], medkits: [], ammoBoxes: [], ammoDrops: [],
-  tierDiagnostics: diagnostics, shotgunPickup: { update() {}, tryPickup: () => false },
+  tierDiagnostics: diagnostics,
 });
 document.pointerLockElement = canvas;
 const run = (seconds) => { for (let i = 0; i < Math.round(seconds / 0.05); i++) game.updateGuardianSupplies(0.05, boss); };

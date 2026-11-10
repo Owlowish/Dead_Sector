@@ -2,7 +2,7 @@
   "documentType": "asset-pack",
   "id": "rampeuse-v2",
   "revision": 3,
-  "updatedAt": "2026-11-06",
+  "updatedAt": "2026-11-10",
   "request": "Renforcer la peur provoquée par la Rampeuse : nouveau sprite plus inquiétant et traque au regard, sans changer ses PV ni dégâts.",
   "scope": {
     "generate": true,
@@ -67,6 +67,15 @@
     "runtimeLighting": "Émission texturée0.035 ivoire, sans nouvelle lumière ni yeux néon, pour conserver les détails en pénombre."
   },
   "pipeline": "Base générée et inspectée, puis action pilote crawl-a inspectée avant extension. Six poses inspectées en contact et à60/140px ; cycles1x/0.25x et retour repos contrôlés en navigateur sur le lot complet.",
+  "runtimeLightCues": {
+    "source": "src/CrawlerAnimation.ts",
+    "sound": "public/assets/sounds/crawler-hiss.wav",
+    "soundProvenance": "docs/asset-packs/AUDIO_V2_2026-11-08.json",
+    "durationSeconds": 0.42,
+    "charge": { "pose": "attack", "playbackRate": 1.35, "glowColor": "#ffb168", "centerUVTopLeft": [0.5, 0.55], "radiusUV": [0.35, 0.23] },
+    "flee": { "pose": "hurt", "playbackRate": 0.72, "glowColor": "#a7d9ff", "centerUVTopLeft": [0.53, 0.55], "radiusUV": [0.19, 0.23] },
+    "transformation": "Les mêmes poses sont réutilisées. Lecture spatialisée depuis le début du WAV, durée source limitée à 0,42 s multipliées par la vitesse de lecture. Matériaux de réaction dans src/CrawlerLightCue.ts, émission texturée elliptique de gain 1,15 avec masque alpha et profondeur existants."
+  },
   "assets": [
     {
       "pose": "idle",
