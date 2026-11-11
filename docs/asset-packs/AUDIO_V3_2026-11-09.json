@@ -43,8 +43,8 @@
     },
     {
       "purpose": "Clac du chargeur et résonances de douilles au ramassage effectif",
-      "sourceFile": "public/assets/sounds/pickup-ammo.wav",
-      "exportFile": "public/assets/sounds/pickup-ammo.wav",
+      "sourceFile": "assets-src/sounds/pickup-ammo.wav",
+      "exportFile": "public/assets/sounds/pickup-ammo.ogg",
       "channels": 1,
       "sampleRate": 44100,
       "durationSeconds": 0.75,
@@ -57,8 +57,8 @@
     },
     {
       "purpose": "Soupir au ramassage effectif d'un soin",
-      "sourceFile": "public/assets/sounds/pickup-medkit.wav",
-      "exportFile": "public/assets/sounds/pickup-medkit.wav",
+      "sourceFile": "assets-src/sounds/pickup-medkit.wav",
+      "exportFile": "public/assets/sounds/pickup-medkit.ogg",
       "channels": 1,
       "sampleRate": 44100,
       "durationSeconds": 1.9,
@@ -92,5 +92,26 @@
     "logic": "Build et 11 contrôles ciblés réussis. Quatorze rendus mécaniques comparés échantillon par échantillon à la synthèse fournie.",
     "browser": "Chrome headless, vrai Game avec Pointer Lock émulé. Ramassages, séquences pistolet et pompe, transition victoire, lecture jusqu'à 13,5 s et bilan après la fin contrôlés.",
     "remainingWork": "Écouter l'équilibre des niveaux et la lisibilité des gestes en partie."
+  },
+  "replacement_2026-11-11": {
+    "summary": "Synthèse mécanique de src/WeaponMechanicalAudio.ts remplacée par sept prises WAV fournies par l'utilisateur ; événements, quatre voix et gain de base 0,04 conservés.",
+    "sources": [
+      "assets-src/sounds/mag-out.wav",
+      "assets-src/sounds/mag-in.wav",
+      "assets-src/sounds/seat.wav",
+      "assets-src/sounds/shell-insert.wav",
+      "assets-src/sounds/pump-back.wav",
+      "assets-src/sounds/pump-forward.wav",
+      "assets-src/sounds/axe-swing.wav"
+    ],
+    "exports": "public/assets/sounds/<id>.ogg via scripts/encode-sounds-ogg.mjs (oggenc -q 5)",
+    "format": "mono 16 bits 44,1 kHz, crête −3 dBFS (souffle de hache −6,6 dBFS)",
+    "trims": {
+      "shell-insert": 0.64,
+      "pump-back": 0.75,
+      "axe-swing": 0.71,
+      "autres": 1
+    },
+    "trimRule": "Atténuation seule pour ne pas dépasser le RMS 0,115 de l'ancienne synthèse."
   }
 }

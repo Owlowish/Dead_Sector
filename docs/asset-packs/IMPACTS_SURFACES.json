@@ -6,15 +6,15 @@
   "scope": "Réponses visuelles et sonores bois, pierre et métal à partir du matériau de la face touchée. Deux sons originaux, aucun nouveau bitmap ni changement de dégâts.",
   "referencesInspected": [
     {
-      "file": "public/assets/sounds/impact-metal-soft.wav",
+      "file": "assets-src/sounds/impact-metal-soft.wav",
       "role": "Impact existant réutilisé pour le métal ; format, durée, crête et RMS contrôlés. Synthèse d'origine dans generate_soft_audio.py."
     },
     {
-      "file": "public/assets/sounds/impact-zombie-soft.wav",
+      "file": "assets-src/sounds/impact-zombie-soft.wav",
       "role": "Référence du niveau des impacts ; réponse organique conservée sans modification."
     },
     {
-      "file": "public/assets/sounds/shot-soft.wav",
+      "file": "assets-src/sounds/shot-soft.wav",
       "role": "Référence de détonation du pistolet ; conservée sans modification."
     }
   ],
@@ -31,7 +31,7 @@
   },
   "assets": [
     {
-      "file": "public/assets/sounds/impact-wood-soft.wav",
+      "file": "assets-src/sounds/impact-wood-soft.wav",
       "status": "produced",
       "channels": 1,
       "sampleRate": 22050,
@@ -44,7 +44,7 @@
       "sha256": "98dbf793c40a7a46cd2faa03ab85e0e39835ae7f90246b11dc82306e7b6fd15a"
     },
     {
-      "file": "public/assets/sounds/impact-stone-soft.wav",
+      "file": "assets-src/sounds/impact-stone-soft.wav",
       "status": "produced",
       "channels": 1,
       "sampleRate": 22050,
@@ -57,7 +57,7 @@
       "sha256": "98cd19ea19ade6f62cf2fc405fc74ccfab5f0131ac872b2d0c354823fc1f869f"
     },
     {
-      "file": "public/assets/sounds/impact-metal-soft.wav",
+      "file": "assets-src/sounds/impact-metal-soft.wav",
       "status": "reused",
       "channels": 1,
       "sampleRate": 44100,

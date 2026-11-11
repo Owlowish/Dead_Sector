@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { AudioManager } from './AudioManager.ts';
 import type { Level } from './Level.ts';
 import { ZombieRemains } from './ZombieRemains.ts';
 import { spitterAnimation, type SpitterPose } from './SpitterAnimation.ts';
@@ -77,20 +78,13 @@ export class SpitterZombie {
     }
   }
 
-  setupAudio(listener: THREE.AudioListener, buffer: AudioBuffer, effectsVolume = 1): void {
-    if (!this.alive || this.disposed) return;
-    this.groanAudio = new THREE.PositionalAudio(listener);
-    this.groanAudio.setBuffer(buffer);
-    this.groanAudio.setRefDistance(3.0);
-    this.groanAudio.setMaxDistance(20);
-    this.groanAudio.setRolloffFactor(1.2);
-    this.setAudioVolume(effectsVolume);
-    // Timbre guttural, lourd et plus grave que les zombies ordinaires
-    this.mesh.add(this.groanAudio);
+  canReceiveVoice(): boolean {
+    return this.alive && !this.disposed && !this.groanAudio;
   }
 
-  setAudioVolume(volume: number): void {
-    this.groanAudio?.setVolume(0.35 * THREE.MathUtils.clamp(volume, 0, 1));
+  /** Gargouillement spatial créé par l'AudioManager et déjà attaché au mesh. */
+  setVoice(audio: THREE.PositionalAudio): void {
+    this.groanAudio = audio;
   }
 
   alert(_targetPosition: THREE.Vector3): void {}
@@ -277,12 +271,8 @@ export class SpitterZombie {
     this.disposed = true;
     this.alive = false;
     this.stopAudio();
-    if (this.groanAudio) {
-      this.groanAudio.disconnect();
-      this.groanAudio.gain.disconnect();
-      this.groanAudio.removeFromParent();
-      this.groanAudio = null;
-    }
+    AudioManager.release(this.groanAudio);
+    this.groanAudio = null;
     this.shotReaction.dispose();
     this.remains.dispose();
     scene.remove(this.mesh);

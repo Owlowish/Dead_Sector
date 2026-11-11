@@ -6,7 +6,7 @@ import wave
 from pathlib import Path
 
 RATE = 22050
-DEST = Path(__file__).resolve().parents[1] / 'public' / 'assets' / 'sounds'
+DEST = Path(__file__).resolve().parents[1] / 'assets-src' / 'sounds'
 DEST.mkdir(parents=True, exist_ok=True)
 
 
@@ -58,4 +58,4 @@ def shotgun():
 
 music()
 shotgun()
-print('Sons créés dans public/assets/sounds')
+print('Sons créés dans assets-src/sounds (lancer scripts/encode-sounds-ogg.mjs)')

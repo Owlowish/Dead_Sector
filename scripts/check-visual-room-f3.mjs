@@ -174,22 +174,16 @@ console.log('   -> PASS : Budget nominal de 2 lumières à ombre respecté (pas 
 // ============================================================================
 console.log('3. Test de la conception sonore espacée (craquements feutrés)...');
 
-const creakSoundPath = path.resolve('public/assets/sounds/creak-soft.wav');
+const creakSoundPath = path.resolve('public/assets/sounds/creak-soft.ogg');
 assert.ok(fs.existsSync(creakSoundPath), `Le fichier sonore ${creakSoundPath} doit exister sur le disque`);
 
 const soundStats = fs.statSync(creakSoundPath);
 assert.ok(soundStats.size > 1000 && soundStats.size < 200000, `Taille du fichier sonore appropriée pour un micro-asset (<200Ko) : ${soundStats.size} octets`);
 
-// Vérification du header RIFF WAV
-const fd = fs.openSync(creakSoundPath, 'r');
-const headerBuffer = Buffer.alloc(12);
-fs.readSync(fd, headerBuffer, 0, 12, 0);
-fs.closeSync(fd);
-
-const riffTag = headerBuffer.toString('ascii', 0, 4);
-const waveTag = headerBuffer.toString('ascii', 8, 12);
-assert.equal(riffTag, 'RIFF', 'Le fichier doit avoir un en-tête RIFF valide');
-assert.equal(waveTag, 'WAVE', 'Le format audio doit être du WAV');
+// Vérification de l'en-tête Ogg Vorbis servi au navigateur
+const header = fs.readFileSync(creakSoundPath).subarray(0, 64);
+assert.equal(header.toString('ascii', 0, 4), 'OggS', 'Le fichier servi doit être un conteneur Ogg');
+assert.ok(header.includes(Buffer.from('vorbis')), 'Le flux audio doit être du Vorbis');
 
 // Vérifier le nouveau directeur, qui remplace l'ancien timer local de Game.
 const source = {
@@ -213,7 +207,7 @@ assert.equal(source.playCount, 1, 'Une seule lecture est autorisée par accalmie
 director.suspend();
 director.dispose();
 
-console.log('   -> PASS : Audio WAV valide et ordonnanceur F5 unique, temporisé et sans répétition vérifiés.\n');
+console.log('   -> PASS : Audio Ogg Vorbis valide et ordonnanceur F5 unique, temporisé et sans répétition vérifiés.\n');
 
 // ============================================================================
 // ÉPREUVE 4 : DOCUMENTATION DES SPRITES MANQUANTS POUR LA PASSE GRAPHIQUE

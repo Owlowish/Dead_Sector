@@ -5,6 +5,7 @@
  */
 
 import * as THREE from 'three';
+import { AudioManager } from './AudioManager.ts';
 
 export class EncounterBell {
   private readonly group: THREE.Group;
@@ -12,7 +13,6 @@ export class EncounterBell {
   private readonly beaconLight: THREE.PointLight;
   private active = false;
   private pulseTimer = 0;
-  private effectsVolume = 1;
   private readonly position: THREE.Vector3;
 
   constructor(scene: THREE.Scene, x: number, z: number, floorY: number) {
@@ -87,13 +87,7 @@ export class EncounterBell {
   public trigger(): void {
     this.setActive(false);
     // Retour sonore immédiat de résonance métallique
-    const bellSound = new Audio('/assets/sounds/empty-soft.wav');
-    bellSound.volume = 0.6 * this.effectsVolume;
-    void bellSound.play().catch(() => {});
-  }
-
-  public setEffectsVolume(volume: number): void {
-    this.effectsVolume = THREE.MathUtils.clamp(volume, 0, 1);
+    AudioManager.peek()?.playPooled('bell');
   }
 
   public update(delta: number): void {
