@@ -295,6 +295,6 @@ for (const id of WEAPON_MECHANICAL_SOUND_IDS) {
   assert(peak < 0.72 && rms > 0.04 && rms * trim <= 0.116, 'Sources sans écrêtage, audibles et sous le plafond RMS');
   stats.push({ id, seconds: Number((samples.length / rate).toFixed(3)), peak: Number(peak.toFixed(4)), rms: Number(rms.toFixed(4)), trim });
 }
-assert.equal(WEAPON_MECHANICAL_BASE_GAIN, 0.04);
+assert.equal(WEAPON_MECHANICAL_BASE_GAIN, 0.14);
 console.table(stats);
 console.log('PASS : événements réels uniques 30/144 Hz, gros deltas, stocks/commit exacts, interruptions sans reprise, Effets/init tardive, sept prises WAV/Ogg bornées et quatre voix maximum. Aucune écoute ni validation artistique effectuée.');

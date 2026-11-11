@@ -94,7 +94,7 @@
     "remainingWork": "Écouter l'équilibre des niveaux et la lisibilité des gestes en partie."
   },
   "replacement_2026-11-11": {
-    "summary": "Synthèse mécanique de src/WeaponMechanicalAudio.ts remplacée par sept prises WAV fournies par l'utilisateur ; événements, quatre voix et gain de base 0,04 conservés.",
+    "summary": "Synthèse mécanique de src/WeaponMechanicalAudio.ts remplacée par sept prises WAV fournies par l'utilisateur ; événements, quatre voix et gain de base relevé de 0,04 à 0,14.",
     "sources": [
       "assets-src/sounds/mag-out.wav",
       "assets-src/sounds/mag-in.wav",
@@ -112,6 +112,7 @@
       "axe-swing": 0.71,
       "autres": 1
     },
-    "trimRule": "Atténuation seule pour ne pas dépasser le RMS 0,115 de l'ancienne synthèse."
+    "trimRule": "Atténuation seule pour ne pas dépasser le RMS 0,115 de l'ancienne synthèse.",
+    "baseGainChange": "0,04 → 0,14 (+11 dB) après retour utilisateur : rechargement trop faible. Niveau effectif mag-in ≈ −36 dB RMS, clic vide ≈ −35 dB, tir pistolet ≈ −32 dB."
   }
 }

@@ -1,7 +1,8 @@
 import { AudioManager } from './AudioManager.ts';
 import type { WeaponMechanicalSoundId } from './WeaponSoundEvents.ts';
 
-export const WEAPON_MECHANICAL_BASE_GAIN = 0.04;
+// Relevé de 0,04 à 0,14 (+11 dB) : rechargement au niveau du clic vide, environ 4 dB sous le tir du pistolet.
+export const WEAPON_MECHANICAL_BASE_GAIN = 0.14;
 export const WEAPON_MECHANICAL_SOUND_IDS: readonly WeaponMechanicalSoundId[] = [
   'mag-out', 'mag-in', 'seat', 'shell-insert', 'pump-back', 'pump-forward', 'axe-swing',
 ];
