@@ -1,7 +1,8 @@
 // Logique réelle de Weapon et graphe WebAudio simulé, sans navigateur ni écoute artistique.
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
-import { WeaponMechanicalAudio, WEAPON_MECHANICAL_BASE_GAIN, WEAPON_MECHANICAL_DURATIONS, createWeaponMechanicalSamples } from '../src/WeaponMechanicalAudio.ts';
+import fs from 'node:fs';
+import { WeaponMechanicalAudio, WEAPON_MECHANICAL_BASE_GAIN, WEAPON_MECHANICAL_SOUND_IDS, WEAPON_MECHANICAL_TRIMS } from '../src/WeaponMechanicalAudio.ts';
 import { crossedWeaponSoundEvents, pistolReloadSoundEvents, shotgunPumpSoundEvents } from '../src/WeaponSoundEvents.ts';
 import { reloadPoses } from '../src/WeaponAnimation.ts';
 import { shotgunPump, shotgunReload } from '../src/ShotgunAnimation.ts';
@@ -60,13 +61,29 @@ class Element extends EventTarget {
   style = { setProperty: (key, value) => this.properties.set(key, value) };
   classList = { toggle() {}, add() {}, remove() {} };
 }
-globalThis.Audio = class {
-  currentTime = 0;
-  volume = 1;
-  playCount = 0;
-  play() { this.playCount++; return Promise.resolve(); }
-  pause() {}
-};
+// Sources réelles : chaque buffer simulé porte la durée du WAV correspondant.
+function readWav(id) {
+  const wav = fs.readFileSync(`assets-src/sounds/${id}.wav`);
+  assert.equal(wav.toString('ascii', 0, 4), 'RIFF');
+  let offset = 12; const format = {};
+  while (offset < wav.length) {
+    const chunk = wav.toString('ascii', offset, offset + 4), size = wav.readUInt32LE(offset + 4);
+    if (chunk === 'fmt ') Object.assign(format, { channels: wav.readUInt16LE(offset + 10), rate: wav.readUInt32LE(offset + 12), bits: wav.readUInt16LE(offset + 22) });
+    if (chunk === 'data') {
+      const samples = new Float32Array(size / 2);
+      for (let i = 0; i < samples.length; i++) samples[i] = wav.readInt16LE(offset + 8 + i * 2) / 32768;
+      return { ...format, samples };
+    }
+    offset += 8 + size + (size % 2);
+  }
+  throw Error(`Pas de données PCM : ${id}`);
+}
+const sources = Object.fromEntries(WEAPON_MECHANICAL_SOUND_IDS.map(id => [id, readWav(id)]));
+const mechanicalId = url => WEAPON_MECHANICAL_SOUND_IDS.find(id => url.endsWith(`/${id}.ogg`));
+const { installMockAudio } = await import('./mock-audio-manager.mjs');
+const { played: pooledSounds, requested } = installMockAudio({
+  duration: url => { const id = mechanicalId(url); return id ? sources[id].samples.length / sources[id].rate : 1; },
+});
 // Une régression qui créerait un second contexte échoue immédiatement.
 globalThis.AudioContext = class { constructor() { throw Error('Utiliser le contexte existant'); } };
 const { Weapon } = await import('../src/Weapon.ts');
@@ -88,10 +105,7 @@ function fixture({ setup = true, volume = 1 } = {}) {
   weapon.setEffectsVolume(volume);
   const attach = () => weapon.setupMechanicalAudio(context, destination);
   if (setup) attach();
-  const names = () => {
-    const buffers = weapon.mechanicalAudio?.buffers ?? {};
-    return context.starts.map(start => Object.keys(buffers).find(id => buffers[id] === start.buffer));
-  };
+  const names = () => context.starts.map(start => mechanicalId(start.buffer.url));
   return {
     canvas, context, destination, weapon, names, attach,
     setActive: value => { active = value; }, setFocus: value => { focus = value; },
@@ -157,13 +171,12 @@ for (const delta of [1 / 30, 1 / 144, 0.073, 0.8]) {
 for (const delta of [1 / 30, 1 / 144, 0.073, 6]) {
   const f = fixture(); f.shotgun();
   f.weapon.magazineAmmo = 0; f.weapon.reserveAmmo = 8;
-  const emptyClip = f.weapon.sounds.empty.clips[0];
-  const emptyPlays = emptyClip.playCount;
+  const emptyPlays = pooledSounds.filter(src => src.includes('/empty-soft')).length;
   assert(f.weapon.reload());
   through(f, 5 * shotgunReload.duration + 0.02, delta);
   assert.deepEqual(f.names(), Array(5).fill('shell-insert'), 'Un son par cartouche réellement engagée');
   assert.equal(f.weapon.getAmmo(), 5); assert.equal(f.weapon.getReserveAmmo(), 3);
-  assert.equal(emptyClip.playCount, emptyPlays, 'Le clic vide n’est plus utilisé pour insérer');
+  assert.equal(pooledSounds.filter(src => src.includes('/empty-soft')).length, emptyPlays, 'Le clic vide n’est plus utilisé pour insérer');
   assert.equal(f.weapon.getIsReloading(), false);
   assert(f.weapon.mechanicalAudio.voices.length <= 4);
   f.weapon.dispose();
@@ -222,7 +235,7 @@ for (const [reason, interrupt] of Object.entries(interruptions).filter(([name]) 
 {
   const f = fixture({ setup: false, volume: 0.25 });
   f.weapon.reload(); f.step(0.7); f.attach(); f.attach();
-  assert.equal(f.context.buffers.length, 7, 'Une synthèse par timbre malgré deux setup, souffle de hache compris');
+  assert.equal(requested.filter(mechanicalId).length, 7, 'Un chargement Ogg par prise malgré plusieurs setup, souffle de hache compris');
   assert.equal(f.context.gains[0].gain.value, WEAPON_MECHANICAL_BASE_GAIN * 0.25);
   f.step(1);
   assert.deepEqual(f.names(), ['mag-in', 'seat'], 'Pas de restitution du mag-out passé avant setup');
@@ -238,7 +251,6 @@ for (const [reason, interrupt] of Object.entries(interruptions).filter(([name]) 
 {
   const context = new FakeContext(); const destination = new Node();
   const audio = new WeaponMechanicalAudio(context, destination);
-  assert.equal(context.buffers.length, 7);
   assert.equal(context.gains[0].connections[0], destination);
   for (let i = 0; i < 20; i++) audio.play('pump-back');
   assert.equal(audio.voices.length, 4);
@@ -253,7 +265,7 @@ for (const [reason, interrupt] of Object.entries(interruptions).filter(([name]) 
   for (const callback of staleCallbacks) callback();
   assert.equal(audio.voices.length, 1, 'Une ancienne fin ne libère pas une nouvelle voix');
   audio.dispose(); audio.dispose(); audio.play('seat');
-  assert.equal(audio.voices.length, 0); assert.equal(audio.buffers, null);
+  assert.equal(audio.voices.length, 0); assert.equal(audio.disposed, true);
   assert(context.gains[0].disconnected);
   assert(pending.every(voice => voice.source.stopped && voice.source.disconnected && voice.source.buffer === null));
 }
@@ -268,18 +280,21 @@ for (const [reason, interrupt] of Object.entries(interruptions).filter(([name]) 
   assert(context.sources.every(source => source.stopped && source.disconnected));
 }
 
+// Sources WAV fournies et Ogg servis : niveau borné au plafond de l'ancienne synthèse après atténuation.
 const stats = [];
-for (const sampleRate of [44100, 48000]) for (const id of Object.keys(WEAPON_MECHANICAL_DURATIONS)) {
-  const samples = createWeaponMechanicalSamples(id, sampleRate);
-  assert.equal(samples.length, Math.ceil(sampleRate * WEAPON_MECHANICAL_DURATIONS[id]));
-  assert(samples.every(Number.isFinite)); assert.equal(samples[0], 0); assert.equal(samples.at(-1), 0);
+for (const id of WEAPON_MECHANICAL_SOUND_IDS) {
+  const { channels, rate, bits, samples } = sources[id];
+  assert.deepEqual([channels, rate, bits], [1, 44100, 16], `${id} : mono 16 bits 44,1 kHz`);
+  const ogg = fs.readFileSync(`public/assets/sounds/${id}.ogg`);
+  assert.equal(ogg.toString('ascii', 0, 4), 'OggS', `${id}.ogg servi`);
   let peak = 0; let energy = 0;
   for (const sample of samples) { peak = Math.max(peak, Math.abs(sample)); energy += sample * sample; }
   const rms = Math.sqrt(energy / samples.length);
-  assert(peak <= 0.65 && rms > 0.04 && rms < 0.13, 'Buffers bornés, audibles et sans écrêtage');
-  assert.deepEqual(samples, createWeaponMechanicalSamples(id, sampleRate), 'Synthèse reproductible');
-  stats.push({ sampleRate, id, samples: samples.length, peak: Number(peak.toFixed(4)), rms: Number(rms.toFixed(4)) });
+  const trim = WEAPON_MECHANICAL_TRIMS[id];
+  assert(trim > 0 && trim <= 1, 'Atténuation seulement');
+  assert(peak < 0.72 && rms > 0.04 && rms * trim <= 0.116, 'Sources sans écrêtage, audibles et sous le plafond RMS');
+  stats.push({ id, seconds: Number((samples.length / rate).toFixed(3)), peak: Number(peak.toFixed(4)), rms: Number(rms.toFixed(4)), trim });
 }
-assert.equal(WEAPON_MECHANICAL_BASE_GAIN, 0.04);
+assert.equal(WEAPON_MECHANICAL_BASE_GAIN, 0.14);
 console.table(stats);
-console.log('PASS : événements réels uniques 30/144 Hz, gros deltas, stocks/commit exacts, interruptions sans reprise, Effets/init tardive, sept buffers bornés et quatre voix maximum. Aucune écoute ni validation artistique effectuée.');
+console.log('PASS : événements réels uniques 30/144 Hz, gros deltas, stocks/commit exacts, interruptions sans reprise, Effets/init tardive, sept prises WAV/Ogg bornées et quatre voix maximum. Aucune écoute ni validation artistique effectuée.');

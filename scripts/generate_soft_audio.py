@@ -6,7 +6,7 @@ import wave
 from pathlib import Path
 
 RATE = 44100
-OUTPUT = Path(__file__).resolve().parents[1] / 'public/assets/sounds'
+OUTPUT = Path(__file__).resolve().parents[1] / 'assets-src/sounds'
 rng = random.Random(73)
 
 

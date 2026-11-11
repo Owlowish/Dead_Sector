@@ -15,6 +15,8 @@ import type { CasingType } from './ShellCasing.ts';
 import { isHeadSpriteHit, isOpaqueSpriteHit } from './SpriteHitMask.ts';
 import { getImpactSurface, type ImpactSurface } from './ImpactSurface.ts';
 import { WeaponMechanicalAudio } from './WeaponMechanicalAudio.ts';
+import { AudioManager } from './AudioManager.ts';
+import type { AudioPoolId } from './AudioManager.ts';
 import { crossedWeaponSoundEvents, pistolReloadSoundEvents, shotgunPumpSoundEvents } from './WeaponSoundEvents.ts';
 import type { WeaponMechanicalSoundId } from './WeaponSoundEvents.ts';
 import { shotgunImpactPower, type EnemyShotImpact } from './EnemyImpact.ts';
@@ -91,19 +93,9 @@ function createInitialWeapons(): Record<WeaponId, WeaponState> {
   };
 }
 
-interface WeaponSound {
-  clips: HTMLAudioElement[];
-  gain: number;
-  nextClip: number;
-}
-
-function createWeaponSound(file: string, gain: number, count = 1): WeaponSound {
-  const clips = Array.from({ length: count }, (_, index) => {
-    const suffix = index === 0 ? '' : `-${index + 1}`;
-    return new Audio(`/assets/sounds/${file}${suffix}.wav`);
-  });
-  return { clips, gain, nextClip: 0 };
-}
+/** Réserves de l'AudioManager utilisées par l'arme ; fichiers, gains et variantes dans `AUDIO_POOLS`. */
+const weaponSoundPools = ['empty', 'pistol', 'shotgun', 'metal', 'wood', 'stone', 'enemy', 'axeFlesh'] as const satisfies readonly AudioPoolId[];
+type WeaponSoundPool = typeof weaponSoundPools[number];
 
 export class Weapon {
   private readonly raycaster = new THREE.Raycaster();
@@ -121,17 +113,6 @@ export class Weapon {
   private shotgunShellCommitted = false;
   private currentFrameIndex = -1;
 
-  // Effets sonores
-  private readonly sounds = {
-    empty: createWeaponSound('empty-soft', 0.3),
-    pistol: createWeaponSound('shot-soft', 0.5, 3),
-    shotgun: createWeaponSound('shotgun-shot', 0.42, 2),
-    metal: createWeaponSound('impact-metal-soft', 0.3, 3),
-    wood: createWeaponSound('impact-wood-soft', 0.3, 3),
-    stone: createWeaponSound('impact-stone-soft', 0.27, 3),
-    enemy: createWeaponSound('impact-zombie-soft', 0.35, 3),
-    axeFlesh: createWeaponSound('axe-flesh', 0.28),
-  };
   private mechanicalAudio: WeaponMechanicalAudio | null = null;
   private mechanicalContext: AudioContext | null = null;
   private effectsVolume = 1;
@@ -319,9 +300,7 @@ export class Weapon {
     this.headMarkerTimer = null;
     this.crosshair?.classList.toggle('head-hit', false);
     this.shotgunRig?.classList.toggle('is-reloading', false);
-    for (const sound of Object.values(this.sounds)) {
-      sound.nextClip = 0;
-    }
+    AudioManager.peek()?.resetPoolCycles();
     this.currentBrightness = this.targetBrightness;
     this.currentWarmth = this.targetWarmth;
     this.weaponView?.style.setProperty('--weapon-brightness', this.currentBrightness.toFixed(2));
@@ -357,11 +336,8 @@ export class Weapon {
 
   public suspendSoundEffects(): void {
     this.suspendMechanicalAudio();
-    for (const sound of Object.values(this.sounds)) {
-      for (const clip of sound.clips) {
-        if (!clip.paused) clip.pause?.();
-      }
-    }
+    const audio = AudioManager.peek();
+    for (const pool of weaponSoundPools) audio?.stopPool(pool);
   }
 
   private hasActiveControl(): boolean {
@@ -415,7 +391,7 @@ export class Weapon {
     this.spentShellScheduled = false;
 
     // Bruit mécanique de prise en main
-    this.playSound(this.sounds.empty);
+    this.playSound('empty');
 
     this.updateWeaponDOM();
     this.notifyAmmoChange();
@@ -536,7 +512,7 @@ export class Weapon {
 
     if (config.magazine <= 0) {
       this.lastShot = now;
-      this.playSound(this.sounds.empty);
+      this.playSound('empty');
       return;
     }
 
@@ -548,7 +524,7 @@ export class Weapon {
     this.spentShellScheduled = false;
     this.muzzleLight.intensity = this.activeWeaponId === 'shotgun' ? 14.0 : 10.0;
     this.renderShotEffects();
-    this.playSound(this.sounds[this.activeWeaponId]);
+    this.playSound(this.activeWeaponId);
 
     // 1. Enregistrement de la position et de l'orientation de la caméra AVANT le recul de tir
     this.camera.updateWorldMatrix(true, false);
@@ -639,7 +615,7 @@ export class Weapon {
 
     // Appliquer les dégâts cumulés à chaque zombie touché
     if (zombieHits.size > 0) {
-      this.playSound(this.sounds.enemy);
+      this.playSound('enemy');
       zombieHits.forEach(({ damage, headHits, bodyHits, headDamage, hitPoint, normal, direction, distance }, targetMesh) => {
         console.log(`Zombie touché par ${this.activeWeaponId} (${damage} dégâts cumulés) !`);
         const hits = headHits + bodyHits;
@@ -741,7 +717,7 @@ export class Weapon {
       : contactDirection.clone().negate();
     if (normal.dot(contactDirection) > 0) normal.negate();
     if (selected.isTarget) {
-      this.playSound(mesh.userData.impactMaterial === 'portrait' ? this.sounds.wood : this.sounds.axeFlesh);
+      this.playSound(mesh.userData.impactMaterial === 'portrait' ? 'wood' : 'axeFlesh');
       this.onImpact?.({ kind: 'zombie', object: mesh, point: contact.point.clone(), normal,
         direction: contactDirection, weaponId: 'axe' });
       this.onHit(mesh, axeAttack.damage, { headHits: 0, bodyHits: 1, headDamage: 0,
@@ -755,20 +731,12 @@ export class Weapon {
   }
 
   private playSurfaceImpact(surface: ImpactSurface): void {
-    this.playSound(this.sounds[surface]);
+    this.playSound(surface);
   }
 
-  private playSound(sound: WeaponSound): void {
+  private playSound(pool: WeaponSoundPool): void {
     if (!this.hasActiveControl() || this.effectsVolume === 0) return;
-    const clip = sound.clips[sound.nextClip];
-    // Alterner indépendamment des tirages utilisés pour la dispersion.
-    sound.nextClip = (sound.nextClip + 1) % sound.clips.length;
-    clip.currentTime = 0;
-    void clip.play().catch((error: unknown) => {
-      if (!(error instanceof DOMException && error.name === 'AbortError')) {
-        console.warn('Impossible de jouer le son :', error);
-      }
-    });
+    AudioManager.peek()?.playPooled(pool);
   }
 
   public getAmmo(): number {
@@ -864,10 +832,8 @@ export class Weapon {
     if (!Number.isFinite(volume)) return;
     const gain = THREE.MathUtils.clamp(volume, 0, 1);
     this.effectsVolume = gain;
+    // Les réserves de tirs et d'impacts suivent Effets via l'AudioManager.
     this.mechanicalAudio?.setVolume(gain);
-    for (const sound of Object.values(this.sounds)) {
-      for (const clip of sound.clips) clip.volume = sound.gain * gain;
-    }
   }
 
   public addAmmo(count: number, weaponId: WeaponId = this.activeWeaponId): boolean {

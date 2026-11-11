@@ -1,5 +1,5 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { createWeaponMechanicalSamples, WEAPON_MECHANICAL_BASE_GAIN } from '../src/WeaponMechanicalAudio.ts';
+import { WEAPON_MECHANICAL_BASE_GAIN, WEAPON_MECHANICAL_TRIMS } from '../src/WeaponMechanicalAudio.ts';
 import { pistolReloadSoundEvents, shotgunPumpSoundEvents } from '../src/WeaponSoundEvents.ts';
 import { shotgunReload } from '../src/ShotgunAnimation.ts';
 
@@ -85,15 +85,29 @@ requestAnimationFrame(tick);
 </script></html>`);
 
 // Séquence d'écoute au gain exact du jeu, sans normalisation du volume.
-const rate = 48000, sequence = new Float32Array(rate * 5);
+// Sources WAV mono 16 bits 44,1 kHz de assets-src/sounds, celles encodées en Ogg pour le jeu.
+const rate = 44100, sequence = new Float32Array(rate * 5);
+function wavSamples(id) {
+  const wav = readFileSync(`assets-src/sounds/${id}.wav`);
+  let offset = 12;
+  while (offset < wav.length) {
+    const size = wav.readUInt32LE(offset + 4);
+    if (wav.toString('ascii', offset, offset + 4) === 'data') {
+      return Float32Array.from({ length: size / 2 }, (_, i) => wav.readInt16LE(offset + 8 + i * 2) / 32768);
+    }
+    offset += 8 + size + (size % 2);
+  }
+  throw Error(`Pas de données PCM : ${id}`);
+}
 const events = [
   ...pistolReloadSoundEvents.map(event => ({ ...event, at: event.at + 0.2 })),
   { at: 2.1 + shotgunReload.commitAt, sound: 'shell-insert' },
   ...shotgunPumpSoundEvents.map(event => ({ ...event, at: event.at + 3.4 })),
 ];
 for (const event of events) {
-  const samples = createWeaponMechanicalSamples(event.sound, rate), first = Math.round(event.at * rate);
-  for (let i = 0; i < samples.length; i++) sequence[first + i] += samples[i] * WEAPON_MECHANICAL_BASE_GAIN;
+  const samples = wavSamples(event.sound), first = Math.round(event.at * rate);
+  const gain = WEAPON_MECHANICAL_BASE_GAIN * WEAPON_MECHANICAL_TRIMS[event.sound];
+  for (let i = 0; i < samples.length && first + i < sequence.length; i++) sequence[first + i] += samples[i] * gain;
 }
 const wav = Buffer.alloc(44 + sequence.length * 2);
 wav.write('RIFF',0);wav.writeUInt32LE(wav.length-8,4);wav.write('WAVEfmt ',8);wav.writeUInt32LE(16,16);wav.writeUInt16LE(1,20);wav.writeUInt16LE(1,22);wav.writeUInt32LE(rate,24);wav.writeUInt32LE(rate*2,28);wav.writeUInt16LE(2,32);wav.writeUInt16LE(16,34);wav.write('data',36);wav.writeUInt32LE(sequence.length*2,40);

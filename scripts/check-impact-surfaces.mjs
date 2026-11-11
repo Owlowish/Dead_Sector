@@ -80,14 +80,8 @@ globalThis.document = Object.assign(new Element(), {
   },
   querySelectorAll: () => [new Element(), new Element()],
 });
-const sounds = [];
-globalThis.Audio = class {
-  currentTime = 0;
-  volume = 1;
-  constructor(src) { this.src = src; }
-  play() { sounds.push(this.src); return Promise.resolve(); }
-  pause() {}
-};
+const { installMockAudio } = await import('./mock-audio-manager.mjs');
+const { played: sounds } = installMockAudio();
 const { Weapon } = await import('../src/Weapon.ts');
 const camera = new THREE.PerspectiveCamera(75, 16 / 9, 0.1, 100);
 let hud = null;
@@ -107,7 +101,7 @@ for (const surface of ['wood', 'stone', 'metal']) {
   impacts.length = 0;
   weapon.shoot();
   assert.equal(impacts[0].surface, surface, 'La surface du rayon traverse Weapon et le callback graphique');
-  assert.deepEqual(sounds.filter((src) => src.includes('/impact-')), [`/assets/sounds/impact-${surface}-soft.wav`]);
+  assert.deepEqual(sounds.filter((src) => src.includes('/impact-')), [`/assets/sounds/impact-${surface}-soft.ogg`]);
 }
 wall.material[4] = wood;
 sounds.length = 0;
@@ -116,11 +110,11 @@ for (let shot = 0; shot < 3; shot++) {
   weapon.shoot();
 }
 assert.deepEqual(sounds.filter((src) => src.includes('/impact-wood')), [
-  '/assets/sounds/impact-wood-soft-2.wav', '/assets/sounds/impact-wood-soft-3.wav',
-  '/assets/sounds/impact-wood-soft.wav',
+  '/assets/sounds/impact-wood-soft-2.ogg', '/assets/sounds/impact-wood-soft-3.ogg',
+  '/assets/sounds/impact-wood-soft.ogg',
 ]);
 assert.deepEqual(sounds.filter((src) => src.includes('/shot-soft')), [
-  '/assets/sounds/shot-soft.wav', '/assets/sounds/shot-soft-2.wav', '/assets/sounds/shot-soft-3.wav',
+  '/assets/sounds/shot-soft.ogg', '/assets/sounds/shot-soft-2.ogg', '/assets/sounds/shot-soft-3.ogg',
 ]);
 weapon.unlockWeapon('shotgun');
 weapon.getActiveWeapon().hipSpreadDeg = 0;
@@ -162,7 +156,7 @@ assert.equal(weapon.getIsReloading(), false, 'Une recharge en cours ne traverse 
 assert.equal(canvas.listenerCount + window.listenerCount + document.listenerCount, listenerCount, 'Les redémarrages ne recréent aucun écouteur');
 
 for (const name of ['wood', 'stone']) {
-  const wav = fs.readFileSync(`public/assets/sounds/impact-${name}-soft.wav`);
+  const wav = fs.readFileSync(`assets-src/sounds/impact-${name}-soft.wav`);
   assert.equal(wav.toString('ascii', 0, 4), 'RIFF');
   assert.equal(wav.toString('ascii', 8, 12), 'WAVE');
   assert.equal(wav.readUInt16LE(22), 1);

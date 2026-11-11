@@ -27,11 +27,11 @@ globalThis.document = Object.assign(new EventTarget(), {
   },
   querySelectorAll: () => [],
 });
-globalThis.Audio = class {
-  volume = 1;
-  currentTime = 0;
-  play() { return Promise.resolve(); }
-};
+const { installMockAudio } = await import('./mock-audio-manager.mjs');
+const { manager: audioManager } = installMockAudio();
+const { AUDIO_POOLS } = await import('../src/AudioManager.ts');
+// Volume courant de chaque canal des réserves (tirs, impacts, lampe).
+const poolVolumes = id => audioManager.pools.get(id).channels.map(channel => channel.getVolume());
 const { Game } = await import('../src/Game.ts');
 const { Level } = await import('../src/Level.ts');
 const { Weapon } = await import('../src/Weapon.ts');
@@ -69,7 +69,7 @@ const scene = new THREE.Scene();
 const level = new Level(scene);
 const camera = new THREE.PerspectiveCamera(75, 16 / 9, 0.1, 100);
 const weapon = new Weapon(camera, new Element(), [], [], () => {}, () => true, () => {});
-const player = Object.assign(Object.create(Player.prototype), { flashlightClick: new Audio() });
+const player = Object.create(Player.prototype);
 const audioSource = () => ({
   volume: -1, isPlaying: false, position: new THREE.Vector3(),
   setVolume(value) { this.volume = value; },
@@ -84,14 +84,15 @@ storm.setThunder(thunder);
 const horror = new HorrorDirector(() => 0);
 horror.setSource(creak);
 const enemies = [new Zombie(scene, level, -14, 15), new Zombie(scene, level, -14, 15, 'agile'), new SpitterZombie(scene, level, -14, 15), new CrawlerZombie(scene, level, -14, 15)];
+await audioManager.load('zombie-groan-soft');
+const voiceOptions = { standard: 0.3, agile: 0.25, spitter: 0.35, crawler: 0.35 };
 const enemySources = enemies.map(enemy => {
-  const source = audioSource();
-  if (enemy.getKind() === 'crawler') enemy.hissAudio = source;
-  else enemy.groanAudio = source;
+  const source = audioManager.createSpatial('zombie-groan-soft', { refDistance: 2.5, maxDistance: 16, gain: voiceOptions[enemy.getKind()] }, enemy.getMesh());
+  enemy.setVoice(source);
   return source;
 });
 const game = Object.assign(Object.create(Game.prototype), {
-  state: 'playing', audioMix: new AudioMix(), ambianceAudio: ambience, music,
+  state: 'playing', audioMix: new AudioMix(), ambianceAudio: ambience, music, audio: audioManager,
   stormController: storm, horrorDirector: horror, weapon, player, zombies: enemies,
   encounterBell: new EncounterBell(scene, 0, 2.5, 0),
 });
@@ -104,11 +105,10 @@ function changeVolume(channel, value) {
 changeVolume('effects', 0);
 game.updateAudioMix(1.5);
 assert.equal(elements.get('#effects-volume-value').value, '0 %');
-for (const [name, sound] of Object.entries(weapon.sounds)) {
-  assert.ok(sound.clips.every(clip => clip.volume === 0), `${name} et ses variantes suivent Effets`);
+for (const name of Object.keys(AUDIO_POOLS)) {
+  assert.ok(poolVolumes(name).every(volume => volume === 0), `${name} et ses canaux suivent Effets`);
 }
-assert.equal(player.flashlightClick.volume, 0);
-assert.ok(enemySources.every(source => source.volume === 0), 'Les quatre types ennemis suivent Effets');
+assert.ok(enemySources.every(source => source.getVolume() === 0), 'Les quatre types ennemis suivent Effets');
 assert.equal(ambience.volume, 0.15, 'Effets ne coupe pas l’ambiance');
 assert.equal(music.volume, 0.4, 'Effets ne coupe pas la musique');
 changeVolume('ambience', 0);
@@ -124,27 +124,26 @@ assert.equal(music.volume, 0.4, 'Ambiance ne coupe pas la musique');
 assert.equal(game.audioMix.update(1.5, true), false, 'Les fondus terminés ne provoquent plus de mise à jour des sources');
 changeVolume('effects', 0.5);
 game.updateAudioMix(1.5);
-assert.ok(weapon.sounds.pistol.clips.every(clip => clip.volume === 0.25));
-assert.ok(weapon.sounds.shotgun.clips.every(clip => clip.volume === 0.21));
-assert.equal(player.flashlightClick.volume, 0.175);
-assert.deepEqual(enemySources.map(source => source.volume), [0.15, 0.125, 0.175, 0.175]);
+assert.ok(poolVolumes('pistol').every(volume => volume === 0.25));
+assert.ok(poolVolumes('shotgun').every(volume => volume === 0.21));
+assert.ok(poolVolumes('flashlight').every(volume => volume === 0.175));
+assert.deepEqual(enemySources.map(source => source.getVolume()), [0.15, 0.125, 0.175, 0.175]);
 game.state = 'exploration';
 game.updateAudioMix(0.05);
 assert.ok(music.presence > 1 / 3 && music.presence < 1, 'La baisse musicale entre combats est progressive');
 
 // Une voix créée alors que les effets sont coupés doit être silencieuse dès sa création.
-const param = () => ({ setTargetAtTime(value) { this.value = value; } });
-const listener = { context: {
-  currentTime: 0,
-  createGain: () => ({ gain: param(), connect() {}, disconnect() {} }),
-  createPanner: () => ({ connect() {}, disconnect() {} }),
-}, getInput: () => ({}) };
+audioManager.setEffectsVolume(0);
 for (const enemy of enemies) {
-  enemy.setupAudio(listener, { duration: 1 }, 0);
-  const source = enemy.getMesh().children.find(child => child instanceof THREE.PositionalAudio);
-  assert.equal(source.gain.gain.value, 0, 'Nouveau son ennemi muet avant sa première lecture');
   enemy.dispose(scene);
+  assert.equal(enemy.getMesh().children.some(child => child instanceof THREE.PositionalAudio), false, 'La voix est détachée à la libération');
+  const late = new Zombie(scene, level, -14, 15);
+  const source = audioManager.createSpatial('zombie-groan-soft', { refDistance: 2.5, maxDistance: 16, gain: 0.3 }, late.getMesh());
+  late.setVoice(source);
+  assert.equal(source.gain.gain.value, 0, 'Nouveau son ennemi muet avant sa première lecture');
+  late.dispose(scene);
 }
+assert.equal(audioManager.getStats().spatial, 0, 'Aucune voix spatiale orpheline après libération');
 
 // Éclair local, décroissance avec la distance et occultation par un vrai mesh.
 const flash = level.getStormLights()[0];

@@ -22,15 +22,8 @@ globalThis.document = Object.assign(new EventTarget(), {
   pointerLockElement: canvas, hidden: false, hasFocus: () => true,
   querySelector: () => hud, querySelectorAll: () => [],
 });
-const sounds = [];
-globalThis.Audio = class {
-  volume = 1;
-  currentTime = 0;
-  paused = true;
-  constructor(src) { this.src = src; }
-  play() { this.paused = false; sounds.push(this.src); return Promise.resolve(); }
-  pause() { this.paused = true; }
-};
+const { installMockAudio } = await import('./mock-audio-manager.mjs');
+const { manager: audioManager, played: sounds } = installMockAudio();
 const { Weapon } = await import('../src/Weapon.ts');
 const { axeAttack } = await import('../src/AxeAnimation.ts');
 const camera = new THREE.PerspectiveCamera(75, 16 / 9, 0.1, 100);
@@ -94,9 +87,9 @@ assert.equal(hits[0][2].stunSeconds, 0.85);
 assert.equal(weapon.muzzleLight.intensity, 0);
 assert.equal(casings.length, 0);
 assert.equal(weapon.getAmmo(), 0, 'Aucune fausse munition');
-assert.deepEqual(sounds, ['/assets/sounds/axe-flesh.wav']);
+assert.deepEqual(sounds, ['/assets/sounds/axe-flesh.ogg']);
 window.dispatchEvent(new Event('blur'));
-assert.equal(weapon.sounds.axeFlesh.clips[0].paused, true);
+assert.equal(audioManager.getStats().pools.axeFlesh.playing, 0, 'La perte de focus coupe la réserve');
 window.dispatchEvent(new Event('focus'));
 assert.equal(sounds.length, 1, 'Le retour du focus ne relance pas le contact');
 mouse(); assert.equal(shots.length, 1, 'Récupération obligatoire');
@@ -137,11 +130,11 @@ mouse(); weapon.update(1);
 assert.equal(hits.length, 0, 'Le mur arrête la hache');
 assert.equal(impacts.length, 1);
 assert.equal(impacts[0].kind, 'surface');
-assert.deepEqual(sounds, ['/assets/sounds/impact-stone-soft.wav']);
+assert.deepEqual(sounds, ['/assets/sounds/impact-stone-soft.ogg']);
 const frame = target();
 frame.userData.impactMaterial = 'portrait';
 reset([frame]); mouse(); weapon.update(1);
-assert.deepEqual(sounds, ['/assets/sounds/impact-wood-soft.wav']);
+assert.deepEqual(sounds, ['/assets/sounds/impact-wood-soft.ogg']);
 // Une cible visible à côté d'un jambage peut recevoir le coup ; le jambage
 // continue d'occulter chacun de ses propres rayons.
 const jamb = new THREE.Mesh(new THREE.PlaneGeometry(0.1, 3), material);

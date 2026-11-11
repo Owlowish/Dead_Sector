@@ -1,11 +1,13 @@
 
 import * as THREE from 'three';
+import { AudioManager } from './AudioManager.ts';
 import { Level } from './Level.ts';
 import { PLAYER_START_POSITION } from './MansionConfig.ts';
 
 export class Player {
   public readonly camera: THREE.PerspectiveCamera;
-  public readonly audioListener = new THREE.AudioListener();
+  /** Écouteur unique du jeu, fourni par l'AudioManager et porté par la caméra. */
+  public readonly audioListener = AudioManager.get().listener;
 
   private level: Level;
   private canvas: HTMLCanvasElement;
@@ -23,7 +25,6 @@ export class Player {
   private flashlightTarget: THREE.Object3D;
   private flashlightOn = true;
   private readonly flashlightIntensity = 22;
-  private readonly flashlightClick = new Audio('/assets/sounds/flashlight-click.wav');
 
   private keys = new Set<string>();
   private yaw = 0;
@@ -76,8 +77,6 @@ export class Player {
     this.camera.add(this.flashlightTarget);
     this.flashlight.target = this.flashlightTarget;
     this.camera.add(this.flashlight);
-    this.flashlightClick.volume = 0.35;
-    this.flashlightClick.preload = 'auto';
 
     this.setupControls();
   }
@@ -131,12 +130,8 @@ export class Player {
     this.onInteract = callback;
   }
 
-  public setEffectsVolume(volume: number): void {
-    this.flashlightClick.volume = 0.35 * THREE.MathUtils.clamp(volume, 0, 1);
-  }
-
   public suspendFlashlightAudio(): void {
-    this.flashlightClick?.pause?.();
+    AudioManager.peek()?.stopPool('flashlight');
   }
 
   public toggleFlashlight(): boolean {
@@ -144,8 +139,7 @@ export class Player {
     // Garder le nombre de lumières stable évite de recompiler les shaders au premier arrêt.
     this.flashlight.intensity = this.flashlightOn ? this.flashlightIntensity : 0;
     this.onFlashlightToggle?.(this.flashlightOn);
-    this.flashlightClick.currentTime = 0;
-    void this.flashlightClick.play().catch(() => {});
+    AudioManager.peek()?.playPooled('flashlight');
     return this.flashlightOn;
   }
 
