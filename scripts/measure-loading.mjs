@@ -108,7 +108,7 @@ let last;function frame(t){if(last)__audit.frames.push({t,ms:t-last});last=t;req
   await sample('p1-first',180);
   const entryFrames=await ev(`__audit.frames.filter(f=>f.t>=${entry.t})`);
   report.entry={frames:summarize(entryFrames),...await ev(`({compile:__audit.compile-${entry.compile},link:__audit.link-${entry.link}})`)};
-  await sample('sounds-first',100,`for(const sound of Object.values(__testGame.weapon.sounds)){__testGame.weapon.playSound(sound);await new Promise(r=>setTimeout(r,70))}__testGame.player.toggleFlashlight();__testGame.player.toggleFlashlight()`);
+  await sample('sounds-first',100,`for(const pool of ['empty','pistol','shotgun','metal','wood','stone','enemy','axeFlesh']){__testGame.weapon.playSound(pool);await new Promise(r=>setTimeout(r,70))}__testGame.player.toggleFlashlight();__testGame.player.toggleFlashlight()`);
   await sample('p7-first',480,`__testGame.startTier(7)`);
   await sample('p7-warm',180);
   await sample('p8-first',240,`__testGame.startTier(8)`);

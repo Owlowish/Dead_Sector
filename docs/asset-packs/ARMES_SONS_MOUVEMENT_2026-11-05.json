@@ -37,7 +37,7 @@
         "inspected": true
       },
       {
-        "path": "public/assets/sounds/empty-soft.wav",
+        "path": "assets-src/sounds/empty-soft.wav",
         "role": "ancienne source mécanique à remplacer pourcartouche",
         "inspected": true,
         "observations": "Format et enveloppe mesurés sans écoute : mono44.1kHz,0.1s,peak0.300,RMS0.0417. Ancien gain0.3 ; pas repris pour les nouveaux clics."

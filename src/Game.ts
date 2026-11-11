@@ -36,6 +36,9 @@ import { GameHud, type HudPrompt } from './GameHud.ts';
 import { AudioMix, type AudioChannel } from './AudioMix.ts';
 import { Music, type MusicTrack } from './Music.ts';
 import { SoundEffects } from './SoundEffects.ts';
+import { AudioManager } from './AudioManager.ts';
+import type { SpatialOptions } from './AudioManager.ts';
+import { WEAPON_MECHANICAL_SOUND_IDS } from './WeaponMechanicalAudio.ts';
 import type { Door } from './Door.ts';
 import { FootstepAudio } from './FootstepAudio.ts';
 import { WeaponMotion } from './WeaponMotion.ts';
@@ -49,11 +52,13 @@ export function getStartupLoadingManager(): THREE.LoadingManager {
   return THREE.DefaultLoadingManager;
 }
 
-const enemyVoiceFiles: Record<ZombieKind, string> = {
-  standard: 'zombie-groan-soft',
-  agile: 'zombie-runner',
-  spitter: 'spitter-gurgle',
-  crawler: 'crawler-hiss',
+/** Voix spatiales par famille, créées par l'AudioManager et attachées au mesh de l'ennemi. */
+const enemyVoices: Record<ZombieKind, { id: string; options: SpatialOptions }> = {
+  standard: { id: 'zombie-groan-soft', options: { refDistance: 2.5, maxDistance: 16, rolloff: 1.5, gain: 0.3 } },
+  agile: { id: 'zombie-runner', options: { refDistance: 2.5, maxDistance: 16, rolloff: 1.5, gain: 0.25 } },
+  // Timbre guttural, lourd et plus grave que les zombies ordinaires.
+  spitter: { id: 'spitter-gurgle', options: { refDistance: 3, maxDistance: 20, rolloff: 1.2, gain: 0.35 } },
+  crawler: { id: 'crawler-hiss', options: { refDistance: 3, maxDistance: 18, gain: 0.35 } },
 };
 
 const fatalHitLabels = {
@@ -239,7 +244,7 @@ export class Game {
   private readonly horrorDirector = new HorrorDirector();
   private stormController: StormController;
   private disposed = false;
-  private readonly enemyVoiceBuffers: Partial<Record<ZombieKind, AudioBuffer>> = {};
+  private readonly audio: AudioManager;
   private readonly onZombieRise = (position: THREE.Vector3): void => this.soundEffects.play('zombie-rise', position);
 
   // Métriques de performance haute précision (raw delta, percentiles, combat vs pause)
@@ -302,9 +307,10 @@ export class Game {
     this.scene.add(this.player.camera);
     this.menus = new GameMenus(this.requestControl, this.onAudioGesture);
     this.portraitAudio = new PortraitAudio(this.player.audioListener);
-    const listener = this.player.audioListener;
-    const audioLoader = new THREE.AudioLoader();
-    this.soundEffects = new SoundEffects(listener, audioLoader);
+    // Le joueur porte l'écouteur du gestionnaire unique ; tous les sons fichier passent par lui.
+    this.audio = AudioManager.get();
+    const listener = this.audio.listener;
+    this.soundEffects = new SoundEffects(this.audio);
     this.music = new Music(listener.context, listener.getInput());
     this.music.preload('menu', 'pause', 'main', 'defeat', 'victory');
     if (this.musicEnableButton) this.musicEnableButton.hidden = listener.context.state === 'running';
@@ -383,6 +389,7 @@ export class Game {
         __DEAD_SECTOR_DIAGNOSTICS?: () => unknown;
         __DEAD_SECTOR_DAMAGE_TARGET?: (amount?: number) => boolean;
       }).__DEAD_SECTOR_PERF = () => this.getPerformanceReport();
+      (window as unknown as { __DEAD_SECTOR_AUDIO?: () => unknown }).__DEAD_SECTOR_AUDIO = () => this.audio.getStats();
       (window as unknown as { __DEAD_SECTOR_PERF_DETAILED?: () => unknown }).__DEAD_SECTOR_PERF_DETAILED = () => this.getDetailedPerformanceReport();
       (window as unknown as { __DEAD_SECTOR_START_TIER?: (tier: number) => void }).__DEAD_SECTOR_START_TIER = (tier: number) => this.jumpToDebugTier(tier);
       (window as unknown as { __DEAD_SECTOR_DIAGNOSTICS?: () => unknown }).__DEAD_SECTOR_DIAGNOSTICS = () => this.getTierDiagnostics();
@@ -416,66 +423,40 @@ export class Game {
 
     this.setupAudioControls();
 
-    // Ambiance sonore et audio spatial du manoir
+    // Ambiance sonore et audio spatial du manoir, partagés avec l'accueil : portée persistante.
     // 1. Nappe sonore feutrée de vent nocturne en boucle
-    audioLoader.load('/assets/sounds/ambiance-soft.wav', (buffer) => {
-      if (this.disposed) return;
-      const sound = new THREE.Audio(this.player.audioListener);
-      sound.setBuffer(buffer);
-      sound.setLoop(true);
+    void this.audio.load('ambiance-soft', 'persistent').then((buffer) => {
+      if (this.disposed || !buffer) return;
+      const sound = this.audio.createAudio('ambiance-soft', true);
+      if (!sound) return;
       sound.setVolume(0.15 * this.audioMix.getVolume('ambience'));
       this.ambianceAudio = sound;
       this.syncAmbientAudio();
-    }, undefined, (error) => console.warn('Chargement ambiance impossible :', error));
+    });
 
     // 1B. Événement sonore spatial rare du manoir (source unique réutilisée)
-    audioLoader.load('/assets/sounds/creak-soft.wav', (buffer) => {
+    void this.audio.load('creak-soft', 'persistent').then(() => {
       if (this.disposed) return;
-      const creak = new THREE.PositionalAudio(this.player.audioListener);
-      creak.setBuffer(buffer);
-      creak.setLoop(false);
-      creak.setRefDistance(2);
-      creak.setMaxDistance(20);
-      creak.setRolloffFactor(1);
-      this.scene.add(creak);
-      this.horrorDirector.setSource(creak);
-    }, undefined, (error) => console.warn('Chargement craquement sonore impossible :', error));
+      const creak = this.audio.createSpatial('creak-soft', { refDistance: 2, maxDistance: 20, rolloff: 1, scope: 'persistent' }, this.scene);
+      if (creak) this.horrorDirector.setSource(creak);
+    });
 
-    audioLoader.load('/assets/sounds/rain-soft.wav', (buffer) => {
+    void this.audio.load('rain-soft', 'persistent').then(() => {
       if (this.disposed) return;
-      const rain = new THREE.PositionalAudio(this.player.audioListener);
-      rain.setBuffer(buffer);
-      rain.setLoop(true);
-      rain.setRefDistance(4);
-      rain.setMaxDistance(24);
-      rain.setRolloffFactor(0.8);
+      const rain = this.audio.createSpatial('rain-soft', { refDistance: 4, maxDistance: 24, rolloff: 0.8, loop: true, scope: 'persistent' }, this.scene);
+      if (!rain) return;
       rain.position.copy(this.level.getStormWindowPositions()[0]!);
-      this.scene.add(rain);
       this.stormController.setRain(rain);
-    }, undefined, (error) => console.warn('Chargement de la pluie impossible :', error));
+    });
 
-    audioLoader.load('/assets/sounds/thunder-soft.wav', (buffer) => {
+    void this.audio.load('thunder-soft', 'persistent').then(() => {
       if (this.disposed) return;
-      const thunder = new THREE.PositionalAudio(this.player.audioListener);
-      thunder.setBuffer(buffer);
-      thunder.setLoop(false);
-      thunder.setRefDistance(6);
-      thunder.setMaxDistance(36);
-      thunder.setRolloffFactor(0.65);
-      this.scene.add(thunder);
-      this.stormController.setThunder(thunder);
-    }, undefined, (error) => console.warn('Chargement du tonnerre impossible :', error));
+      const thunder = this.audio.createSpatial('thunder-soft', { refDistance: 6, maxDistance: 36, rolloff: 0.65, scope: 'persistent' }, this.scene);
+      if (thunder) this.stormController.setThunder(thunder);
+    });
 
-    // Voix spatiales par famille, y compris pour un ennemi apparu pendant le chargement.
-    for (const kind of Object.keys(enemyVoiceFiles) as ZombieKind[]) {
-      audioLoader.load(`/assets/sounds/${enemyVoiceFiles[kind]}.wav`, (buffer) => {
-        if (this.disposed) return;
-        this.enemyVoiceBuffers[kind] = buffer;
-        for (const zombie of this.zombies) {
-          if (zombie.getKind() === kind) this.setupEnemyVoice(zombie);
-        }
-      }, undefined, (error) => console.warn('Chargement voix ennemie impossible', kind, error));
-    }
+    // Réserves de tirs/impacts et voix ennemies, libérées à chaque fin de tentative.
+    this.loadRunAudio();
 
     // Trousses de secours réparties dans le manoir.
     this.medkits = MANSION_PICKUPS
@@ -577,11 +558,10 @@ export class Game {
 
   public async prepareAudio(): Promise<string[]> {
     await Promise.all([
-      this.player.audioReady,
-      this.weapon.audioReady,
+      this.audio.ready,
       this.music.preload('menu', 'pause', 'main', 'boss1', 'transformation', 'boss2', 'defeat', 'victory'),
     ]);
-    return [...this.player.audioUnavailable, ...this.weapon.audioUnavailable, ...this.music.unavailableTracks];
+    return [...this.audio.unavailableIds, ...this.music.unavailableTracks];
   }
 
   public async prepareGraphics(progress: (done: number, total: number) => void): Promise<void> {
@@ -1684,11 +1664,27 @@ export class Game {
     this.guardianSupplyIndex = 0;
   }
 
-  private setupEnemyVoice(zombie: Zombie | SpitterZombie | CrawlerZombie): void {
-    const buffer = this.enemyVoiceBuffers?.[zombie.getKind()];
-    if (buffer && !(zombie instanceof GuardianZombie)) {
-      zombie.setupAudio(this.player.audioListener, buffer, this.getEffectsVolume());
+  /** (Re)charge les sons d'une tentative après le démarrage ou un `AudioManager.clear()`. */
+  private loadRunAudio(): void {
+    this.audio.preloadPools();
+    this.soundEffects?.preload();
+    for (const id of WEAPON_MECHANICAL_SOUND_IDS) void this.audio.load(id);
+    // Voix spatiales par famille, y compris pour un ennemi apparu pendant le chargement.
+    for (const kind of Object.keys(enemyVoices) as ZombieKind[]) {
+      void this.audio.load(enemyVoices[kind].id).then((buffer) => {
+        if (this.disposed || !buffer) return;
+        for (const zombie of this.zombies) {
+          if (zombie.getKind() === kind) this.setupEnemyVoice(zombie);
+        }
+      });
     }
+  }
+
+  private setupEnemyVoice(zombie: Zombie | SpitterZombie | CrawlerZombie): void {
+    if (zombie instanceof GuardianZombie || !zombie.canReceiveVoice()) return;
+    const voice = enemyVoices[zombie.getKind()];
+    const audio = this.audio?.createSpatial(voice.id, voice.options, zombie.getMesh());
+    if (audio) zombie.setVoice(audio);
   }
 
   private applyEnemyDamage(damage: number, cause: EnemyDamageCause, isAnkleGrab = false): void {
@@ -1849,6 +1845,9 @@ export class Game {
     if (this.ambianceAudio && this.ambianceAudio.isPlaying) {
       this.ambianceAudio.stop();
     }
+    // 0 PV : arrêter les voix ; conserver les buffers/canaux prêts pour la prochaine tentative.
+    this.soundEffects?.stop();
+    this.audio?.clear({ keepBuffers: true });
     if (this.gameOverDisplay) this.gameOverDisplay.hidden = false;
     if (document.pointerLockElement === this.renderer.domElement) document.exitPointerLock();
     this.syncAmbientAudio();
@@ -1933,6 +1932,12 @@ export class Game {
     this.shellCasings = [];
     this.hitEffects.clear();
     this.appliedUpgrades = [];
+    // Nouvelle tentative : couper les voix, conserver les ressources déjà décodées.
+    if (this.audio) {
+      this.soundEffects?.stop();
+      this.audio.clear({ keepBuffers: true });
+      this.loadRunAudio();
+    }
     this.player.resetForNewRun();
     this.weapon.resetForNewRun();
     for (const door of this.level.getDoors()) door.resetForNewRun();
@@ -2044,12 +2049,11 @@ export class Game {
     this.horrorDirector.setVolume(this.audioMix.getVolume('horror') * ambience);
     this.music?.setVolume(this.audioMix.getVolume('music'), this.audioMix.getMusicPresence());
     this.soundEffects?.setVolume(effects);
+    // Réserves (tirs, impacts, lampe) et voix ennemies spatiales.
+    this.audio?.setEffectsVolume(effects);
     this.weapon.setEffectsVolume(effects);
-    this.player.setEffectsVolume(effects);
     this.footsteps?.setVolume(effects);
     this.portraitAudio?.setVolume(effects);
-    this.encounterBell.setEffectsVolume(effects);
-    for (const zombie of this.zombies) zombie.setAudioVolume(effects);
   }
 
   public dispose(): void {
@@ -2069,7 +2073,6 @@ export class Game {
     this.music?.dispose();
     this.soundEffects?.dispose();
     this.player?.suspendFlashlightAudio?.();
-    this.player?.disposeAudio?.();
     this.musicEnableButton?.removeEventListener('click', this.onAudioGesture);
     this.renderer.domElement.removeEventListener?.('click', this.onCanvasClick);
     for (const drop of (this.ammoDrops ?? [])) drop.dispose();
@@ -2101,5 +2104,6 @@ export class Game {
     GuardianProjectile.disposeSharedResources();
     PortraitProjectileImpacts.disposeSharedResources();
     CrawlerZombie.disposeSharedResources();
+    this.audio?.dispose();
   }
 }

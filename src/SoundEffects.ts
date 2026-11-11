@@ -1,4 +1,5 @@
-import type { AudioListener, AudioLoader, Vector3 } from 'three';
+import type { Vector3 } from 'three';
+import type { AudioManager } from './AudioManager.ts';
 
 const gains = {
   'door-open': 0.27,
@@ -22,11 +23,11 @@ const gains = {
 
 type SoundId = keyof typeof gains;
 
-/** Sons ponctuels du manoir, sur le contexte du jeu et le canal Effets. */
+/** Sons ponctuels du manoir, sur le contexte du jeu et le canal Effets ; buffers fournis par l'AudioManager. */
 export class SoundEffects {
+  private readonly audio: AudioManager;
   private readonly context: AudioContext;
   private readonly master: GainNode;
-  private readonly buffers = new Map<SoundId, AudioBuffer>();
   private readonly voices = new Map<AudioBufferSourceNode, { gain: GainNode; panner?: PannerNode }>();
   private active = false;
   private disposed = false;
@@ -34,15 +35,18 @@ export class SoundEffects {
   private heartbeat: AudioBufferSourceNode | null = null;
   private nextHurt: 'player-hurt' | 'player-hurt-2' = 'player-hurt';
 
-  constructor(listener: AudioListener, loader: AudioLoader) {
-    this.context = listener.context;
+  constructor(audio: AudioManager) {
+    this.audio = audio;
+    this.context = audio.context;
     this.master = this.context.createGain();
-    this.master.connect(listener.getInput());
-    for (const id of Object.keys(gains) as SoundId[]) {
-      loader.load(`/assets/sounds/${id}.wav`, (buffer) => {
-        if (!this.disposed) this.buffers.set(id, buffer);
-      }, undefined, (error) => console.warn('Chargement effet sonore impossible', id, error));
-    }
+    this.master.connect(audio.listener.getInput());
+    this.preload();
+  }
+
+  /** Demande les buffers au gestionnaire ; à rappeler après un `AudioManager.clear()`. */
+  preload(): void {
+    if (this.disposed) return;
+    for (const id of Object.keys(gains) as SoundId[]) void this.audio.load(id);
   }
 
   setActive(active: boolean): void {
@@ -73,7 +77,7 @@ export class SoundEffects {
   }
 
   private start(id: SoundId, position?: Vector3): AudioBufferSourceNode | null {
-    const buffer = this.buffers.get(id);
+    const buffer = this.audio.getBuffer(id);
     if (!buffer || !this.active || this.disposed || this.volume === 0
       || this.context.state !== 'running' || this.voices.size >= 12) return null;
     const source = this.context.createBufferSource();
@@ -120,6 +124,5 @@ export class SoundEffects {
     this.disposed = true;
     this.stop();
     this.master.disconnect();
-    this.buffers.clear();
   }
 }

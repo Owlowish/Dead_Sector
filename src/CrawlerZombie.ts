@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { AudioManager } from './AudioManager.ts';
 import type { Level } from './Level.ts';
 import { EnemyImpact, type EnemyShotImpact } from './EnemyImpact.ts';
 import { crawlerConfig, crawlerAnimation, crawlerGroundOffsetY, crawlerLightCue, type CrawlerLightReaction, type CrawlerPose } from './CrawlerAnimation.ts';
@@ -200,22 +201,13 @@ export class CrawlerZombie {
     this.routeReplanTimer = 0.2;
   }
 
-  public setupAudio(listener: THREE.AudioListener, buffer: AudioBuffer, effectsVolume = 1): void {
-    if (!this.alive || this.disposed) return;
-    try {
-      this.hissAudio = new THREE.PositionalAudio(listener);
-      this.hissAudio.setBuffer(buffer);
-      this.hissAudio.setRefDistance(3);
-      this.hissAudio.setMaxDistance(18);
-      this.setAudioVolume(effectsVolume);
-      this.mesh.add(this.hissAudio);
-    } catch {
-      // Audio facultatif si contexte verrouillé
-    }
+  public canReceiveVoice(): boolean {
+    return this.alive && !this.disposed && !this.hissAudio;
   }
 
-  public setAudioVolume(volume: number): void {
-    this.hissAudio?.setVolume(0.35 * THREE.MathUtils.clamp(volume, 0, 1));
+  /** Sifflement spatial créé par l'AudioManager et déjà attaché au mesh. */
+  public setVoice(audio: THREE.PositionalAudio): void {
+    this.hissAudio = audio;
   }
 
   public stopAudio(): void {
@@ -810,12 +802,8 @@ export class CrawlerZombie {
     this.disposed = true;
     this.shotReaction.dispose();
     this.stopAudio();
-    if (this.hissAudio) {
-      this.hissAudio.disconnect();
-      this.hissAudio.gain.disconnect();
-      this.hissAudio.removeFromParent();
-      this.hissAudio = null;
-    }
+    AudioManager.release(this.hissAudio);
+    this.hissAudio = null;
     scene.remove(this.mesh);
   }
 }

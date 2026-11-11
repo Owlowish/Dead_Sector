@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { AudioManager } from './AudioManager.ts';
 import type { Level } from './Level';
 import { visualColors } from './VisualStyle.ts';
 import { zombieAnimation, attackFrame, createAtlasFrameGeometry } from './ZombieAnimation.ts';
@@ -297,19 +298,13 @@ export class Zombie {
     return this.elite;
   }
 
-  public setupAudio(listener: THREE.AudioListener, buffer: AudioBuffer, effectsVolume = 1): void {
-    if (!this.alive || this.disposed) return;
-    this.groanAudio = new THREE.PositionalAudio(listener);
-    this.groanAudio.setBuffer(buffer);
-    this.groanAudio.setRefDistance(2.5);
-    this.groanAudio.setMaxDistance(16);
-    this.groanAudio.setRolloffFactor(1.5);
-    this.setAudioVolume(effectsVolume);
-    this.mesh.add(this.groanAudio);
+  public canReceiveVoice(): boolean {
+    return this.alive && !this.disposed && !this.groanAudio;
   }
 
-  public setAudioVolume(volume: number): void {
-    this.groanAudio?.setVolume((this.kind === 'agile' ? 0.25 : 0.3) * THREE.MathUtils.clamp(volume, 0, 1));
+  /** Voix spatiale créée par l'AudioManager et déjà attachée au mesh. */
+  public setVoice(audio: THREE.PositionalAudio): void {
+    this.groanAudio = audio;
   }
 
   public getMesh(): THREE.Mesh {
@@ -333,12 +328,8 @@ export class Zombie {
     this.revivalPending = false;
     this.mesh.visible = false;
     this.stopAudio();
-    if (this.groanAudio) {
-      this.groanAudio.disconnect();
-      this.groanAudio.gain.disconnect();
-      this.groanAudio.removeFromParent();
-      this.groanAudio = null;
-    }
+    AudioManager.release(this.groanAudio);
+    this.groanAudio = null;
     this.shotReaction.dispose();
     this.remains.dispose();
     scene.remove(this.mesh);

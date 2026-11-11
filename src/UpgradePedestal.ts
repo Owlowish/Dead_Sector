@@ -6,6 +6,7 @@
  */
 
 import * as THREE from 'three';
+import { AudioManager } from './AudioManager.ts';
 import type { UpgradeSpec } from './UpgradeConfig.ts';
 import { createPickupSprite } from './PickupSprite.ts';
 
@@ -120,9 +121,7 @@ export class UpgradePedestal {
     this.beaconLight.intensity = 0;
 
     // Son de validation d'offrande
-    const chime = new Audio('/assets/sounds/empty-soft.wav');
-    chime.volume = 0.5;
-    void chime.play().catch(() => {});
+    AudioManager.peek()?.playPooled('bell');
 
     return chosenOffer;
   }

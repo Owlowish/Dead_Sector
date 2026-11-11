@@ -19,7 +19,7 @@ Inspecter 2 à 4 références proches, issues des chemins chargés. Identifier l
 | Objet/icône | `public/assets/pickups/medkit.png`, `public/assets/pickups/ammo.png`, `public/assets/sprites/upgrades/upgrade-vitality-vial.png` |
 | HUD gothique | V2 : `public/assets/ui/gothic/heart-beat-v2.png`, quatre poses natives de 32 px ; chronologie `HeartAnimation.ts`. Référence initiale et sources V1/V2 documentées dans `docs/asset-packs/HUD_GOTHIQUE_2026-11-06.json` ; anciens médaillons réservés à la provenance |
 | Décor | `public/assets/textures/mansion_wall_v2.png`, `public/assets/textures/wood_floor_v2.png`, `public/assets/textures/mansion/door-panel-v1.png` |
-| Son | `public/assets/sounds/`, appels de lecture et volumes du système concerné ; écouter si possible |
+| Son | Source WAV dans `assets-src/sounds/`, Ogg servi dans `public/assets/sounds/` via `scripts/encode-sounds-ogg.mjs` ; déclaration dans `AudioManager` (réserve, spatial ou `SoundEffects`) et volumes ; écouter si possible |
 
 Les anciens essais ou poses rejetées ne deviennent pas des références par leur seule présence. Viser la cohérence à la taille d'affichage plutôt qu'une résolution source identique pour tous les objets.
 

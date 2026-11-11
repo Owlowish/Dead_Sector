@@ -80,7 +80,7 @@
     "08_victoire"
   ],
   "alternatives": "Les variantes clair et les doublons WAV de la musique restent dans le lot source. Les trois thèmes du Portrait V1 restent dans le projet, avec leurs mesures dans MUSIQUE_2026-11-08.json.",
-  "soundDirectory": "public/assets/sounds/",
+  "soundDirectory": "assets-src/sounds/ (sources WAV) ; public/assets/sounds/ (Ogg Vorbis servis par scripts/encode-sounds-ogg.mjs)",
   "sounds": [
     {
       "file": "ambiance-soft.wav",

@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { BufferedSoundBank } from '../src/BufferedSoundBank.ts';
 import { Music } from '../src/Music.ts';
 
 class Node {
@@ -19,32 +18,8 @@ class Context extends EventTarget {
   }
   createMediaElementSource(media) { const source = new Node(); source.media = media; this.mediaSources.push(source); return source; }
 }
-const fetched = [];
-globalThis.fetch = async url => { fetched.push(url); return { ok: true, arrayBuffer: async () => new ArrayBuffer(20) }; };
 const context = new Context(), output = new Node();
-const bank = new BufferedSoundBank(context, output, ['/a.wav', '/b.wav', '/a.wav'], 2);
-bank.play('/a.wav', .5);
-assert.equal(context.sources.length, 0, 'Avant readiness aucun effet différé');
-await bank.ready;
-const shared = new BufferedSoundBank(context, output, ['/a.wav'], 1); await shared.ready;
-assert.deepEqual(fetched, ['/a.wav', '/b.wav']); assert.equal(context.decodes, 2);
-bank.play('/a.wav', .5); bank.play('/b.wav', .3); bank.play('/a.wav', .5);
-assert(context.sources[0].stopped, 'Une variante remplace sa voix précédente');
-assert.equal(bank.voices.length, 2);
-bank.setVolume(0); assert.equal(bank.voices.length, 0); bank.play('/b.wav', .3);
-assert.equal(context.sources.length, 3);
-bank.setVolume(.5); context.state = 'suspended'; bank.play('/a.wav', .5);
-assert.equal(context.sources.length, 3);
-context.state = 'running'; bank.play('/a.wav', .5); bank.stop();
-assert(context.sources.every(s => s.stopped && s.buffer === null && s.disconnected));
-bank.dispose(); shared.dispose();
-const normalFetch = globalThis.fetch, warn = console.warn;
-console.warn = () => {};
-globalThis.fetch = async () => ({ ok: false, status: 404 });
-const unavailable = new BufferedSoundBank(new Context(), output, ['/missing.wav'], 1);
-await unavailable.ready; assert.deepEqual(unavailable.unavailableUrls, ['/missing.wav']);
-unavailable.dispose(); globalThis.fetch = normalFetch; console.warn = warn;
-
+const warn = console.warn;
 
 let refuse = false, failMedia = false, pending = [];
 globalThis.Audio = class extends EventTarget {
@@ -95,7 +70,7 @@ music.select('victory', true); const victory = music.playback.get('victory').med
 assert.equal(victory.loop, false); victory.ended = true; victory.paused = true;
 const victoryStarts = victory.starts; music.select('victory', false); music.select('victory', true);
 assert.equal(victory.starts, victoryStarts, 'Pas de rejeu après fin naturelle');
-assert.equal(context.decodes, 2, 'Aucune musique longue décodée en AudioBuffer');
+assert.equal(context.decodes, 0, 'Aucune musique longue décodée en AudioBuffer');
 music.dispose(); assert(context.mediaSources.every(s => s.disconnected && s.media.src === ''));
 assert.equal(music.playback.size, 0);
 refuse = true;
@@ -110,4 +85,4 @@ failMedia = true; console.warn = () => {};
 const missingMusic = new Music(context, output); await missingMusic.preload('defeat');
 assert.deepEqual(missingMusic.unavailableTracks, ['defeat']); missingMusic.dispose();
 failMedia = false; console.warn = warn;
-console.log('PASS audio : décodage partagé, premières lectures prêtes, voix bornées, mute/pause, préparation streaming silencieuse, reprise, fin naturelle, refus et destruction.');
+console.log('PASS musique : streaming sans AudioBuffer, préparation silencieuse, reprise après pause/interruption, fin naturelle, refus et destruction. Effets couverts par check-audio-manager.');
