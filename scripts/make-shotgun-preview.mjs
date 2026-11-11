@@ -36,7 +36,6 @@ const shotgunReload=${JSON.stringify(shotgunReload)};
 const reloadPose=${getShotgunReloadPose.toString()};
 const rig=document.getElementById('shotgun-rig');
 const phase=document.getElementById('phase');
-const images=[timing.restAsset,timing.backAsset,timing.hipKickAsset,timing.adsKickAsset,'${assets}weapons/shotgun/ads_pump_v2.png'].map(src=>{const img=new Image();img.src=src;return img;});
 const buttons=[document.getElementById('play'),document.getElementById('slow')];
 const ads=document.getElementById('ads');
 const loading=document.getElementById('loading');

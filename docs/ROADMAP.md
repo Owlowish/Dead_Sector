@@ -33,7 +33,7 @@ Accueil « La Nuit », pause et panneaux communs intégrés. Contrôles et limit
 
 Échelle HUD 80–150 %, taille/contraste du réticule, sensibilité, luminosité calibrée et bornée ; reprendre les quatre volumes déjà persistants dans le panneau commun, sans dupliquer `AudioMix`. Réduction des éclairs, du voile rouge et des scanlines sans supprimer les vrais signaux d'attaque. Libellés français, contraste et états lisibles sans dépendre seulement d'une couleur ; annonces d'accessibilité brèves sans lecture à chaque cartouche. Valeurs validées et persistantes, bouton rétablir les valeurs initiales.
 
-**Acceptation :** effet réel de chaque réglage, persistance après recharge et redémarrage, stockage indisponible toléré. Vérifier notamment les deux chemins audio (`Audio` et Three.js). Tester 1280 × 720, 1920 × 1080, 1024 × 768 et ultralarge, échelle maximale comprise. Conserver le recul de deux secondes.
+**Acceptation :** effet réel de chaque réglage, persistance après recharge et redémarrage, stockage indisponible toléré. Vérifier notamment les buffers d’effets et les lecteurs musicaux reliés à Web Audio. Tester 1280 × 720, 1920 × 1080, 1024 × 768 et ultralarge, échelle maximale comprise. Conserver le recul de deux secondes.
 
 ### UI6 — Mort, victoire et bilan · priorité moyenne
 
@@ -51,13 +51,13 @@ Après code : `npm.cmd run build`, contrôles ciblés des états/transferts/paus
 
 ## Performance — priorités issues de l'audit
 
-Mesures antérieures aux nouveaux sprites et limites dans `ETAT_PROJET.md` ; optimisations encore ouvertes. Préserver gameplay, provenance et contrats UV/ancrages.
+Chargement initial, banques d’effets prêtes, streaming musical, dérivés d’armes et préparation graphique sont intégrés. Mesures et limites dans `ETAT_PROJET.md`. Préserver gameplay, provenance et contrats UV/ancrages.
 
-1. **Haute — Livraison des images.** Exporter personnages/armes à la taille utile ; comparer poses, transparences et tirs tête avant intégration. Conserver les sources. Éviter de garder tous les originaux d'armes décodés si des dérivés suffisent.
-2. **Haute — Premières apparitions.** Chargement anticipé Rampeuse/Portrait ajouté ; compléter la préparation réelle du décodage, masques alpha, upload et compilation. Mesurer premiers types/poses et images stabilisées, sans déplacer toute la saccade dans le début jouable.
-3. **Moyenne — Ombres et appels de dessin.** Réutiliser les cartes pendant K/bilan avec invalidation à la reprise/reset ; préserver les ombres mobiles en combat. Regrouper marches/bâtis/ferrures par ensemble animable. Le passage unique des sprites est secondaire et exige un contrôle visuel.
-4. **Moyenne — CPU et mesures.** Mutualiser les raycasts de visibilité par ennemi/image et les matrices du décor ; présélectionner les points d'apparition avant les tests coûteux. Mesurer cumuls IA/navigation et GPU, vérifier que chaque benchmark simule réellement le combat, corriger la résolution diagnostique. Pas de refonte de navigation justifiée.
-5. **Basse — Entretien.** Unifier les ressources de mort préparées en double, limiter les styles d'arme inchangés et compléter la destruction globale avant recréation de Game. Filtrer la livraison des assets dormants sans supprimer leur provenance. Évaluer le chargement différé de JavaScript à partir d'une mesure du démarrage.
+1. **Haute — Validation matérielle.** Rejouer premiers sons, poses et finale sur machine modeste/réseau ralenti. Mesurer temps de chargement et mémoire native/GPU, sans confondre poids fichier, buffers estimés et mémoire du processus.
+2. **Moyenne — Images des personnages.** Évaluer les atlas encore grands à leur taille utile ; comparer transparences et tirs tête avant intégration. Conserver les sources et zones de tête.
+3. **Moyenne — Ombres et appels de dessin.** Réutiliser les cartes pendant K/bilan avec invalidation à la reprise/reset ; préserver les ombres mobiles en combat. Regrouper marches/bâtis/ferrures par ensemble animable.
+4. **Moyenne — CPU et mesures.** Présélection des chemins, portée de matrices aux spawns, rejet rapide des portes et rayon local du Cracheur réalisés. Profiler le rendu/les ombres dominants et les dernières allocations ; mutualiser davantage les matrices IA seulement si une mesure le justifie. Mesurer GPU et corriger la résolution diagnostique. Pas de refonte de navigation justifiée.
+5. **Basse — Entretien.** Unifier les ressources de mort préparées en double, limiter les styles d’arme inchangés et compléter la destruction globale avant recréation de Game. Filtrer la livraison des assets dormants sans supprimer leur provenance.
 
 ## Autres travaux encore ouverts
 

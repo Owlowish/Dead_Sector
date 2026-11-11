@@ -51,6 +51,9 @@ function getShared(): CrawlerSharedResources {
   return shared;
 }
 
+/** Inspection/préparation GPU sans créer une menace ni prendre possession du cache. */
+export function getCrawlerGraphicsResources(): CrawlerSharedResources { return getShared(); }
+
 export class CrawlerZombie {
   private readonly level: Level;
   private readonly mesh: THREE.Mesh;

@@ -123,5 +123,251 @@
       },
       "reason": "Ancien sprite absent du depot courant et non charge par le code. Son prompt n'est pas une provenance d'asset actif."
     }
-  ]
+  ],
+  "runtimeWeaponExports": {
+    "updatedAt": "2026-11-11",
+    "purpose": "Dérivés légers pistolet/fusil à la place du traitement canvas au démarrage et au redimensionnement.",
+    "recipe": "python scripts/export-weapon-retro.py",
+    "referenceViewport": [
+      1920,
+      1080
+    ],
+    "referencePixelSize": 3,
+    "transformations": [
+      "Canevas complet, même rapport d'aspect à l'arrondi du pixel",
+      "Plus proche voisin",
+      "Alpha binaire : alpha source >=128 devient255, sinon0"
+    ],
+    "invariants": [
+      "Sources intactes",
+      "Aucun recadrage",
+      "Cellules et ancrages CSS en pourcentages conservés",
+      "Mêmes phases et recul de deux secondes",
+      "Aucun nouveau prompt ni génération artistique"
+    ],
+    "provenance": [
+      "Prompts pistolet dans entries de ce document",
+      "Prompts fusil dans PROMPTS_POMPE_AGILE.json ; source des poses de recul conservée dans IMPACTS_SURFACES.json"
+    ],
+    "validation": {
+      "files": "pass : check-weapon-art, sources/SHA, alpha binaire, cellules, silhouette et budgets",
+      "pilot": "pass : garde et pompe du fusil inspectées avant extension",
+      "browser": "Captures Chrome de poses repos/pompe/ADS/recharge à1920×1080,1280×720,390×700,2560×1080 ; hanche/culasse/ADS pistolet en aperçu. Pas de partie jouée ni animation continue visionnée.",
+      "evidence": "tmp/weapon-retro-review/ (non versionné)",
+      "tests": [
+        "node scripts/check-weapon-art.mjs",
+        "node scripts/check-weapon.mjs",
+        "node scripts/check-shotgun.mjs"
+      ]
+    },
+    "totals": {
+      "sourceBytes": 6185487,
+      "exportBytes": 725590,
+      "sourceRgba8Bytes": 62912952,
+      "exportRgba8Bytes": 5245316
+    },
+    "assets": [
+      {
+        "source": "public/assets/weapons/pistol_actions_v3.png",
+        "export": "public/assets/weapons/retro/pistol_actions_v3.png",
+        "sourceSize": [
+          1254,
+          1254
+        ],
+        "exportSize": [
+          585,
+          585
+        ],
+        "columns": 3,
+        "rows": 3,
+        "sourceBytes": 1144368,
+        "exportBytes": 270634,
+        "sourceRgba8Bytes": 6290064,
+        "exportRgba8Bytes": 1368900,
+        "sourceSha256": "e1a97f1cb942f735590a41446e1ccecb86d6c9aa7afff01edde602c0b686f728",
+        "exportSha256": "b58734cbe141963f73fbbff9e990f1d43a2d921c3693c6b5bb00e2c10e01f2de"
+      },
+      {
+        "source": "public/assets/weapons/modern_ads.png",
+        "export": "public/assets/weapons/retro/modern_ads.png",
+        "sourceSize": [
+          1254,
+          1254
+        ],
+        "exportSize": [
+          346,
+          346
+        ],
+        "columns": 1,
+        "rows": 1,
+        "sourceBytes": 432579,
+        "exportBytes": 43154,
+        "sourceRgba8Bytes": 6290064,
+        "exportRgba8Bytes": 478864,
+        "sourceSha256": "2493f3df5fb8ec40b19e4906ca66ce3b527d98d1b9292854af0e705b45bb3f91",
+        "exportSha256": "b79ac8a4fd27ee577268226c23bcea3db22a55a2f0cc401f2e022a66cf89e249"
+      },
+      {
+        "source": "public/assets/weapons/shotgun/hip-rest-v2.png",
+        "export": "public/assets/weapons/retro/hip-rest-v2.png",
+        "sourceSize": [
+          1254,
+          1254
+        ],
+        "exportSize": [
+          288,
+          288
+        ],
+        "columns": 1,
+        "rows": 1,
+        "sourceBytes": 501597,
+        "exportBytes": 34754,
+        "sourceRgba8Bytes": 6290064,
+        "exportRgba8Bytes": 331776,
+        "sourceSha256": "63a816685d99de7127227c6337abd189e18c3bea0bfedda7b9415a1e3e0a7ce3",
+        "exportSha256": "ecf61068f59cfe452a90ca8ea31361a8d2123de1d457a894b7106d6726bf3905"
+      },
+      {
+        "source": "public/assets/weapons/shotgun/hip-back-v2.png",
+        "export": "public/assets/weapons/retro/hip-back-v2.png",
+        "sourceSize": [
+          1254,
+          1254
+        ],
+        "exportSize": [
+          288,
+          288
+        ],
+        "columns": 1,
+        "rows": 1,
+        "sourceBytes": 501132,
+        "exportBytes": 34214,
+        "sourceRgba8Bytes": 6290064,
+        "exportRgba8Bytes": 331776,
+        "sourceSha256": "981f170c53b36819c07ed5fc0c7727b629edcc92a7a0587220d2a8e9118101ef",
+        "exportSha256": "ea1c27171a4779b2f55cc8738437d95fbf4b81b037401b79f0875b1a9c89e659"
+      },
+      {
+        "source": "public/assets/weapons/shotgun/hip-kick-v2.png",
+        "export": "public/assets/weapons/retro/hip-kick-v2.png",
+        "sourceSize": [
+          1254,
+          1254
+        ],
+        "exportSize": [
+          288,
+          288
+        ],
+        "columns": 1,
+        "rows": 1,
+        "sourceBytes": 572905,
+        "exportBytes": 39822,
+        "sourceRgba8Bytes": 6290064,
+        "exportRgba8Bytes": 331776,
+        "sourceSha256": "d46c766bfa0abcca74175d682f65d320ed550574b60168dd54c629704ad3fd57",
+        "exportSha256": "17160f79e7d61bc49b881bb0556e08fca1b4b3d75cbe701b24b6ccb86ea490f7"
+      },
+      {
+        "source": "public/assets/weapons/shotgun/ads_pump_v2.png",
+        "export": "public/assets/weapons/retro/ads_pump_v2.png",
+        "sourceSize": [
+          1774,
+          887
+        ],
+        "exportSize": [
+          836,
+          418
+        ],
+        "columns": 2,
+        "rows": 1,
+        "sourceBytes": 724028,
+        "exportBytes": 169760,
+        "sourceRgba8Bytes": 6294152,
+        "exportRgba8Bytes": 1397792,
+        "sourceSha256": "3c102a8ddbfc6298afa9a511f7368e459f2f020864037fccbc3446882ddf7827",
+        "exportSha256": "e13251128128d8218d1ec44f30057af9cd95f07a15cbda6a5372cffbd9b39e6a"
+      },
+      {
+        "source": "public/assets/weapons/shotgun/ads-kick-v2.png",
+        "export": "public/assets/weapons/retro/ads-kick-v2.png",
+        "sourceSize": [
+          1254,
+          1254
+        ],
+        "exportSize": [
+          418,
+          418
+        ],
+        "columns": 1,
+        "rows": 1,
+        "sourceBytes": 640862,
+        "exportBytes": 81827,
+        "sourceRgba8Bytes": 6290064,
+        "exportRgba8Bytes": 698896,
+        "sourceSha256": "29af93d65f7db1b8057f3fb680d089a9d57ec8314e12f37c9736a6fbfc4c463c",
+        "exportSha256": "7bf346458e43d870954385c0e04ad968b0a4ee2b6c732d0f0bb2760b551149e8"
+      },
+      {
+        "source": "public/assets/weapons/shotgun/reload_draft.png",
+        "export": "public/assets/weapons/retro/reload_draft.png",
+        "sourceSize": [
+          1448,
+          1086
+        ],
+        "exportSize": [
+          260,
+          195
+        ],
+        "columns": 1,
+        "rows": 1,
+        "sourceBytes": 807889,
+        "exportBytes": 38280,
+        "sourceRgba8Bytes": 6290112,
+        "exportRgba8Bytes": 202800,
+        "sourceSha256": "51fb5c51cc653ac8a19dcd1eb5c4cfafca84adbb7ec092016c879f4b487e0bad",
+        "exportSha256": "511ac4715674f524ce701d49cd0382ae27a85e3c3768461c8e95d0735a85a76e"
+      },
+      {
+        "source": "public/assets/weapons/shotgun/live_shell.png",
+        "export": "public/assets/weapons/retro/live_shell.png",
+        "sourceSize": [
+          1774,
+          887
+        ],
+        "exportSize": [
+          62,
+          31
+        ],
+        "columns": 1,
+        "rows": 1,
+        "sourceBytes": 435309,
+        "exportBytes": 1390,
+        "sourceRgba8Bytes": 6294152,
+        "exportRgba8Bytes": 7688,
+        "sourceSha256": "c3cc35c16d374e5cc4dcc703ddda372052bd1b4de8e490bb95321c0ad910b5e4",
+        "exportSha256": "7a1440613a7a64c026c0c9a7c34e4bda13b417f73ef8fea37583c0d33ab80830"
+      },
+      {
+        "source": "public/assets/weapons/shotgun/flash.png",
+        "export": "public/assets/weapons/retro/flash.png",
+        "sourceSize": [
+          1774,
+          887
+        ],
+        "exportSize": [
+          218,
+          109
+        ],
+        "columns": 2,
+        "rows": 1,
+        "sourceBytes": 424818,
+        "exportBytes": 11755,
+        "sourceRgba8Bytes": 6294152,
+        "exportRgba8Bytes": 95048,
+        "sourceSha256": "326caa8ef2964bc3149feb4608e6972e894da53cc1fc65e706b5cb904413a75c",
+        "exportSha256": "8922de26d0bc9880b4bad78efb8ac270779fa7e8b83e27609bdc04ecde3ea78d"
+      }
+    ],
+    "displayPolicy": "Résolution fixe : détails plus fins qu’avant à720p, sans rééchantillonnage au redimensionnement. Ancrages CSS inchangés ; conversion Pillow proche du Canvas mais non identique pixel à pixel."
+  }
 }

@@ -49,6 +49,26 @@ fallen.updateDeath(0.25, new THREE.Vector3(0, 4, 3));
 assert.equal(fallen.remains.mesh.material.map.userData.url, '/assets/zombies/spitter/corpse.png', 'Cadavre final distinct');
 fallen.dispose(scene);
 
+// La poursuite teste plusieurs décisions sur le même segment avant déplacement.
+// Un obstacle qui disparaît à l'image suivante doit immédiatement réautoriser la préparation.
+let corridorBlocked = true, sightQueries = 0;
+const corridor = {
+  getFloorHeightAt: () => 0, isColliding: () => false,
+  getSolidMeshes: () => corridorBlocked ? [wall] : [], findNextWaypoint: () => null,
+};
+const pursuing = new SpitterZombie(scene, corridor, 0, 0);
+const querySight = pursuing.hasClearPath.bind(pursuing);
+pursuing.hasClearPath = (...args) => { sightQueries++; return querySight(...args); };
+const corridorPlayer = new THREE.Vector3(0, 1.7, 7);
+pursuing.update(.016, corridorPlayer, [], () => assert.fail('Pas de tir à travers le mur'));
+assert.equal(sightQueries, 1, 'Un seul rayon pour les décisions avant déplacement');
+assert.notEqual(pursuing.getPose(), 'windup');
+corridorBlocked = false; pursuing.cooldown = 0;
+pursuing.update(.016, corridorPlayer, [], () => {});
+assert.equal(sightQueries, 2, 'Le résultat ne survit pas à une mise à jour');
+assert.equal(pursuing.getPose(), 'windup', 'Couvert disparu : préparation autorisée immédiatement');
+pursuing.dispose(scene);
+
 // Un projectile s'arrête au premier solide, même si son pas traverse le mur.
 let hits = 0;
 const impacts = [];

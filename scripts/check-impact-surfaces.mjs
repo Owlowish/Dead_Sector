@@ -94,6 +94,7 @@ let hud = null;
 let ejections = 0;
 const impacts = [];
 const weapon = new Weapon(camera, canvas, [], [wall], () => assert.fail('Un mur ne reçoit pas de dégâts ennemi'), () => true, () => {});
+weapon.soundBank = { play(url) { sounds.push(url); }, stop() {}, setVolume() {}, dispose() {} };
 const initial = structuredClone(weapon.weapons);
 weapon.unlockWeapon('pistol');
 weapon.setOnAmmoChange((magazine, capacity, reserve, reloading, name, id) => { hud = { magazine, capacity, reserve, reloading, name, id }; });

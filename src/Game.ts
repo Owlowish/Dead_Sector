@@ -41,8 +41,13 @@ import { FootstepAudio } from './FootstepAudio.ts';
 import { WeaponMotion } from './WeaponMotion.ts';
 import { GameMenus } from './GameMenus.ts';
 import { TitleScene } from './TitleScene.ts';
+import { GraphicsWarmup } from './GraphicsWarmup.ts';
 
 type GameState = 'playing' | 'respite' | 'exploration' | 'terminal' | 'won' | 'lost';
+
+export function getStartupLoadingManager(): THREE.LoadingManager {
+  return THREE.DefaultLoadingManager;
+}
 
 const enemyVoiceFiles: Record<ZombieKind, string> = {
   standard: 'zombie-groan-soft',
@@ -179,7 +184,10 @@ export class Game {
   private readonly pauseDisplay = document.querySelector<HTMLElement>('#pause-message');
   private readonly menus: GameMenus;
   private titleScene: TitleScene | null;
+  private preparing = false;
+  private graphicsWarmup: GraphicsWarmup | null = null;
   private readonly onPointerLockChange = (): void => {
+    if (this.preparing) return;
     const locked = document.pointerLockElement === this.renderer.domElement;
     if (locked) {
       this.menus.closePanel();
@@ -200,7 +208,7 @@ export class Game {
   private readonly onPointerLockError = (): void => this.menus.setCaptureError(true);
   private readonly requestControl = (): void => {
     const canvas = this.renderer.domElement;
-    if (this.disposed || this.menus.panelOpen || document.pointerLockElement === canvas
+    if (this.disposed || this.preparing || this.menus.panelOpen || document.pointerLockElement === canvas
       || (!this.titleScene && !this.isSimulationActive())) return;
     this.menus.setCaptureError(false);
     this.resumeAudio();
@@ -239,7 +247,8 @@ export class Game {
   private lastFrameTime = typeof performance !== 'undefined' ? performance.now() : 0;
   private tabBecameVisible = false;
 
-  constructor(showTitle = false) {
+  constructor(showTitle = false, prepareOnStart = false) {
+    this.preparing = prepareOnStart;
     this.scene = new THREE.Scene();
     this.respiteGuide = new THREE.Mesh(new THREE.OctahedronGeometry(0.21),
       new THREE.MeshBasicMaterial({ toneMapped: false }));
@@ -559,20 +568,40 @@ export class Game {
       }
     );
 
-    // Préchauffage des shaders WebGL pour éviter le micro-gel de la première frame de rendu
-    if (typeof this.renderer.compile === 'function') {
-      try {
-        this.renderer.compile(this.scene, this.titleScene?.camera ?? this.player.camera);
-      } catch {
-        // Ignorer en environnement de test sans contexte WebGL complet
-      }
-    }
-    this.menus.setTitle(showTitle);
+    // Les caches/prototypes sont construits avant l'attente de LoadingManager.
+    // Le rendu de préparation attend ensuite toutes leurs images, sous l'écran de chargement.
+    if (prepareOnStart) this.graphicsWarmup = new GraphicsWarmup(this.scene, this.player.camera);
+    this.menus.setTitle(showTitle && !this.preparing);
     if (this.pauseDisplay) this.pauseDisplay.hidden = showTitle;
   }
 
+  public async prepareAudio(): Promise<string[]> {
+    await Promise.all([
+      this.player.audioReady,
+      this.weapon.audioReady,
+      this.music.preload('menu', 'pause', 'main', 'boss1', 'transformation', 'boss2', 'defeat', 'victory'),
+    ]);
+    return [...this.player.audioUnavailable, ...this.weapon.audioUnavailable, ...this.music.unavailableTracks];
+  }
+
+  public async prepareGraphics(progress: (done: number, total: number) => void): Promise<void> {
+    if (!this.graphicsWarmup) throw new Error('Préparation graphique non initialisée');
+    await this.graphicsWarmup.prepare(this.renderer, progress);
+  }
+
+  public activateStartupAudio(): Promise<void> {
+    const context = this.player.audioListener.context;
+    return Promise.all([context.resume(), this.music.activate()]).then(() => undefined);
+  }
+
+  public finishStartup(): void {
+    this.preparing = false;
+    this.menus.setTitle(!!this.titleScene);
+    this.syncAmbientAudio();
+  }
+
   private isSimulationActive(): boolean {
-    return !this.titleScene && !this.menus?.panelOpen && !this.debugMenuOpen && !this.runSummaryOpen
+    return !this.preparing && !this.titleScene && !this.menus?.panelOpen && !this.debugMenuOpen && !this.runSummaryOpen
       && (this.state === 'playing' || this.state === 'respite' || this.state === 'exploration' || this.state === 'terminal' || this.state === 'won');
   }
 
@@ -1395,6 +1424,16 @@ export class Game {
   }
 
   public trySpawnZombie(): boolean {
+    // Les portes ne bougent pas pendant cette sélection synchrone.
+    this.level.beginVisibilityQueryBatch?.();
+    try {
+      return this.selectAndSpawnZombie();
+    } finally {
+      this.level.endVisibilityQueryBatch?.();
+    }
+  }
+
+  private selectAndSpawnZombie(): boolean {
     const t0 = performance.now();
     const configs = this.encounterConfigs ?? (this as unknown as { tierCandidateSpawns?: EncounterSpec[] }).tierCandidateSpawns;
     const config = configs?.[this.currentTier - 1];
@@ -1433,7 +1472,7 @@ export class Game {
       if (leadIndex > 0) order.unshift(...order.splice(leadIndex, 1));
     }
 
-    interface Candidate { x: number; z: number; floor: number; score: number; quadrant: number }
+    interface Candidate { x: number; z: number; floor: number; score: number; quadrant: number; reachable?: boolean }
     const quadrants = [0, 0, 0, 0];
     const quadrantOf = (dx: number, dz: number) => Math.floor(((Math.atan2(dz, dx) + Math.PI + Math.PI / 4) % (2 * Math.PI)) / (Math.PI / 2)) % 4;
     for (const other of living) {
@@ -1454,7 +1493,6 @@ export class Game {
         const dot = (dx * cameraDir.x + dz * cameraDir.z) / distance;
         const visible = this.level.hasLineOfSight(playerPos, position);
         if (dot > 0.45 && visible) continue;
-        if (!this.level.findNextWaypoint(position, playerPos, 0.4)) continue;
         const quadrant = quadrantOf(dx, dz);
         const score = Math.max(0, 24 - distance) * 2 + (!visible ? 5 : 0) + (dot <= 0 ? 2 : 0)
           + (quadrants[quadrant] === 0 ? 4 : quadrants[quadrant] === 1 ? 1 : -3)
@@ -1464,6 +1502,17 @@ export class Game {
       return candidates;
     };
     const groupPreferences = config.spawnGroups?.[this.spawnGroupIndex ?? 0]?.spawnPreferences;
+    const reachable = (candidate: Candidate): boolean => candidate.reachable ??= !!this.level.findNextWaypoint(
+      new THREE.Vector3(candidate.x, candidate.floor + 1, candidate.z), playerPos, 0.4,
+    );
+    const firstFiveReachable = (candidates: Candidate[]): Candidate[] => {
+      const choices: Candidate[] = [];
+      for (const candidate of candidates) {
+        if (reachable(candidate)) choices.push(candidate);
+        if (choices.length === 5) break;
+      }
+      return choices;
+    };
     const selectPlacement = (candidates: Candidate[], allowSeparatedPair: boolean) => {
       candidates.sort((a, b) => b.score - a.score);
       for (const kind of order) {
@@ -1473,22 +1522,28 @@ export class Game {
         const prefers = groupPreferences?.[kind] ?? config.spawnPreferences?.[kind];
         const preferred = prefers ? eligible.filter((candidate) => prefers(candidate, candidate.floor)) : [];
         if (kind !== 'spitter') {
-          const choices = preferred.length > 0 ? preferred : eligible;
-          const chosen = choices[Math.floor(Math.random() * Math.min(5, choices.length))];
+          // Exactement les cinq premiers points valides de l'ancien classement exhaustif.
+          // Un secteur préféré sans chemin doit toujours retomber sur les points ordinaires.
+          const preferredChoices = firstFiveReachable(preferred);
+          const choices = preferredChoices.length > 0 ? preferredChoices : firstFiveReachable(eligible);
+          if (choices.length === 0) continue;
+          const chosen = choices[Math.floor(Math.random() * choices.length)];
           return { kind, chosen, escort: undefined };
         }
         const ranked = preferred.length > 0
           ? [...preferred, ...eligible.filter((candidate) => !preferred.includes(candidate))] : eligible;
         for (const chosen of ranked) {
+          if (!reachable(chosen)) continue;
           const escort = eligible.find((other) => {
             const distance = Math.hypot(other.x - chosen.x, other.z - chosen.z);
-            return distance >= 2 && distance <= 8 && Math.abs(other.floor - chosen.floor) < 1
+            return distance >= 2 && distance <= 8 && Math.abs(other.floor - chosen.floor) < 1 && reachable(other)
               && this.level.hasLineOfSight(new THREE.Vector3(chosen.x, chosen.floor + 1, chosen.z),
                 new THREE.Vector3(other.x, other.floor + 1, other.z));
           });
           if (escort) return { kind, chosen, escort };
         }
-        if (allowSeparatedPair) return { kind, chosen: ranked[0], escort: undefined };
+        const separated = allowSeparatedPair ? ranked.find(reachable) : undefined;
+        if (separated) return { kind, chosen: separated, escort: undefined };
       }
     };
     const pool = config.spawnPool ?? (config as unknown as { pool: Point2D[] }).pool;
@@ -1911,6 +1966,7 @@ export class Game {
 
   private resumeAudio(): void {
     if (this.disposed) return;
+    void this.music?.activate?.();
     void this.player.audioListener.context.resume().then(() => {
       if (this.musicEnableButton) this.musicEnableButton.hidden = true;
     }).catch((error: unknown) => {
@@ -1919,7 +1975,7 @@ export class Game {
   }
 
   private syncMusic(): void {
-    if (!this.music || this.disposed) return;
+    if (!this.music || this.disposed || this.preparing) return;
     const focused = !document.hidden && (document.hasFocus?.() ?? true);
     const active = focused && this.isSimulationActive() && document.pointerLockElement === this.renderer.domElement;
     if (active) this.hasEnteredManor = true;
@@ -1932,7 +1988,7 @@ export class Game {
   }
 
   private syncAmbientAudio(): void {
-    if (this.disposed) return;
+    if (this.disposed || this.preparing) return;
     const focused = !document.hidden && (document.hasFocus?.() ?? true);
     const active = focused && this.isSimulationActive() && document.pointerLockElement === this.renderer.domElement;
     this.syncMusic();
@@ -1998,6 +2054,8 @@ export class Game {
 
   public dispose(): void {
     this.disposed = true;
+    this.renderer?.setAnimationLoop?.(null);
+    this.graphicsWarmup?.dispose();
     this.titleScene?.dispose();
     this.menus?.dispose();
     document.removeEventListener('pointerlockchange', this.onPointerLockChange);
@@ -2011,6 +2069,7 @@ export class Game {
     this.music?.dispose();
     this.soundEffects?.dispose();
     this.player?.suspendFlashlightAudio?.();
+    this.player?.disposeAudio?.();
     this.musicEnableButton?.removeEventListener('click', this.onAudioGesture);
     this.renderer.domElement.removeEventListener?.('click', this.onCanvasClick);
     for (const drop of (this.ammoDrops ?? [])) drop.dispose();

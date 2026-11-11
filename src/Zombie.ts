@@ -65,6 +65,7 @@ export function getStandardSharedResources(): StandardSharedResources {
   for (const texture of [idle, walk, attack, hurt]) {
     texture.magFilter = THREE.NearestFilter;
     texture.minFilter = THREE.NearestFilter;
+    texture.generateMipmaps = false;
     texture.colorSpace = THREE.SRGBColorSpace;
   }
 

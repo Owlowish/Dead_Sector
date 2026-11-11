@@ -15,6 +15,7 @@ import type { CasingType } from './ShellCasing.ts';
 import { isHeadSpriteHit, isOpaqueSpriteHit } from './SpriteHitMask.ts';
 import { getImpactSurface, type ImpactSurface } from './ImpactSurface.ts';
 import { WeaponMechanicalAudio } from './WeaponMechanicalAudio.ts';
+import { BufferedSoundBank } from './BufferedSoundBank.ts';
 import { crossedWeaponSoundEvents, pistolReloadSoundEvents, shotgunPumpSoundEvents } from './WeaponSoundEvents.ts';
 import type { WeaponMechanicalSoundId } from './WeaponSoundEvents.ts';
 import { shotgunImpactPower, type EnemyShotImpact } from './EnemyImpact.ts';
@@ -92,7 +93,7 @@ function createInitialWeapons(): Record<WeaponId, WeaponState> {
 }
 
 interface WeaponSound {
-  clips: HTMLAudioElement[];
+  clips: string[];
   gain: number;
   nextClip: number;
 }
@@ -100,7 +101,7 @@ interface WeaponSound {
 function createWeaponSound(file: string, gain: number, count = 1): WeaponSound {
   const clips = Array.from({ length: count }, (_, index) => {
     const suffix = index === 0 ? '' : `-${index + 1}`;
-    return new Audio(`/assets/sounds/${file}${suffix}.wav`);
+    return `/assets/sounds/${file}${suffix}.wav`;
   });
   return { clips, gain, nextClip: 0 };
 }
@@ -132,6 +133,9 @@ export class Weapon {
     enemy: createWeaponSound('impact-zombie-soft', 0.35, 3),
     axeFlesh: createWeaponSound('axe-flesh', 0.28),
   };
+  public audioReady: Promise<void> = Promise.resolve();
+  public get audioUnavailable(): readonly string[] { return this.soundBank?.unavailableUrls ?? []; }
+  private soundBank: BufferedSoundBank | null = null;
   private mechanicalAudio: WeaponMechanicalAudio | null = null;
   private mechanicalContext: AudioContext | null = null;
   private effectsVolume = 1;
@@ -217,19 +221,6 @@ export class Weapon {
     this.camera.add(this.muzzleLight);
 
     this.setEffectsVolume(1);
-
-    // Préchargement des planches d'armes
-    if (typeof Image !== 'undefined') {
-      new Image().src = '/assets/weapons/pistol_actions_v3.png';
-      new Image().src = shotgunPump.restAsset;
-      new Image().src = shotgunPump.backAsset;
-      new Image().src = shotgunPump.hipKickAsset;
-      new Image().src = shotgunPump.adsKickAsset;
-      new Image().src = '/assets/weapons/shotgun/reload_draft.png';
-      new Image().src = '/assets/weapons/shotgun/live_shell.png';
-      new Image().src = '/assets/weapons/shotgun/ads_pump_v2.png';
-      new Image().src = '/assets/weapons/shotgun/flash.png';
-    }
 
     // Gestion de la visée et du tir
     this.listen(canvas, 'mousedown', (event: MouseEvent) => {
@@ -342,6 +333,9 @@ export class Weapon {
   public setupMechanicalAudio(context: AudioContext, destination: AudioNode): void {
     if (this.disposed || this.mechanicalAudio) return;
     this.mechanicalContext = context;
+    this.soundBank = new BufferedSoundBank(context, destination, Object.values(this.sounds).flatMap(sound => sound.clips), 12);
+    this.soundBank.setVolume(this.effectsVolume);
+    this.audioReady = this.soundBank.ready;
     this.mechanicalAudio = new WeaponMechanicalAudio(context, destination);
     this.mechanicalAudio.setVolume(this.effectsVolume);
     this.listen(context, 'statechange', () => {
@@ -357,11 +351,7 @@ export class Weapon {
 
   public suspendSoundEffects(): void {
     this.suspendMechanicalAudio();
-    for (const sound of Object.values(this.sounds)) {
-      for (const clip of sound.clips) {
-        if (!clip.paused) clip.pause?.();
-      }
-    }
+    this.soundBank?.stop();
   }
 
   private hasActiveControl(): boolean {
@@ -763,12 +753,7 @@ export class Weapon {
     const clip = sound.clips[sound.nextClip];
     // Alterner indépendamment des tirages utilisés pour la dispersion.
     sound.nextClip = (sound.nextClip + 1) % sound.clips.length;
-    clip.currentTime = 0;
-    void clip.play().catch((error: unknown) => {
-      if (!(error instanceof DOMException && error.name === 'AbortError')) {
-        console.warn('Impossible de jouer le son :', error);
-      }
-    });
+    this.soundBank?.play(clip, sound.gain);
   }
 
   public getAmmo(): number {
@@ -865,9 +850,7 @@ export class Weapon {
     const gain = THREE.MathUtils.clamp(volume, 0, 1);
     this.effectsVolume = gain;
     this.mechanicalAudio?.setVolume(gain);
-    for (const sound of Object.values(this.sounds)) {
-      for (const clip of sound.clips) clip.volume = sound.gain * gain;
-    }
+    this.soundBank?.setVolume(gain);
   }
 
   public addAmmo(count: number, weaponId: WeaponId = this.activeWeaponId): boolean {
@@ -1109,6 +1092,7 @@ export class Weapon {
     this.cancelReload();
     this.suspendSoundEffects();
     this.mechanicalAudio?.dispose();
+    this.soundBank?.dispose();
     this.mechanicalAudio = null;
     this.mechanicalContext = null;
     for (const removeListener of this.removeInputListeners) removeListener();

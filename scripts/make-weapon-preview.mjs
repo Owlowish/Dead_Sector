@@ -5,7 +5,9 @@ import { pathToFileURL } from 'node:url';
 import { reloadPoses } from '../src/WeaponAnimation.ts';
 import { installWeaponArt } from '../src/WeaponPresentation.ts';
 const html = readFileSync('index.html', 'utf8');
-const markup = html.slice(html.indexOf('<div class="hud"'), html.indexOf('<div id="objective"'));
+const markup = html.slice(html.indexOf('<div class="hud"'), html.indexOf('<div id="objective"'))
+  .replace('id="pistol-rig" class="weapon-group" hidden', 'id="pistol-rig" class="weapon-group"')
+  .replace('id="axe-rig" class="weapon-group"', 'id="axe-rig" class="weapon-group" hidden');
 const cases = [
   { label: 'Hanche : repos', aim: 0, slide: 0 },
   { label: 'Hanche : culasse reculée', aim: 0, slide: 1 },

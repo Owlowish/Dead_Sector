@@ -137,6 +137,12 @@ export function warmupRemainsResources(): void {
   }
 }
 
+/** Les caches restent possédés par ZombieRemains, y compris après la préparation GPU. */
+export function getRemainsGraphicsResources(): readonly SharedDeathResources[] {
+  warmupRemainsResources();
+  return [...sharedByType.values()];
+}
+
 export function disposeRemainsSharedResources(): void {
   for (const [, res] of sharedByType.entries()) {
     res.frames.forEach((geometry) => geometry.dispose());

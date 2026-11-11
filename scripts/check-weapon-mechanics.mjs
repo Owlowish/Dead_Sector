@@ -16,7 +16,9 @@ class Node {
   connect(destination) { this.connections.push(destination); }
   disconnect() { this.disconnected = true; }
 }
+globalThis.fetch = async () => ({ ok: true, arrayBuffer: async () => new ArrayBuffer(0) });
 class FakeContext extends EventTarget {
+  async decodeAudioData() { return { duration: 0.1 }; }
   sampleRate = 48000;
   currentTime = 0;
   state = 'running';
@@ -157,13 +159,13 @@ for (const delta of [1 / 30, 1 / 144, 0.073, 0.8]) {
 for (const delta of [1 / 30, 1 / 144, 0.073, 6]) {
   const f = fixture(); f.shotgun();
   f.weapon.magazineAmmo = 0; f.weapon.reserveAmmo = 8;
-  const emptyClip = f.weapon.sounds.empty.clips[0];
-  const emptyPlays = emptyClip.playCount;
+  const effects = [];
+  f.weapon.soundBank.play = url => effects.push(url);
   assert(f.weapon.reload());
   through(f, 5 * shotgunReload.duration + 0.02, delta);
   assert.deepEqual(f.names(), Array(5).fill('shell-insert'), 'Un son par cartouche réellement engagée');
   assert.equal(f.weapon.getAmmo(), 5); assert.equal(f.weapon.getReserveAmmo(), 3);
-  assert.equal(emptyClip.playCount, emptyPlays, 'Le clic vide n’est plus utilisé pour insérer');
+  assert.equal(effects.length, 0, 'Le clic vide n’est plus utilisé pour insérer');
   assert.equal(f.weapon.getIsReloading(), false);
   assert(f.weapon.mechanicalAudio.voices.length <= 4);
   f.weapon.dispose();
@@ -223,12 +225,12 @@ for (const [reason, interrupt] of Object.entries(interruptions).filter(([name]) 
   const f = fixture({ setup: false, volume: 0.25 });
   f.weapon.reload(); f.step(0.7); f.attach(); f.attach();
   assert.equal(f.context.buffers.length, 7, 'Une synthèse par timbre malgré deux setup, souffle de hache compris');
-  assert.equal(f.context.gains[0].gain.value, WEAPON_MECHANICAL_BASE_GAIN * 0.25);
+  assert.equal(f.weapon.mechanicalAudio.gain.gain.value, WEAPON_MECHANICAL_BASE_GAIN * 0.25);
   f.step(1);
   assert.deepEqual(f.names(), ['mag-in', 'seat'], 'Pas de restitution du mag-out passé avant setup');
   f.weapon.magazineAmmo = 4; f.weapon.setEffectsVolume(0); f.weapon.reload(); f.step(2);
   assert.deepEqual(f.names(), ['mag-in', 'seat']);
-  assert.equal(f.context.gains[0].gain.value, 0);
+  assert.equal(f.weapon.mechanicalAudio.gain.gain.value, 0);
   f.weapon.setEffectsVolume(1); f.step(1);
   assert.deepEqual(f.names(), ['mag-in', 'seat'], 'Démuter ne rejoue pas les événements passés');
   f.weapon.dispose();

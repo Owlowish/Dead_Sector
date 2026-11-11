@@ -2,6 +2,16 @@ import * as THREE from 'three';
 import type { Level } from './Level.ts';
 import { visualColors } from './VisualStyle.ts';
 
+/** Contrat partagé par les traces réelles et leur préparation GPU avant le duel. */
+export function createPortraitCueMaterial(kind: 'trace' | 'stain' | 'rupture', sweep = false): THREE.MeshBasicMaterial {
+  if (kind === 'stain') return new THREE.MeshBasicMaterial({ color: 0x60151c, transparent: true, opacity: 0.6,
+    side: THREE.DoubleSide, depthWrite: false, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
+  if (kind === 'rupture') return new THREE.MeshBasicMaterial({ color: sweep ? 0xffbe74 : 0x7d232a,
+    side: THREE.DoubleSide, transparent: true, opacity: sweep ? 0.65 : 0.95, depthWrite: false, toneMapped: !sweep });
+  return new THREE.MeshBasicMaterial({ color: visualColors.warning, transparent: true, opacity: 0.65,
+    side: THREE.DoubleSide, depthWrite: false });
+}
+
 /** Trace au sol construite sur les sols réels, arrêtée par le premier obstacle. */
 export class PortraitAttackCue {
   readonly group = new THREE.Group();
@@ -19,10 +29,7 @@ export class PortraitAttackCue {
     this.origin = origin.clone();
     this.direction = direction.clone();
     this.sweep = sweep;
-    this.material = new THREE.MeshBasicMaterial({
-      color: visualColors.warning, transparent: true, opacity: 0.65,
-      side: THREE.DoubleSide, depthWrite: false,
-    });
+    this.material = createPortraitCueMaterial('trace');
     const vertices: number[] = [];
     const raised: number[] = [];
     const stain: number[] = [];
@@ -112,13 +119,11 @@ export class PortraitAttackCue {
     this.group.add(mesh);
     const stainGeometry = new THREE.BufferGeometry();
     stainGeometry.setAttribute('position', new THREE.Float32BufferAttribute(stain, 3));
-    this.stainMaterial = new THREE.MeshBasicMaterial({ color: 0x60151c, transparent: true, opacity: 0.6,
-      side: THREE.DoubleSide, depthWrite: false, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
+    this.stainMaterial = createPortraitCueMaterial('stain');
     this.group.add(new THREE.Mesh(stainGeometry, this.stainMaterial));
     const ruptureGeometry = new THREE.BufferGeometry();
     ruptureGeometry.setAttribute('position', new THREE.Float32BufferAttribute(raised, 3));
-    this.ruptureMaterial = new THREE.MeshBasicMaterial({ color: sweep ? 0xffbe74 : 0x7d232a,
-      side: THREE.DoubleSide, transparent: true, opacity: sweep ? 0.65 : 0.95, depthWrite: false, toneMapped: !sweep });
+    this.ruptureMaterial = createPortraitCueMaterial('rupture', sweep);
     this.rupture = new THREE.Mesh(ruptureGeometry, this.ruptureMaterial);
     this.rupture.visible = sweep;
     this.group.add(this.rupture);

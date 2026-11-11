@@ -52,6 +52,11 @@ export class Level {
   );
   private candleTimer = 0;
   private lastPathfindingDurationMs = 0;
+  private readonly visibilityRay = new THREE.Raycaster();
+  private readonly visibilityDirection = new THREE.Vector3();
+  private readonly visibilityHits: THREE.Intersection[] = [];
+  private visibilityQueryDepth = 0;
+  private visibilityMatricesReady = false;
 
   // Graphe de navigation statique précalculé (Waypoints fixes)
   private staticNavEdges: { to: number; distance: number; doorIndex: number }[][] = [];
@@ -70,6 +75,8 @@ export class Level {
     this.portraits = new MansionPortraits(scene);
     this.furnishings = new MansionFurnishings(scene);
     this.solidMeshes.push(...this.furnishings.getShotBlockers());
+    // Les solides ont une géométrie fixe. Le rayon natif évite ensuite leurs triangles hors boîte.
+    for (const mesh of this.solidMeshes) mesh.geometry.computeBoundingBox();
     this.atmosphere = new MansionAtmosphere(scene);
     this.initNavigationGraph();
   }
@@ -644,11 +651,30 @@ export class Level {
     const dist = Math.hypot(dx, dy, dz);
     if (dist < 0.001) return true;
 
-    const dir = new THREE.Vector3(dx / dist, dy / dist, dz / dist);
-    const ray = new THREE.Raycaster(new THREE.Vector3(from.x, from.y, from.z), dir, 0.1, dist);
-    for (const mesh of this.solidMeshes) mesh.updateWorldMatrix(true, false);
-    const hits = ray.intersectObjects(this.solidMeshes, false);
-    return hits.length === 0;
+    this.visibilityDirection.set(dx / dist, dy / dist, dz / dist);
+    this.visibilityRay.set(from, this.visibilityDirection);
+    this.visibilityRay.near = 0.1;
+    this.visibilityRay.far = dist;
+    if (!this.visibilityMatricesReady || this.visibilityQueryDepth === 0) {
+      for (const mesh of this.solidMeshes) mesh.updateWorldMatrix(true, false);
+      this.visibilityMatricesReady = this.visibilityQueryDepth > 0;
+    }
+    for (const mesh of this.solidMeshes) {
+      this.visibilityHits.length = 0;
+      this.visibilityRay.intersectObject(mesh, false, this.visibilityHits);
+      if (this.visibilityHits.length > 0) return false;
+    }
+    return true;
+  }
+
+  /** Portée synchrone uniquement : aucune porte ni aucun solide ne doit bouger à l'intérieur. */
+  public beginVisibilityQueryBatch(): void {
+    if (this.visibilityQueryDepth++ === 0) this.visibilityMatricesReady = false;
+  }
+
+  public endVisibilityQueryBatch(): void {
+    this.visibilityQueryDepth = Math.max(0, this.visibilityQueryDepth - 1);
+    if (this.visibilityQueryDepth === 0) this.visibilityMatricesReady = false;
   }
 
   public getLastPathfindingDurationMs(): number {

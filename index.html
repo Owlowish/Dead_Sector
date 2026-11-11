@@ -5,8 +5,30 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>DEAD SECTOR</title>
+    <style>
+      body[data-loading] { margin: 0; background: #0a0809; }
+      body[data-loading] > :not(#loading-screen):not(script):not(style) { visibility: hidden; }
+      #loading-screen { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 24px; box-sizing: border-box; background: #0a0809; color: #eee5d1; font: 16px Georgia, serif; text-align: center; }
+      #loading-screen[hidden] { display: none; }
+      .loading-panel { width: min(440px, 100%); }
+      .loading-panel h1 { text-transform: uppercase; letter-spacing: .14em; font-size: clamp(28px, 6vw, 46px); }
+      .loading-panel p { line-height: 1.6; color: #b0aaa2; }
+      #loading-progress { width: 100%; height: 8px; accent-color: #923d42; margin: 20px 0; }
+      #loading-action { padding: 14px 24px; border: 1px solid #8e7a55; background: #211a1c; color: inherit; font: inherit; cursor: pointer; }
+      #loading-action:focus-visible { outline: 2px solid #d7c7a5; outline-offset: 4px; }
+    </style>
   </head>
-  <body>
+  <body data-loading>
+    <section id="loading-screen" aria-labelledby="loading-title" aria-busy="true">
+      <div class="loading-panel">
+        <h1 id="loading-title">Dead Sector</h1>
+        <p id="loading-status" role="status">Préparation du manoir…</p>
+        <progress id="loading-progress" aria-label="Chargement du jeu"></progress>
+        <p id="loading-notice" hidden></p>
+        <button type="button" id="loading-action" hidden>Continuer</button>
+        <noscript>Activez JavaScript pour entrer dans le manoir.</noscript>
+      </div>
+    </section>
     <div id="app"></div>
     <section id="title-screen" class="title-screen" aria-labelledby="title-name" hidden>
       <h1 id="title-name">Dead Sector</h1>

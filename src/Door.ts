@@ -37,6 +37,9 @@ export class Door {
   private readonly type: DoorType;
   private readonly unlockAfterTier: number;
   private readonly axis: 'X' | 'Z';
+  private collisionProgress = NaN;
+  private collisionCos = 1;
+  private collisionSin = 0;
 
   // Groupes pivots positionnés aux charnières
   private rootGroup: THREE.Group;
@@ -295,13 +298,24 @@ export class Door {
       qz = rz;
     }
 
-    const angle = this.openProgress * (Math.PI / 2);
+    // La navigation échantillonne beaucoup de points loin des portes. Ce volume
+    // contient les deux battants sur tout leur débattement ET les montants.
+    // Seuls les points proches passent ensuite au test exact point-segment.
+    if (Math.abs(qx) > this.passageWidth / 2 + 0.18 + radius
+      || qz > 0.2 + radius || qz < -this.leafWidth - 0.2 - radius) return false;
+
+    if (this.collisionProgress !== this.openProgress) {
+      this.collisionProgress = this.openProgress;
+      const angle = this.openProgress * (Math.PI / 2);
+      this.collisionCos = Math.cos(angle);
+      this.collisionSin = Math.sin(angle);
+    }
 
     // 1. Segment du battant gauche
     const hLx = -this.passageWidth / 2 + 0.03;
     const hLz = 0;
-    const eLx = hLx + this.leafWidth * Math.cos(angle);
-    const eLz = hLz - this.leafWidth * Math.sin(angle);
+    const eLx = hLx + this.leafWidth * this.collisionCos;
+    const eLz = hLz - this.leafWidth * this.collisionSin;
 
     if (this.distanceToSegment(qx, qz, hLx, hLz, eLx, eLz) < radius + this.leafThickness / 2) {
       return true;
@@ -310,8 +324,8 @@ export class Door {
     // 2. Segment du battant droit
     const hRx = this.passageWidth / 2 - 0.03;
     const hRz = 0;
-    const eRx = hRx - this.leafWidth * Math.cos(angle);
-    const eRz = hRz - this.leafWidth * Math.sin(angle);
+    const eRx = hRx - this.leafWidth * this.collisionCos;
+    const eRz = hRz - this.leafWidth * this.collisionSin;
 
     if (this.distanceToSegment(qx, qz, hRx, hRz, eRx, eRz) < radius + this.leafThickness / 2) {
       return true;

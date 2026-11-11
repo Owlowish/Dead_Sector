@@ -69,7 +69,8 @@ const scene = new THREE.Scene();
 const level = new Level(scene);
 const camera = new THREE.PerspectiveCamera(75, 16 / 9, 0.1, 100);
 const weapon = new Weapon(camera, new Element(), [], [], () => {}, () => true, () => {});
-const player = Object.assign(Object.create(Player.prototype), { flashlightClick: new Audio() });
+weapon.soundBank = { volume: 1, setVolume(value) { this.volume = value; } };
+const player = Object.assign(Object.create(Player.prototype), { flashlightClick: { volume: 1, setVolume(value) { this.volume = value; } } });
 const audioSource = () => ({
   volume: -1, isPlaying: false, position: new THREE.Vector3(),
   setVolume(value) { this.volume = value; },
@@ -105,7 +106,8 @@ changeVolume('effects', 0);
 game.updateAudioMix(1.5);
 assert.equal(elements.get('#effects-volume-value').value, '0 %');
 for (const [name, sound] of Object.entries(weapon.sounds)) {
-  assert.ok(sound.clips.every(clip => clip.volume === 0), `${name} et ses variantes suivent Effets`);
+  assert.equal(weapon.soundBank.volume, 0, `${name} et ses variantes suivent Effets`);
+  assert(sound.clips.length > 0);
 }
 assert.equal(player.flashlightClick.volume, 0);
 assert.ok(enemySources.every(source => source.volume === 0), 'Les quatre types ennemis suivent Effets');
@@ -124,9 +126,9 @@ assert.equal(music.volume, 0.4, 'Ambiance ne coupe pas la musique');
 assert.equal(game.audioMix.update(1.5, true), false, 'Les fondus terminés ne provoquent plus de mise à jour des sources');
 changeVolume('effects', 0.5);
 game.updateAudioMix(1.5);
-assert.ok(weapon.sounds.pistol.clips.every(clip => clip.volume === 0.25));
-assert.ok(weapon.sounds.shotgun.clips.every(clip => clip.volume === 0.21));
-assert.equal(player.flashlightClick.volume, 0.175);
+assert.equal(weapon.soundBank.volume * weapon.sounds.pistol.gain, 0.25);
+assert.equal(weapon.soundBank.volume * weapon.sounds.shotgun.gain, 0.21);
+assert.equal(player.flashlightClick.volume * 0.35, 0.175);
 assert.deepEqual(enemySources.map(source => source.volume), [0.15, 0.125, 0.175, 0.175]);
 game.state = 'exploration';
 game.updateAudioMix(0.05);

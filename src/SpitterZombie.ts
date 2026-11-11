@@ -30,6 +30,9 @@ function getShared() {
   return shared;
 }
 
+/** Inspection/préparation GPU sans créer une menace ni prendre possession du cache. */
+export function getSpitterGraphicsResources() { return getShared(); }
+
 export class SpitterZombie {
   private readonly level: Level;
   private readonly mesh: THREE.Mesh;
@@ -153,10 +156,14 @@ export class SpitterZombie {
     const distance = Math.hypot(dx, dy, dz);
     const minAttackDistance = 1.0;
     const maxAttackDistance = 12.0;
-    const visible = distance <= maxAttackDistance && distance >= minAttackDistance && this.hasClearPath(playerPosition, distance);
+    // Ces décisions précèdent toutes move() : le segment testé est identique.
+    // Ne conserver le résultat que pour cette mise à jour, jamais après déplacement.
+    let clearPath: boolean | undefined;
+    const hasClearPath = () => clearPath ??= this.hasClearPath(playerPosition, distance);
+    const visible = distance <= maxAttackDistance && distance >= minAttackDistance && hasClearPath();
 
     if (this.pose === 'windup') {
-      if (distance > maxAttackDistance || distance < 0.85 || !this.hasClearPath(playerPosition, distance)) {
+      if (distance > maxAttackDistance || distance < 0.85 || !hasClearPath()) {
         this.setPose('idle');
         this.cooldown = 0.8;
       } else if (this.poseTime >= spitterAnimation.windupDuration) {
@@ -177,12 +184,12 @@ export class SpitterZombie {
     } else if (visible && this.cooldown <= 0) {
       this.mesh.rotation.y = Math.atan2(dx, dz);
       this.setPose('windup');
-    } else if (distance > 10 || !this.hasClearPath(playerPosition, distance)) {
+    } else if (distance > 10 || !hasClearPath()) {
       const flat = Math.hypot(dx, dz) || 1;
       const step = this.speed * delta;
       const directX = dx / flat * step;
       const directZ = dz / flat * step;
-      if (!this.hasClearPath(playerPosition, distance)
+      if (!hasClearPath()
         || this.level.isColliding(this.mesh.position.x + directX, this.mesh.position.z + directZ, this.radius)) {
         this.routeReplanTimer -= delta;
         if (!this.routeWaypoint || this.routeReplanTimer <= 0) {

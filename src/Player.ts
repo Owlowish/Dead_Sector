@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { Level } from './Level.ts';
 import { PLAYER_START_POSITION } from './MansionConfig.ts';
+import { BufferedSoundBank } from './BufferedSoundBank.ts';
 
 export class Player {
   public readonly camera: THREE.PerspectiveCamera;
@@ -23,7 +24,9 @@ export class Player {
   private flashlightTarget: THREE.Object3D;
   private flashlightOn = true;
   private readonly flashlightIntensity = 22;
-  private readonly flashlightClick = new Audio('/assets/sounds/flashlight-click.wav');
+  private readonly flashlightClick: BufferedSoundBank;
+  public readonly audioReady: Promise<void>;
+  public get audioUnavailable(): readonly string[] { return this.flashlightClick.unavailableUrls; }
 
   private keys = new Set<string>();
   private yaw = 0;
@@ -76,8 +79,8 @@ export class Player {
     this.camera.add(this.flashlightTarget);
     this.flashlight.target = this.flashlightTarget;
     this.camera.add(this.flashlight);
-    this.flashlightClick.volume = 0.35;
-    this.flashlightClick.preload = 'auto';
+    this.flashlightClick = new BufferedSoundBank(this.audioListener.context, this.audioListener.getInput(), ['/assets/sounds/flashlight-click.wav'], 1);
+    this.audioReady = this.flashlightClick.ready;
 
     this.setupControls();
   }
@@ -132,11 +135,11 @@ export class Player {
   }
 
   public setEffectsVolume(volume: number): void {
-    this.flashlightClick.volume = 0.35 * THREE.MathUtils.clamp(volume, 0, 1);
+    this.flashlightClick.setVolume(volume);
   }
 
   public suspendFlashlightAudio(): void {
-    this.flashlightClick?.pause?.();
+    this.flashlightClick?.stop();
   }
 
   public toggleFlashlight(): boolean {
@@ -144,10 +147,11 @@ export class Player {
     // Garder le nombre de lumières stable évite de recompiler les shaders au premier arrêt.
     this.flashlight.intensity = this.flashlightOn ? this.flashlightIntensity : 0;
     this.onFlashlightToggle?.(this.flashlightOn);
-    this.flashlightClick.currentTime = 0;
-    void this.flashlightClick.play().catch(() => {});
+    this.flashlightClick.play('/assets/sounds/flashlight-click.wav', 0.35);
     return this.flashlightOn;
   }
+
+  public disposeAudio(): void { this.flashlightClick.dispose(); }
 
   public isFlashlightOn(): boolean {
     return this.flashlightOn;
