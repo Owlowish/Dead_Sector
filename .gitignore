@@ -20,6 +20,7 @@ dist-ssr
 # Local credentials and environment settings
 .env
 .env.*
+.venv
 !.env.example
 *.pem
 *.key
